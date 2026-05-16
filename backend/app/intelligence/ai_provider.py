@@ -65,6 +65,7 @@ class FakeAIProvider:
             provider=self.provider_name,
             model=self.model,
             content=self.content,
+            reasoning=None,
             finish_reason="stop",
             usage=AIUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
             raw_response_id="fake-response",
@@ -164,6 +165,12 @@ def parse_fpt_chat_response(
     choice = choices[0]
     message = choice["message"]
     content = message["content"]
+    reasoning = message.get("reasoning")
+    if content is None:
+        raise AIProviderError(
+            "FPT response did not include final message content. "
+            "GLM-5.1 may still be using the completion budget for reasoning; increase max_tokens."
+        )
     if not isinstance(content, str):
         content = json.dumps(content)
 
@@ -174,6 +181,7 @@ def parse_fpt_chat_response(
         provider=provider_name,
         model=str(payload.get("model", "")),
         content=content,
+        reasoning=reasoning if isinstance(reasoning, str) else None,
         finish_reason=choice.get("finish_reason"),
         usage=usage,
         raw_response_id=payload.get("id"),

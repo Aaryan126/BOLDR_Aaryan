@@ -26,6 +26,7 @@ class ChatCompletionResult(BaseModel):
     provider: str
     model: str
     content: str
+    reasoning: str | None = None
     finish_reason: str | None = None
     usage: AIUsage | None = None
     raw_response_id: str | None = None

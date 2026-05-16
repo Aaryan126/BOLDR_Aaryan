@@ -168,6 +168,26 @@ def test_fpt_response_parser_accepts_plain_openai_shape() -> None:
     assert result.raw_response_id == "plain"
 
 
+def test_fpt_response_parser_rejects_reasoning_without_content() -> None:
+    with pytest.raises(RuntimeError, match="increase max_tokens"):
+        parse_fpt_chat_response(
+            {
+                "id": "reasoning-only",
+                "model": "GLM-5.1",
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "reasoning": "Still thinking through the answer.",
+                        },
+                        "finish_reason": "length",
+                    }
+                ],
+            }
+        )
+
+
 def test_ai_api_status_schemas_and_prompt_preview() -> None:
     client = TestClient(create_app())
 
