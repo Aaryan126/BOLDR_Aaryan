@@ -11,6 +11,7 @@ from app.models.classification import (
 )
 from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
 from app.models.drafting import ApprovalStatus, DraftEvaluation, DraftReviewRequest, TicketDraft
+from app.models.evaluation import QualityScorecardResponse
 from app.models.insights import (
     MarketingBriefRequest,
     MarketingBriefResponse,
@@ -46,6 +47,7 @@ from app.services.drafts import (
     list_ticket_drafts,
     review_ticket_draft,
 )
+from app.services.evaluation import get_quality_scorecard
 from app.services.insights import generate_marketing_brief, get_theme_radar
 from app.services.retrieval import (
     get_retrieval_evaluation,
@@ -115,6 +117,11 @@ def meta() -> dict[str, object]:
                 "name": "Marketing Brief",
                 "status": "insights_ready",
                 "description": "Monthly product and marketing intelligence output.",
+            },
+            {
+                "name": "Quality Dashboard",
+                "status": "evaluation_ready",
+                "description": "Accuracy, guardrail, evidence, and regression scorecard.",
             },
             {
                 "name": "External Benchmarking",
@@ -239,6 +246,11 @@ def marketing_brief_generate(
     request: MarketingBriefRequest | None = None,
 ) -> MarketingBriefResponse:
     return MarketingBriefResponse(data=generate_marketing_brief(request))
+
+
+@router.get("/api/evaluation/scorecard", tags=["evaluation"])
+def evaluation_scorecard() -> QualityScorecardResponse:
+    return QualityScorecardResponse(data=get_quality_scorecard(get_settings().app_phase))
 
 
 @router.get("/api/workflow/overview", tags=["workflow"])

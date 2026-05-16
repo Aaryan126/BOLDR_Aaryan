@@ -10,7 +10,7 @@ def test_workflow_overview_reports_phase_9_endpoints() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["phase"] == "phase-10-theme-brief"
+    assert body["phase"] == "phase-11-quality-dashboard"
     assert body["stable_endpoint_count"] >= 12
     assert body["ticket_count"] == 70
     assert body["draft_count"] == 70

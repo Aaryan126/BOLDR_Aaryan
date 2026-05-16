@@ -215,6 +215,67 @@ export type InsightsOverview = {
   detail?: string;
 };
 
+export type MetricStatus = "pass" | "documented_exception" | "fail";
+
+export type QualityMetric = {
+  metric_id: string;
+  label: string;
+  value: number;
+  target: number;
+  unit: "ratio" | "count" | "boolean";
+  status: MetricStatus;
+  numerator: number | null;
+  denominator: number | null;
+  detail: string;
+};
+
+export type GoldenFixtureResult = {
+  fixture_id: string;
+  ticket_id: string;
+  scenario: string;
+  expected_persona: string;
+  actual_persona: string;
+  expected_answerability: string;
+  actual_answerability: string;
+  expected_reply_type: string;
+  actual_reply_type: string;
+  evidence_required: boolean;
+  evidence_count: number;
+  passed: boolean;
+  notes: string;
+};
+
+export type QualityIssue = {
+  issue_id: string;
+  severity: "low" | "medium" | "high";
+  area: string;
+  summary: string;
+  ticket_ids: string[];
+  recommended_action: string;
+};
+
+export type QualityScorecard = {
+  phase: string;
+  generated_at: string;
+  total_ticket_count: number;
+  overall_status: "pass" | "pass_with_notes" | "fail";
+  metrics: QualityMetric[];
+  golden_fixtures: GoldenFixtureResult[];
+  issues: QualityIssue[];
+  summary: string;
+};
+
+export type QualityScorecardResponse = {
+  status: "ok";
+  data: QualityScorecard;
+};
+
+export type QualityOverview = {
+  scorecard: QualityScorecard | null;
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export type ReplyType = "customer_reply" | "holding_reply" | "internal_note";
 
 export type ApprovalStatus =
@@ -786,6 +847,36 @@ export async function getInsightsOverview(): Promise<InsightsOverview> {
       status: "unavailable",
       themeRadar: null,
       marketingBrief: null,
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getQualityOverview(): Promise<QualityOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/evaluation/scorecard`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        status: "unavailable",
+        scorecard: null,
+        detail: `Evaluation endpoint returned ${response.status}`,
+      };
+    }
+
+    const body = (await response.json()) as QualityScorecardResponse;
+    return {
+      status: "ok",
+      scorecard: body.data,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      scorecard: null,
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }

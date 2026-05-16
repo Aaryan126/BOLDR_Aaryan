@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-10: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, and monthly marketing intelligence. Quality scorecards and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-11: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, monthly marketing intelligence, and an evaluation quality scorecard. Bonus benchmarking begins in later phases.
 
 ## References
 
@@ -262,4 +262,12 @@ docker compose down
 - Theme radar clusters all 70 tickets into the nine planned business themes with persona, answerability, evidence, trend, product-page gap, and marketing action fields.
 - Monthly marketing brief answers what customers are asking that product pages should answer better, which themes need decisions, and which campaign angles are useful.
 - Frontend shows Theme Radar cards, opportunity cards, and the generated Markdown brief.
+- Backend and frontend checks pass.
+
+## Phase 11 Exit Criteria
+
+- Backend serves `/api/evaluation/scorecard`.
+- Scorecard reports answerability accuracy, escalation routing accuracy, persona mapping coverage, evidence coverage, unsupported-claim guardrail results, source conflict handling, golden fixture pass rate, and actionable issues.
+- Minimum targets are marked as pass or documented exception; the current CSV escalation-label disagreement is visible for human review.
+- Frontend shows quality metric cards, golden fixture checks, and issue details suitable for demo defence.
 - Backend and frontend checks pass.

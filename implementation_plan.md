@@ -789,6 +789,8 @@ Decision to proceed: Pending user review
 
 ## 15. Phase 11: Evaluation And Quality Dashboard
 
+Status: Implemented; awaiting human verification.
+
 Goal: Make system quality measurable and visible.
 
 Deliverables:
@@ -803,6 +805,14 @@ Deliverables:
   - source conflict handling
 - Golden fixtures for core scenarios.
 - Regression tests for previous bugs.
+
+Implementation notes:
+
+- Added `/api/evaluation/scorecard`.
+- Scorecard includes answerability accuracy, escalation routing accuracy, persona mapping coverage, evidence coverage, unsupported-claim guardrail count, source conflict handling, and golden fixture pass rate.
+- Current scorecard status is `pass_with_notes` because answerability, persona mapping, evidence, guardrails, source priority, and golden fixtures pass, while CSV escalation-label agreement is below 90% and explicitly documented for human review.
+- Golden fixtures cover BPA safety, carbon-neutral shipping gap, order lookup, engraving rate-card pricing, older-model servicing human review, and vegan strap gap.
+- Frontend now shows quality metric cards, golden fixture status, and issue details.
 
 Default tests:
 
@@ -823,6 +833,18 @@ Human verification:
 Exit criteria:
 
 - We can defend the system's accuracy and safety in a demo.
+
+Phase gate record:
+
+```text
+Phase: 11 - Evaluation And Quality Dashboard
+Status: Implemented; awaiting human verification
+Implemented: Evaluation scorecard API, threshold metrics, documented escalation-label exception, golden fixture checks, quality dashboard UI
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit, git diff check, Playwright desktop/mobile smoke
+Human verification completed: Pending
+Known issues: Escalation routing accuracy is 87.14% against CSV labels and is documented for review because several CSV escalation labels conflict with evidence-backed safe-answer behavior
+Decision to proceed: Pending user review
+```
 
 ## 16. Phase 12: Bonus External Sentiment Benchmarking
 
@@ -986,4 +1008,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 10 human verification, then start Phase 11 by adding the evaluation and quality dashboard.
+Complete Phase 11 human verification, then start Phase 12 by implementing the bonus external sentiment benchmarking layer.

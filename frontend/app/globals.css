@@ -902,7 +902,8 @@ a {
   line-height: 1.45;
 }
 
-.insights-console {
+.insights-console,
+.quality-console {
   background: var(--panel);
   box-shadow: 0 8px 30px rgba(24, 34, 52, 0.06);
 }
@@ -973,6 +974,136 @@ a {
   min-width: 0;
 }
 
+.quality-console {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.quality-summary {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.quality-card,
+.fixture-panel,
+.issue-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.quality-card h4,
+.issue-card h4 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.quality-card > strong {
+  display: block;
+  margin-top: 14px;
+  color: var(--navy);
+  font-size: 28px;
+}
+
+.quality-card p,
+.issue-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.quality-card small,
+.issue-card small {
+  display: block;
+  margin-top: 10px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.status-pass,
+.status-pass_with_notes {
+  background: #e8f6ec;
+  color: #246a39;
+}
+
+.status-documented_exception {
+  background: #fff8e6;
+  color: #765715;
+}
+
+.status-fail {
+  background: #fff0ef;
+  color: #9b2f2b;
+}
+
+.quality-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.fixture-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.fixture-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfd;
+  padding: 12px;
+}
+
+.fixture-row div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fixture-row strong {
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.fixture-row span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.fixture-row em {
+  flex: 0 0 auto;
+  color: #246a39;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+}
+
 @media (max-width: 1040px) {
   .workbench-layout {
     display: block;
@@ -989,7 +1120,8 @@ a {
   .workbench-columns,
   .gap-layout,
   .evidence-layout,
-  .brief-layout {
+  .brief-layout,
+  .quality-detail-layout {
     grid-template-columns: 1fr;
   }
 
@@ -1033,6 +1165,7 @@ a {
   .workbench-stat-grid,
   .gap-signal-grid,
   .theme-grid,
+  .quality-grid,
   .review-grid {
     grid-template-columns: 1fr;
   }
