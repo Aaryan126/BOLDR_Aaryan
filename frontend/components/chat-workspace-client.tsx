@@ -1035,11 +1035,150 @@ function ConversationRecord({ record }: { record: AdhocEnquiryRecord }) {
         <span>BOLDR Intelligence</span>
         <p>{customerStateMessage(record)}</p>
         {record.customer_visible_response ? (
-          <blockquote>{record.customer_visible_response}</blockquote>
+          <div className="assistant-markdown">
+            <MarkdownResponse text={record.customer_visible_response} />
+          </div>
         ) : null}
       </div>
     </article>
   );
+}
+
+function MarkdownResponse({ text }: { text: string }) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (!hasExplicitMarkdown(trimmed)) {
+    const sentences = trimmed.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const [lead, ...bodySentences] = sentences;
+    const bodyParagraphs = [];
+    for (let index = 0; index < bodySentences.length; index += 2) {
+      bodyParagraphs.push(bodySentences.slice(index, index + 2).join(" "));
+    }
+
+    return (
+      <>
+        <p className="markdown-lead">{renderInlineMarkdown(lead)}</p>
+        {bodyParagraphs.map((paragraph, index) => (
+          <p key={`paragraph-${index}`}>{renderInlineMarkdown(paragraph)}</p>
+        ))}
+      </>
+    );
+  }
+
+  return <>{renderMarkdownBlocks(trimmed)}</>;
+}
+
+function hasExplicitMarkdown(text: string) {
+  return /(^|\n)\s{0,3}(#{1,3}\s|[-*]\s+|\d+\.\s+)|\*\*[^*]+\*\*|__[^_]+__|\n\s*\n/.test(text);
+}
+
+function renderMarkdownBlocks(text: string) {
+  const blocks: ReactNode[] = [];
+  const paragraphLines: string[] = [];
+  const bulletLines: string[] = [];
+  const orderedLines: string[] = [];
+
+  function flushParagraph() {
+    if (paragraphLines.length === 0) {
+      return;
+    }
+    const paragraph = paragraphLines.join(" ");
+    blocks.push(<p key={`paragraph-${blocks.length}`}>{renderInlineMarkdown(paragraph)}</p>);
+    paragraphLines.length = 0;
+  }
+
+  function flushBullets() {
+    if (bulletLines.length === 0) {
+      return;
+    }
+    blocks.push(
+      <ul key={`list-${blocks.length}`}>
+        {bulletLines.map((line, index) => (
+          <li key={`${line}-${index}`}>{renderInlineMarkdown(line)}</li>
+        ))}
+      </ul>,
+    );
+    bulletLines.length = 0;
+  }
+
+  function flushOrdered() {
+    if (orderedLines.length === 0) {
+      return;
+    }
+    blocks.push(
+      <ol key={`ordered-${blocks.length}`}>
+        {orderedLines.map((line, index) => (
+          <li key={`${line}-${index}`}>{renderInlineMarkdown(line)}</li>
+        ))}
+      </ol>,
+    );
+    orderedLines.length = 0;
+  }
+
+  for (const rawLine of text.replace(/\r\n/g, "\n").split("\n")) {
+    const line = rawLine.trim();
+    if (!line) {
+      flushParagraph();
+      flushBullets();
+      flushOrdered();
+      continue;
+    }
+
+    const heading = /^(#{1,3})\s+(.+)$/.exec(line);
+    if (heading) {
+      flushParagraph();
+      flushBullets();
+      flushOrdered();
+      const level = heading[1].length;
+      const content = renderInlineMarkdown(heading[2]);
+      if (level === 1) {
+        blocks.push(<h3 key={`heading-${blocks.length}`}>{content}</h3>);
+      } else if (level === 2) {
+        blocks.push(<h4 key={`heading-${blocks.length}`}>{content}</h4>);
+      } else {
+        blocks.push(<h5 key={`heading-${blocks.length}`}>{content}</h5>);
+      }
+      continue;
+    }
+
+    const bullet = /^[-*]\s+(.+)$/.exec(line);
+    if (bullet) {
+      flushParagraph();
+      flushOrdered();
+      bulletLines.push(bullet[1]);
+      continue;
+    }
+
+    const ordered = /^\d+\.\s+(.+)$/.exec(line);
+    if (ordered) {
+      flushParagraph();
+      flushBullets();
+      orderedLines.push(ordered[1]);
+      continue;
+    }
+
+    paragraphLines.push(line);
+  }
+
+  flushParagraph();
+  flushBullets();
+  flushOrdered();
+  return blocks;
+}
+
+function renderInlineMarkdown(value: string) {
+  return value.split(/(\*\*[^*]+\*\*|__[^_]+__)/g).map((segment, index) => {
+    if (
+      (segment.startsWith("**") && segment.endsWith("**")) ||
+      (segment.startsWith("__") && segment.endsWith("__"))
+    ) {
+      return <strong key={`${segment}-${index}`}>{segment.slice(2, -2)}</strong>;
+    }
+    return segment;
+  });
 }
 
 function customerStateMessage(record: AdhocEnquiryRecord) {

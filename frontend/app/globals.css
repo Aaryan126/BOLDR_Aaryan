@@ -3844,6 +3844,67 @@ button {
   padding: 10px 12px;
 }
 
+.assistant-markdown {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: rgba(37, 99, 235, 0.06);
+  padding: 12px 14px;
+  color: var(--text);
+}
+
+.assistant-markdown p,
+.assistant-markdown li {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.assistant-markdown .markdown-lead {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 760;
+  line-height: 1.55;
+}
+
+.assistant-markdown h3,
+.assistant-markdown h4,
+.assistant-markdown h5 {
+  margin: 2px 0 0;
+  color: var(--text);
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.assistant-markdown h3 {
+  font-size: 18px;
+}
+
+.assistant-markdown h4 {
+  font-size: 16px;
+}
+
+.assistant-markdown h5 {
+  font-size: 15px;
+}
+
+.assistant-markdown ul,
+.assistant-markdown ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.assistant-markdown strong {
+  color: var(--text);
+  font-weight: 850;
+}
+
 .empty-chat-state,
 .empty-panel {
   border: 1px dashed var(--border-strong);
