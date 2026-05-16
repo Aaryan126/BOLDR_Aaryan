@@ -25,7 +25,7 @@ This is not a chatbot. It is an approval-first intelligence workbench for a 3-pe
   - LlamaIndex and/or LangChain-family tooling for AI orchestration.
   - Database chosen for fit, not ideology.
 - AI model provider:
-  - Use a Qwen model via Alibaba Cloud.
+  - Use GLM-5.1 via FPT AI Factory for inference.
   - Prefer open-source/local infrastructure around the model layer where practical.
   - Keep the provider adapter replaceable.
 - First version:
@@ -655,9 +655,9 @@ AI/RAG:
 
 Model provider:
 
-- Qwen via Alibaba Cloud Model Studio.
-- Use an OpenAI-compatible client adapter so the provider can be swapped.
-- Alibaba Cloud documentation states Qwen supports OpenAI Chat Completion, OpenAI Responses, and DashScope interfaces.
+- GLM-5.1 via FPT AI Factory.
+- Use a provider adapter around the FPT chat completions endpoint so the provider can be swapped.
+- The current GLM endpoint is `https://mkp-api.fptcloud.com/v1/chat/completions` and returns a wrapped response with `code`, `message`, and `data`.
 
 Embeddings:
 
@@ -675,7 +675,7 @@ Background jobs:
 Local development:
 
 - Docker Compose for Postgres/pgvector.
-- `.env` for Qwen credentials and model names.
+- `.env` for FPT AI Factory credentials and GLM model names.
 - Seed script that ingests all local documents and tickets.
 
 ### 12.2 System Components
@@ -993,7 +993,7 @@ Later integration should:
 | Model hallucination | Evidence sufficiency gate, source citations, no-answer policy |
 | Source conflicts | Source priority rules and conflict UI |
 | External scraping fragility | Use curated demo data first; add compliant connectors later |
-| Qwen API differences | Provider adapter with OpenAI-compatible interface |
+| GLM/FPT API differences | Provider adapter with isolated request/response parsing |
 | Overbuilding | Phase milestones; core challenge first |
 | Weak business insight | Tie every theme to persona, product page gap, and recommended action |
 
@@ -1031,7 +1031,7 @@ Local project references:
 
 External research references for implementation planning:
 
-- Alibaba Cloud Model Studio Qwen API reference: https://www.alibabacloud.com/help/en/model-studio/qwen-api-reference/
+- FPT AI Factory GLM-5.1 chat completions endpoint: `https://mkp-api.fptcloud.com/v1/chat/completions`
 - r/Watches: https://www.reddit.com/r/Watches/
 - r/MicrobrandWatches: https://www.reddit.com/r/MicrobrandWatches/
 - r/Watchexchange: https://www.reddit.com/r/Watchexchange/

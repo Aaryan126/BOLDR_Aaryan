@@ -89,6 +89,24 @@ export type RetrievalOverview = {
   detail?: string;
 };
 
+export type AIProviderStatus = {
+  provider: string;
+  model: string;
+  base_url: string;
+  configured: boolean;
+  live_enabled: boolean;
+  timeout_seconds: number;
+  max_retries: number;
+  prompt_redaction_enabled: boolean;
+  structured_schema_count: number;
+};
+
+export type AIOverview = {
+  statusReport: AIProviderStatus | null;
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export async function getBackendHealth(): Promise<BackendHealth> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -199,6 +217,35 @@ export async function getRetrievalOverview(): Promise<RetrievalOverview> {
     return {
       status: "unavailable",
       evaluation: null,
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getAIOverview(): Promise<AIOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/ai/status`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        status: "unavailable",
+        statusReport: null,
+        detail: `AI status endpoint returned ${response.status}`,
+      };
+    }
+
+    return {
+      status: "ok",
+      statusReport: (await response.json()) as AIProviderStatus,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      statusReport: null,
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }

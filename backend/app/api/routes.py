@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core.config import get_settings
+from app.models.ai import AIProviderStatus, AISchemaSummary, StructuredPromptPreview
 from app.models.classification import ClassificationEvaluation, TicketClassification
 from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
 from app.models.retrieval import RetrievalEvaluation, RetrievalResult
+from app.services.ai import get_ai_schema_catalog, get_ai_status, get_evidence_prompt_preview
 from app.services.classifications import (
     get_classification_evaluation,
     get_ticket_classification,
@@ -124,3 +126,21 @@ def ticket_evidence(ticket_id: str) -> RetrievalResult:
 @router.get("/api/retrieval/evaluation", tags=["retrieval"])
 def retrieval_evaluation() -> RetrievalEvaluation:
     return get_retrieval_evaluation()
+
+
+@router.get("/api/ai/status", tags=["ai"])
+def ai_status() -> AIProviderStatus:
+    return get_ai_status()
+
+
+@router.get("/api/ai/schemas", tags=["ai"])
+def ai_schemas() -> list[AISchemaSummary]:
+    return get_ai_schema_catalog()
+
+
+@router.get("/api/ai/prompt-preview/{ticket_id}", tags=["ai"])
+def ai_prompt_preview(ticket_id: str) -> StructuredPromptPreview:
+    preview = get_evidence_prompt_preview(ticket_id)
+    if preview is None:
+        raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
+    return preview

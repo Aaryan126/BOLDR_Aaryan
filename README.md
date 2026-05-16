@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-4: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, and an explainable retrieval evidence layer. Qwen calls, draft replies, and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-5: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, and a GLM-5.1/FPT AI Factory structured-output layer. Draft replies and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -27,7 +27,7 @@ Create a local environment file when needed:
 cp .env.example .env
 ```
 
-Qwen credentials are not required for Phases 1-4.
+GLM/FPT credentials are not required for local tests. Keep `AI_LIVE_ENABLED=false` unless you are intentionally smoke-testing live inference.
 
 ## Backend
 
@@ -99,6 +99,27 @@ cd backend
 env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.retrieval_cli ticket --ticket-id TKT-1048
 ```
 
+AI provider status:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.ai_cli status
+```
+
+Structured output schema catalog:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.ai_cli schemas
+```
+
+Redacted evidence-sufficiency prompt preview:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.ai_cli prompt-preview --ticket-id TKT-1048
+```
+
 ## Frontend
 
 ```bash
@@ -166,3 +187,12 @@ docker compose down
 - Retrieval evaluation passes all golden questions and rate-card source-priority checks.
 - Frontend shows the evidence coverage, unsupported-blocking, golden-query, and conflict-warning metrics.
 - Backend and frontend checks pass.
+
+## Phase 5 Exit Criteria
+
+- GLM-5.1 via FPT AI Factory is configured behind a replaceable provider adapter.
+- Backend serves `/api/ai/status`, `/api/ai/schemas`, and `/api/ai/prompt-preview/{ticket_id}`.
+- `.env.example` documents `FPT_AI_API_KEY`, `FPT_AI_BASE_URL`, `GLM_MODEL`, and live-inference controls.
+- Structured JSON schemas exist for intent refinement, persona reasoning, evidence sufficiency, draft replies, gap records, KB drafts, theme clusters, and marketing briefs.
+- Tests validate fake-provider outputs, FPT response parsing, schema rejection, and prompt redaction without a live API key.
+- Frontend shows GLM/FPT provider readiness and structured-contract count.

@@ -19,7 +19,7 @@ The first complete version should be a local-data, full-stack demo that feels li
 
 - Backend: Python/FastAPI.
 - Frontend: Next.js/React/TypeScript.
-- AI provider: Qwen through Alibaba Cloud Model Studio, behind an OpenAI-compatible adapter.
+- AI provider: GLM-5.1 through FPT AI Factory, behind a replaceable provider adapter.
 - RAG layer: LlamaIndex preferred for ingestion/retrieval; LangGraph/LangChain only if explicit workflow orchestration becomes useful.
 - Storage: PostgreSQL with pgvector preferred; SQLite fallback only if local setup becomes a blocker.
 - Embeddings: local/open-source embeddings preferred.
@@ -334,9 +334,11 @@ Known issues: No semantic embedding database yet; current vector scoring is stan
 Decision to proceed: Pending user review
 ```
 
-## 9. Phase 5: Qwen Adapter And Structured AI Outputs
+## 9. Phase 5: GLM-5.1 Adapter And Structured AI Outputs
 
-Goal: Add the LLM layer through a replaceable Qwen provider adapter with validated JSON outputs.
+Status: Implemented; awaiting human verification.
+
+Goal: Add the LLM layer through a replaceable GLM-5.1/FPT AI Factory provider adapter with validated JSON outputs.
 
 Deliverables:
 
@@ -346,7 +348,7 @@ Deliverables:
   - retry handling
   - timeout handling
   - model name config
-- Qwen/Alibaba Cloud implementation using OpenAI-compatible API.
+- GLM-5.1/FPT AI Factory implementation using the chat completions endpoint.
 - Fake/local provider for tests.
 - Pydantic schemas for:
   - intent refinement
@@ -362,15 +364,15 @@ Deliverables:
 
 Default tests:
 
-- Unit tests use fake provider, not live Qwen.
+- Unit tests use fake provider, not live GLM inference.
 - Schema validation tests reject malformed LLM output.
 - Prompt input builder excludes unnecessary customer email/name where not needed.
-- Provider adapter can be smoke-tested only when Qwen env vars are present.
+- Provider adapter can be smoke-tested only when FPT AI Factory env vars are present.
 - Golden output tests for a small fixture set.
 
 Human verification:
 
-- With Qwen configured, process 5 tickets live:
+- With FPT AI Factory credentials configured, process 5 tickets live:
   - one safety
   - one engraving
   - one servicing
@@ -383,7 +385,33 @@ Exit criteria:
 
 - AI calls are behind an interface.
 - App can run tests without live AI credentials.
-- Live Qwen smoke test works when credentials are available.
+- Live GLM smoke test works when credentials are available.
+
+Implementation notes:
+
+- Added GLM/FPT settings to `.env.example`.
+- Added `.gitignore` coverage for local env files, caches, logs, and test artifacts.
+- Added provider interface, FPT GLM adapter, fake provider, response parser, and retry/timeout controls.
+- Added Pydantic structured-output contracts for intent, persona, evidence sufficiency, replies, gaps, KB drafts, theme clusters, and marketing briefs.
+- Added redacted prompt preview for evidence-sufficiency judging.
+- Added API endpoints:
+  - `/api/ai/status`
+  - `/api/ai/schemas`
+  - `/api/ai/prompt-preview/{ticket_id}`
+- Added backend tests for fake-provider validation, malformed JSON rejection, prompt redaction, FPT response parsing, and AI API endpoints.
+- Updated dashboard to show GLM/FPT provider readiness and structured-contract count.
+
+Phase gate record:
+
+```text
+Phase: 5 - GLM-5.1 Adapter And Structured AI Outputs
+Status: Implemented; awaiting human verification
+Implemented: Provider adapter, fake provider, schema contracts, prompt redaction, AI status/schema APIs, dashboard panel
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit
+Human verification completed: Pending
+Known issues: No live GLM smoke test was run because credentials are not present in the repo
+Decision to proceed: Pending user review
+```
 
 ## 10. Phase 6: Reply Drafting And Answerability Judge
 
@@ -725,8 +753,8 @@ Default tests:
 - Playwright demo path passes.
 - Seed/reset works.
 - No required secrets committed.
-- App works without Qwen credentials in demo/mock mode.
-- App works with Qwen credentials in live mode.
+- App works without GLM/FPT credentials in demo/mock mode.
+- App works with GLM/FPT credentials in live mode.
 
 Human verification:
 
@@ -808,8 +836,8 @@ These apply across all phases:
 - Do not claim unsupported certifications, medical safety, or supplier facts.
 - Every customer-facing hard claim needs evidence.
 - Every LLM behavior that affects product output must have validated structured output.
-- Tests must be runnable without live Qwen credentials.
-- Live Qwen checks should be smoke tests, not the only test path.
+- Tests must be runnable without live GLM/FPT credentials.
+- Live GLM checks should be smoke tests, not the only test path.
 
 ## 20. Immediate Next Step
 

@@ -1,4 +1,5 @@
 import type {
+  AIOverview,
   BackendHealth,
   ClassificationOverview,
   DatasetOverview,
@@ -30,6 +31,12 @@ const phaseCards = [
   {
     title: "Phase 4",
     label: "Retrieval evidence and source priority",
+    value: "Complete",
+    tone: "purple",
+  },
+  {
+    title: "Phase 5",
+    label: "GLM-5.1 provider and structured outputs",
     value: "Active",
     tone: "gold",
   },
@@ -37,12 +44,12 @@ const phaseCards = [
 
 const upcomingModules = [
   {
-    title: "Phase 5",
-    body: "Add the Qwen adapter and structured AI output contracts.",
-  },
-  {
     title: "Phase 6",
     body: "Generate grounded draft replies only after evidence checks.",
+  },
+  {
+    title: "Phase 7",
+    body: "Stabilize workflow APIs for review, approval, and batch processing.",
   },
 ];
 
@@ -51,6 +58,7 @@ type DashboardShellProps = {
   datasetOverview: DatasetOverview;
   classificationOverview: ClassificationOverview;
   retrievalOverview: RetrievalOverview;
+  aiOverview: AIOverview;
 };
 
 export function DashboardShell({
@@ -58,11 +66,13 @@ export function DashboardShell({
   datasetOverview,
   classificationOverview,
   retrievalOverview,
+  aiOverview,
 }: DashboardShellProps) {
   const isHealthy = health.status === "ok";
   const diagnostics = datasetOverview.diagnostics;
   const evaluation = classificationOverview.evaluation;
   const retrievalEvaluation = retrievalOverview.evaluation;
+  const aiStatus = aiOverview.statusReport;
 
   return (
     <main className="workbench">
@@ -89,14 +99,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 4 Evidence Layer</p>
+                <p className="eyebrow">Phase 5 Structured AI Layer</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
                   The core pipeline now ingests local tickets, assigns the five
-                  required personas, retrieves explainable evidence, and blocks
-                  known unsupported themes before any AI draft can be trusted.
+                  required personas, retrieves explainable evidence, and now has
+                  GLM-5.1 structured-output contracts ready for draft generation.
                 </p>
               </div>
               <div
@@ -357,6 +367,63 @@ export function DashboardShell({
             ) : (
               <p className="dataset-unavailable">
                 Retrieval metrics will appear here when the backend is running.
+              </p>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Phase 5 AI Provider</p>
+                <h3>GLM-5.1 structured contracts</h3>
+              </div>
+              <span className="count-pill">
+                {aiOverview.status === "ok" ? "Ready" : "Unavailable"}
+              </span>
+            </div>
+
+            {aiStatus ? (
+              <>
+                <div className="diagnostic-grid">
+                  <div>
+                    <p className="diagnostic-value">{aiStatus.model}</p>
+                    <p className="diagnostic-label">Inference model</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {aiStatus.configured ? "Yes" : "No"}
+                    </p>
+                    <p className="diagnostic-label">API key configured</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {aiStatus.structured_schema_count}
+                    </p>
+                    <p className="diagnostic-label">JSON contracts</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {aiStatus.live_enabled ? "On" : "Off"}
+                    </p>
+                    <p className="diagnostic-label">Live inference</p>
+                  </div>
+                </div>
+                <div className="note-box">
+                  Provider:
+                  {" "}
+                  {aiStatus.provider}
+                  . Prompt redaction:
+                  {" "}
+                  {aiStatus.prompt_redaction_enabled ? "enabled" : "disabled"}
+                  . Base URL:
+                  {" "}
+                  {aiStatus.base_url}
+                  .
+                </div>
+              </>
+            ) : (
+              <p className="dataset-unavailable">
+                AI provider status will appear here when the backend is running.
               </p>
             )}
           </section>
