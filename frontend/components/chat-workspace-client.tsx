@@ -9,6 +9,7 @@ import type {
   GapMetrics,
   InsightsOverview,
   KnowledgeGapRecord,
+  ThemeRadarItem,
   TicketWorkflowSummary,
   TraceEvent,
   WorkflowOverview,
@@ -127,6 +128,14 @@ function badgeToneClass(value: string) {
     return "tone-accent";
   }
   return "tone-neutral";
+}
+
+function dominantPersonaFromBreakdown(breakdown: ThemeRadarItem["persona_breakdown"]) {
+  const [persona] =
+    Object.entries(breakdown)
+      .filter(([, count]) => count > 0)
+      .sort((left, right) => right[1] - left[1])[0] ?? [];
+  return persona ?? "Marketing signal";
 }
 
 function samplePriority(ticket: TicketWorkflowSummary) {
@@ -906,13 +915,18 @@ export function ChatWorkspaceClient({
                 <p className="muted-copy">Submit a gap enquiry to create a live signal.</p>
               ) : (
                 liveGapThemes.map(([theme, count]) => (
-                  <article className="signal-card tone-warning" key={theme}>
-                    <strong>{theme}</strong>
-                    <span>{count} enquiry signal{count === 1 ? "" : "s"}</span>
+                  <article className="signal-card market-signal-card tone-warning" key={theme}>
+                    <div className="signal-card-header">
+                      <strong>{theme}</strong>
+                      <span className="signal-metric">{count} signal{count === 1 ? "" : "s"}</span>
+                    </div>
                     <p>
                       Recommended action: add product-page proof points and FAQ copy before
                       using this claim in campaigns.
                     </p>
+                    <div className="signal-card-footer">
+                      <span className="insight-chip tone-warning">Needs proof</span>
+                    </div>
                   </article>
                 ))
               )}
@@ -920,30 +934,64 @@ export function ChatWorkspaceClient({
 
             <section className="marketing-panel">
               <h2>Existing theme radar</h2>
-              {(themeRadar?.data ?? []).slice(0, 4).map((theme) => (
-                <article
-                  className={`signal-card ${theme.product_page_gap ? "tone-warning" : "tone-accent"}`}
-                  key={theme.theme_name}
-                >
-                  <strong>{theme.theme_name}</strong>
-                  <span>{theme.frequency} tickets</span>
-                  <p>{theme.recommended_marketing_action}</p>
-                </article>
-              ))}
+              {(themeRadar?.data ?? []).slice(0, 4).map((theme) => {
+                const dominantPersona = dominantPersonaFromBreakdown(theme.persona_breakdown);
+                return (
+                  <article
+                    className={`signal-card market-signal-card ${badgeToneClass(dominantPersona)}`}
+                    key={theme.theme_name}
+                  >
+                    <div className="signal-card-header">
+                      <strong>{theme.theme_name}</strong>
+                      <span className="signal-metric">{theme.frequency} tickets</span>
+                    </div>
+                    <p>{theme.recommended_marketing_action}</p>
+                    <div className="signal-card-footer">
+                      <span className={`insight-chip ${badgeToneClass(dominantPersona)}`}>
+                        {dominantPersona}
+                      </span>
+                      <span className="insight-chip tone-accent">
+                        {formatLabel(theme.trend_direction)}
+                      </span>
+                      {theme.product_page_gap ? (
+                        <span className="insight-chip tone-warning">Page gap</span>
+                      ) : (
+                        <span className="insight-chip tone-success">Covered</span>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </section>
 
             <section className="marketing-panel">
               <h2>Campaign and page actions</h2>
               {(marketingBrief?.opportunities ?? []).slice(0, 4).map((opportunity) => (
                 <article
-                  className={`signal-card ${opportunity.product_page_update_needed ? "tone-warning" : "tone-accent"}`}
+                  className={`signal-card market-signal-card ${badgeToneClass(opportunity.persona_focus[0] ?? "")}`}
                   key={opportunity.theme_name}
                 >
-                  <strong>{opportunity.campaign_angle}</strong>
-                  <span className={badgeToneClass(opportunity.persona_focus[0] ?? "")}>
-                    {opportunity.persona_focus.join(", ")}
-                  </span>
+                  <div className="signal-card-header">
+                    <strong>{opportunity.campaign_angle}</strong>
+                    <span className="signal-metric">
+                      {opportunity.evidence_ticket_ids.length} refs
+                    </span>
+                  </div>
+                  <div className="persona-chip-row">
+                    {opportunity.persona_focus.map((persona) => (
+                      <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
+                        {persona}
+                      </span>
+                    ))}
+                  </div>
                   <p>{opportunity.recommended_action}</p>
+                  <div className="signal-card-footer">
+                    {opportunity.product_page_update_needed ? (
+                      <span className="insight-chip tone-warning">Product page update</span>
+                    ) : (
+                      <span className="insight-chip tone-success">Campaign ready</span>
+                    )}
+                  </div>
                 </article>
               ))}
             </section>
