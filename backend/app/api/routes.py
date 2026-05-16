@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 
 from app.core.config import get_settings
+from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
+from app.services.datasets import get_dataset_samples, get_dataset_snapshot
 
 router = APIRouter()
 
@@ -56,3 +58,18 @@ def meta() -> dict[str, object]:
             },
         ],
     }
+
+
+@router.get("/api/datasets/diagnostics", tags=["datasets"])
+def dataset_diagnostics() -> DatasetDiagnostics:
+    return get_dataset_snapshot().diagnostics
+
+
+@router.get("/api/datasets/sources", tags=["datasets"])
+def dataset_sources() -> list[SourceFile]:
+    return get_dataset_snapshot().sources
+
+
+@router.get("/api/datasets/samples", tags=["datasets"])
+def dataset_record_samples() -> DatasetSamples:
+    return get_dataset_samples()

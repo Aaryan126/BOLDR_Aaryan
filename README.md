@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation is Phase 1: repository and app scaffold. It creates a runnable FastAPI backend, a Next.js dashboard shell, local environment examples, and PostgreSQL/pgvector Compose configuration. Ingestion, RAG, Qwen calls, ticket processing, and bonus benchmarking begin in later phases.
+The current implementation includes Phase 1 and Phase 2: repository scaffold plus local dataset ingestion and diagnostics. RAG, Qwen calls, ticket classification, draft replies, and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -47,7 +47,21 @@ Backend tests:
 
 ```bash
 cd backend
-uv run pytest
+env UV_CACHE_DIR=.uv-cache uv run pytest
+```
+
+Dataset diagnostics:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.ingest.cli summary
+```
+
+Write a generated normalized snapshot:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.ingest.cli seed
 ```
 
 ## Frontend
@@ -90,4 +104,12 @@ docker compose down
 - Frontend shows backend health state.
 - Postgres/pgvector Compose config validates and starts.
 - README setup commands are accurate.
+
+## Phase 2 Exit Criteria
+
+- All six actual files under `Boldr Data/` parse successfully.
+- Backend serves `/api/datasets/diagnostics`, `/api/datasets/sources`, and `/api/datasets/samples`.
+- Frontend shows the local dataset diagnostics panel when the backend is running.
+- Diagnostics warn that the brief mentions 11 files while 6 local files are available.
+- Parser tests verify ticket, rate card, FAQ, SOP, product model, and strap catalogue counts.
 - Backend and frontend checks pass.

@@ -119,6 +119,7 @@ Use this file for:
 
 Important notes:
 
+- The actual PDF currently contains 32 FAQ entries across six sections.
 - The FAQ is customer-facing and useful for tone.
 - It may summarize details that are more precisely represented in rate cards or product reference files.
 - For pricing and hard constraints, verify against the structured CSVs.

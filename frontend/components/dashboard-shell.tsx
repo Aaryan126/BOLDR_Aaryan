@@ -1,4 +1,4 @@
-import type { BackendHealth } from "@/lib/api";
+import type { BackendHealth, DatasetOverview } from "@/lib/api";
 
 const navigationItems = [
   "Inbox Intelligence",
@@ -47,10 +47,12 @@ const upcomingModules = [
 
 type DashboardShellProps = {
   health: BackendHealth;
+  datasetOverview: DatasetOverview;
 };
 
-export function DashboardShell({ health }: DashboardShellProps) {
+export function DashboardShell({ health, datasetOverview }: DashboardShellProps) {
   const isHealthy = health.status === "ok";
+  const diagnostics = datasetOverview.diagnostics;
 
   return (
     <main className="workbench">
@@ -166,6 +168,65 @@ export function DashboardShell({ health }: DashboardShellProps) {
                 ))}
               </div>
             </article>
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Phase 2 Data Foundation</p>
+                <h3>Local dataset diagnostics</h3>
+              </div>
+              <span className="count-pill">
+                {datasetOverview.status === "ok" ? "Loaded" : "Unavailable"}
+              </span>
+            </div>
+
+            {diagnostics ? (
+              <>
+                {diagnostics.warning ? (
+                  <div className="warning-box">{diagnostics.warning}</div>
+                ) : null}
+                <div className="diagnostic-grid">
+                  <div>
+                    <p className="diagnostic-value">{diagnostics.ticket_count}</p>
+                    <p className="diagnostic-label">Tickets parsed</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {diagnostics.actual_source_file_count}
+                    </p>
+                    <p className="diagnostic-label">Actual files</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {diagnostics.document_section_count}
+                    </p>
+                    <p className="diagnostic-label">Document sections</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">{diagnostics.faq_entry_count}</p>
+                    <p className="diagnostic-label">FAQ entries</p>
+                  </div>
+                </div>
+                <div className="source-list">
+                  {datasetOverview.sources.map((source) => (
+                    <div className="source-row" key={source.file_name}>
+                      <div>
+                        <p className="source-title">{source.file_name}</p>
+                        <p>{source.role}</p>
+                      </div>
+                      <span className={source.exists ? "source-ok" : "source-missing"}>
+                        {source.exists ? "Ready" : "Missing"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="dataset-unavailable">
+                Dataset diagnostics will appear here when the backend is running.
+              </p>
+            )}
           </section>
         </section>
       </div>
