@@ -4,6 +4,8 @@ from app.main import create_app
 from app.services.drafts import get_draft_evaluation, get_ticket_draft, list_ticket_drafts
 
 BANNED_PHRASES = ["Dear Sir/Madam", "Great question!"]
+RAW_REPLY_PREFIX = "Based on the current BOLDR knowledge base"
+RAW_REPLY_MARKERS = [" | ", "STR-", "..."]
 
 
 def _draft(ticket_id: str):
@@ -62,6 +64,21 @@ def test_order_specific_ticket_generates_internal_note_without_inventing_status(
     assert all(guardrail.passed for guardrail in draft.guardrails)
 
 
+def test_titanium_stainless_reply_is_customer_readable() -> None:
+    draft = _draft("TKT-1039")
+    reply_text = draft.draft.draft_reply
+
+    assert draft.decision.reply_type == "customer_reply"
+    assert "titanium" in reply_text.lower()
+    assert "stainless steel" in reply_text.lower()
+    assert "lighter" in reply_text.lower() or "weight" in reply_text.lower()
+    assert RAW_REPLY_PREFIX not in reply_text
+    assert " | " not in reply_text
+    assert "STR-" not in reply_text
+    assert "customer_safe_wording" in {guardrail.name for guardrail in draft.guardrails}
+    assert all(guardrail.passed for guardrail in draft.guardrails)
+
+
 def test_all_customer_facing_claims_are_evidence_backed_and_clean() -> None:
     for draft in list_ticket_drafts():
         reply_text = draft.draft.draft_reply
@@ -71,6 +88,8 @@ def test_all_customer_facing_claims_are_evidence_backed_and_clean() -> None:
             assert draft.draft.claims
             assert draft.draft.evidence_ids
             assert draft.evidence_trace
+            assert not reply_text.startswith(RAW_REPLY_PREFIX)
+            assert all(marker not in reply_text for marker in RAW_REPLY_MARKERS)
 
         if draft.decision.reply_type == "holding_reply":
             assert draft.draft.claims == []

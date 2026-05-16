@@ -22,6 +22,9 @@ BANNED_REPLY_PATTERNS = [
     "your package is delayed",
 ]
 
+RAW_EVIDENCE_REPLY_PREFIX = "Based on the current BOLDR knowledge base"
+RAW_TABLE_ROW_PATTERN = re.compile(r"\b[A-Z]{2,}-[A-Z0-9-]+\b.*\|")
+
 
 def generate_ticket_draft(
     classification: TicketClassification,
@@ -40,7 +43,27 @@ def generate_ticket_draft(
     ]
     evidence_sufficiency = judge_evidence_sufficiency(classification, retrieval)
     decision = decide_reply_type(classification, retrieval, evidence_sufficiency)
-    draft = build_draft_output(classification, retrieval, decision)
+    prepared_customer_reply = None
+    if decision.reply_type == "customer_reply":
+        prepared_customer_reply = compose_customer_reply(classification, retrieval)
+        if not prepared_customer_reply or has_raw_evidence_artifacts(prepared_customer_reply):
+            decision = decision.model_copy(
+                update={
+                    "reply_type": "internal_note",
+                    "customer_facing": False,
+                    "can_send_to_customer": False,
+                    "evidence_sufficient": False,
+                    "reasons": [
+                        *decision.reasons,
+                        "No clean customer-safe wording could be generated from retrieved evidence.",
+                    ],
+                    "required_human_inputs": [
+                        "Rewrite the retrieved evidence into a customer-safe answer before approval."
+                    ],
+                }
+            )
+            prepared_customer_reply = None
+    draft = build_draft_output(classification, retrieval, decision, prepared_customer_reply)
     gap_record = build_gap_record(classification, retrieval, decision)
     guardrails = run_guardrails(classification, retrieval, decision, draft)
 
@@ -213,6 +236,7 @@ def build_draft_output(
     classification: TicketClassification,
     retrieval: RetrievalResult,
     decision: AnswerabilityDecision,
+    prepared_customer_reply: str | None = None,
 ) -> DraftReplyOutput:
     evidence_ids = [
         evidence.evidence_id for evidence in retrieval.evidence if evidence.supports_answer
@@ -220,7 +244,9 @@ def build_draft_output(
     claims = infer_supported_claims(classification, retrieval) if decision.can_send_to_customer else []
 
     if decision.reply_type == "customer_reply":
-        reply = compose_customer_reply(classification, retrieval)
+        reply = prepared_customer_reply or compose_customer_reply(classification, retrieval)
+        if reply is None:
+            reply = "Internal action: rewrite the retrieved evidence into a customer-safe answer before approval."
         return DraftReplyOutput(
             ticket_id=classification.ticket_id,
             reply_type="customer_reply",
@@ -260,7 +286,7 @@ def build_draft_output(
 def compose_customer_reply(
     classification: TicketClassification,
     retrieval: RetrievalResult,
-) -> str:
+) -> str | None:
     text = classification.normalized_question
     if "bpa" in text:
         return (
@@ -317,13 +343,362 @@ def compose_customer_reply(
             "The Expedition uses Grade 5 Titanium, also listed as Ti-6Al-4V. The Journey "
             "uses Grade 2 titanium, so the two models use different titanium grades."
         )
+    if "titanium" in text and ("stainless" in text or "lighter" in text):
+        return (
+            "Titanium is the lighter, more technical case-material choice compared with "
+            "standard stainless steel. BOLDR's current product reference lists the "
+            "Expedition Titanium case as Grade 5 titanium and the Journey as Grade 2 "
+            "titanium. The Expedition reference also lists a 68g watch weight without "
+            "the strap, so the practical benefit is lower wrist weight with a strong, "
+            "corrosion-resistant titanium case."
+        )
+    if "hypoallergenic" in text or "nickel" in text:
+        return (
+            "The current product reference marks BOLDR's listed strap safety details as "
+            "BPA-free, nickel-free, hypoallergenic, and EU REACH compliant. For severe "
+            "skin sensitivity or nickel allergy, FKM rubber or nylon NATO is the safer "
+            "recommendation. Leather is BPA-free, but it is not treated as hypoallergenic."
+        )
+    if "food-grade" in text or "medical-grade" in text:
+        return (
+            "The current BOLDR knowledge base confirms the strap safety details we can "
+            "support: the listed FKM rubber and nylon straps are BPA-free, and the strap "
+            "safety reference is nickel-free, hypoallergenic, and EU REACH compliant. It "
+            "does not list a separate food-grade or medical-grade silicone certification, "
+            "so we should not describe the strap that way without team confirmation."
+        )
+    if "dye" in text or "non-toxic" in text:
+        return (
+            "The current product reference supports the main safety claims for BOLDR "
+            "straps: BPA-free, nickel-free, hypoallergenic, and EU REACH compliant. It "
+            "does not separately publish dye-bleed testing for coloured straps, so for "
+            "heavy sweat or sensitive skin I would steer you toward FKM rubber or nylon "
+            "rather than treated leather."
+        )
+    if "reach" in text or "rohs" in text:
+        return (
+            "The current product reference lists the strap safety details as BPA-free, "
+            "nickel-free, hypoallergenic, and EU REACH compliant. I do not see a "
+            "separate RoHS strap certification in the local knowledge base, so we should "
+            "not claim RoHS compliance unless the product team confirms it."
+        )
+    if "safe" in text and ("kid" in text or "child" in text or "children" in text):
+        return (
+            "For the current range, BOLDR's FKM rubber and nylon NATO straps are the "
+            "safest recommendation for children or sensitive skin. The product reference "
+            "marks the listed strap safety details as BPA-free, nickel-free, "
+            "hypoallergenic, and EU REACH compliant. Leather is BPA-free, but it is not "
+            "treated as hypoallergenic."
+        )
+    if "water resistant" in text and "strap" in text:
+        return (
+            "The Expedition reference lists 100m water resistance, which is suitable for "
+            "swimming but not diving. For the strap, FKM rubber is the best match for wet "
+            "use; current FKM rubber straps are 20mm, BPA-free, and compatible with all "
+            "current models. Leather should not be treated as the water-friendly option."
+        )
+    if "swimming" in text and ("rubber" in text or "silicone" in text or "strap" in text):
+        return (
+            "Yes. For swimming, choose the FKM rubber strap rather than leather. The "
+            "current catalogue lists 20mm FKM rubber straps in black, navy, and olive at "
+            "SGD 35, and they are compatible with all current models. The Expedition is "
+            "rated 100m for swimming, but not diving."
+        )
+    if "colour" in text and ("rubber" in text or "strap" in text):
+        return (
+            "The current 20mm FKM rubber strap colours listed in the product reference "
+            "are black, navy, and olive. They are BPA-free, priced at SGD 35, and "
+            "compatible with all current models."
+        )
+    if "large wrist" in text or "20cm" in text or "extended strap" in text:
+        return (
+            "The current knowledge base confirms that all current BOLDR models use a "
+            "standard 20mm lug width and are compatible with standard 20mm straps. It "
+            "does not publish a confirmed extended-strap fit for a 20cm wrist, so the "
+            "team should confirm the exact strap length before promising fit."
+        )
+    if "mesh" in text or "milanese" in text:
+        return compose_strap_catalog_reply(retrieval) or (
+            "The current product reference lists a 20mm mesh bracelet option for Journey. "
+            "For Expedition, use the titanium bracelet or another compatible 20mm strap."
+        )
+    if "leather" in text and ("care" in text or "wet" in text):
+        return (
+            "BOLDR's leather straps are listed as BPA-free and compatible with all current "
+            "models, but leather is not treated as hypoallergenic and should not be the "
+            "wet-use strap. For water exposure or sensitive skin, FKM rubber or nylon is "
+            "the safer recommendation."
+        )
+    if "gift wrapping" in text or "gift box" in text:
+        return (
+            "Yes. Gift wrapping is available at checkout for SGD 8, and the watch is "
+            "presented in a BOLDR gift box. That is the best option for a wedding gift."
+        )
+    if "warranty" in text and "strap" in text:
+        return (
+            "BOLDR watches come with a 2-year manufacturer's warranty covering movement "
+            "defects. The warranty does not cover strap wear, physical damage, or water "
+            "damage beyond the rated depth."
+        )
+    if "limited edition" in text or "ember" in text or "sold out" in text:
+        return (
+            "The Expedition Titanium - Ember Limited Edition is listed as sold out in the "
+            "current product reference. The customer should be directed to the BOLDR "
+            "waitlist rather than told it is available."
+        )
 
-    best_evidence = first_supporting_evidence(retrieval)
-    excerpt = best_evidence.excerpt if best_evidence else "the current knowledge base"
+    if classification.intent in {"engraving", "servicing"}:
+        return compose_rate_card_reply(classification, retrieval)
+    if classification.intent == "strap_compatibility":
+        return compose_strap_catalog_reply(retrieval) or compose_clean_evidence_answer(retrieval)
+    if classification.intent in {"materials_safety", "product_general"}:
+        return compose_clean_evidence_answer(retrieval)
+
+    return compose_clean_evidence_answer(retrieval)
+
+
+def compose_rate_card_reply(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+) -> str | None:
+    text = classification.normalized_question
+    rate_cards = [
+        evidence.structured_data
+        for evidence in retrieval.evidence
+        if evidence.supports_answer and evidence.source_type == "rate_card" and evidence.structured_data
+    ]
+    if not rate_cards:
+        return compose_clean_evidence_answer(retrieval)
+
+    def service_contains(*terms: str) -> dict | None:
+        for item in rate_cards:
+            service = str(item.get("service", "")).lower()
+            if all(term in service for term in terms):
+                return item
+        return None
+
+    if "wrong text" in text or "change" in text or "corrected" in text:
+        item = service_contains("correction") or rate_cards[0]
+        return (
+            "If the engraving correction is requested within 1 hour of the order, the "
+            f"rate card lists it as {price_text(item)}. {note_sentence(item)} "
+            "Because production timing matters, the team should still confirm whether "
+            "engraving has already started before promising the change."
+        ).strip()
+    if "font" in text:
+        standard = service_contains("up to 20") or rate_cards[0]
+        return (
+            "The current rate card confirms the standard Roman/Latin caseback engraving "
+            f"tier at {price_text(standard)}, but it does not list separate selectable "
+            "font styles. We should confirm the available engraving style before "
+            "promising a more decorative font."
+        )
+    if "per-character" in text or "per character" in text or "20-character" in text:
+        standard = service_contains("up to 20")
+        extra = service_contains("additional", "beyond")
+        script = service_contains("chinese") or service_contains("arabic")
+        parts = []
+        if standard:
+            parts.append(f"a 20-character Roman/Latin caseback engraving is {price_text(standard)}")
+        if extra:
+            parts.append(f"extra characters beyond 40 are {price_text(extra)} each")
+        if script:
+            parts.append(f"non-Latin script engraving is {price_text(script)} per character")
+        return "For engraving, " + "; ".join(parts) + "."
+    if "turnaround" in text or "ship" in text or "urgent" in text or "next friday" in text:
+        item = service_contains("rush") or rate_cards[0]
+        return (
+            f"For urgent engraved orders, {service_label(item)} is listed at "
+            f"{price_text(item)}. {note_sentence(item)} Standard order timing should "
+            "still be checked against the actual checkout and production queue."
+        ).strip()
+    if "multi-line" in text or "two lines" in text:
+        item = service_contains("multi-line") or service_contains("2 lines") or rate_cards[0]
+        return rate_card_item_sentence(item)
+    if "chinese" in text or "japanese" in text or "korean" in text or "mandarin" in text:
+        item = service_contains("chinese") or rate_cards[0]
+        return rate_card_item_sentence(item)
+    if "arabic" in text:
+        item = service_contains("arabic") or rate_cards[0]
+        return rate_card_item_sentence(item)
+    if "depth" in text or "fade" in text or "visibility" in text:
+        standard = service_contains("up to 20") or rate_cards[0]
+        return (
+            "The current engraving rate card confirms caseback engraving availability "
+            f"and pricing, with standard caseback engraving starting at {price_text(standard)}. "
+            "It does not publish a precise engraving-depth specification, so the team "
+            "should confirm that before making a durability claim."
+        )
+
+    selected = select_relevant_rate_cards(text, rate_cards)
+    if classification.intent == "servicing" and "battery" in text and "movement service" in text:
+        battery = service_contains("battery") or selected[0]
+        regulation = service_contains("regulation")
+        full = service_contains("full service", "standard")
+        parts = [rate_card_item_sentence(battery)]
+        if regulation:
+            parts.append(rate_card_item_sentence(regulation))
+        if full:
+            parts.append(rate_card_item_sentence(full))
+        return " ".join(parts)
+
+    return " ".join(rate_card_item_sentence(item) for item in selected[:2])
+
+
+def compose_strap_catalog_reply(retrieval: RetrievalResult) -> str | None:
+    straps = [
+        evidence.structured_data
+        for evidence in retrieval.evidence
+        if evidence.supports_answer
+        and evidence.source_type == "product_reference"
+        and evidence.section_title == "Strap Catalogue"
+        and evidence.structured_data
+    ]
+    if not straps:
+        return None
+
+    strap_descriptions = []
+    for item in straps[:3]:
+        strap_type = str(item.get("strap_type", "strap"))
+        colour = str(item.get("colour", "")).strip()
+        price = item.get("price_sgd")
+        compatible = str(item.get("compatible_with", "")).strip()
+        bpa_text = "BPA-free" if item.get("bpa_free") is True else "not marked BPA-free"
+        description = f"{colour} {strap_type}".strip()
+        details = [bpa_text]
+        if price is not None:
+            details.append(f"SGD {format_money(price)}")
+        if compatible:
+            details.append(f"compatible with {compatible}")
+        strap_descriptions.append(f"{description} ({', '.join(details)})")
+
+    if not strap_descriptions:
+        return None
     return (
-        "Based on the current BOLDR knowledge base, this is answerable from our local "
-        f"sources: {excerpt}"
+        "The current strap catalogue lists "
+        + "; ".join(strap_descriptions)
+        + ". All current BOLDR models use 20mm straps, so compatibility should be checked "
+        "against the model-specific note above."
     )
+
+
+def compose_clean_evidence_answer(retrieval: RetrievalResult) -> str | None:
+    for evidence in retrieval.evidence:
+        if not evidence.supports_answer:
+            continue
+        answer = extract_answer_like_text(evidence.excerpt)
+        if answer and not has_raw_evidence_artifacts(answer):
+            return answer
+    return None
+
+
+def extract_answer_like_text(excerpt: str) -> str | None:
+    compact = clean_whitespace(excerpt)
+    compact = compact.removeprefix("...")
+    if not compact:
+        return None
+
+    qa_matches = list(re.finditer(r"Q:\s*(?P<question>.*?)\s+A:\s*(?P<answer>.*?)(?=\s+Q:|$)", compact))
+    if qa_matches:
+        answer = qa_matches[-1].group("answer").strip()
+        return clean_customer_text(answer)
+
+    quoted_matches = list(re.finditer(r"\"(?P<question>[^\"]+)\"\s*\|\s*(?P<answer>.*?)(?=\s+\"|$)", compact))
+    if quoted_matches:
+        answer = quoted_matches[-1].group("answer").strip()
+        return clean_customer_text(answer)
+
+    if "What to do:" in compact:
+        answer = compact.split("What to do:", 1)[1]
+        return clean_customer_text(answer)
+    return None
+
+
+def clean_customer_text(text: str) -> str | None:
+    text = re.sub(r"\s*\|\s*", ". ", text)
+    text = clean_whitespace(text).strip(". ")
+    if not text:
+        return None
+    if len(text) > 420:
+        text = text[:420].rsplit(" ", 1)[0].rstrip(".,;") + "."
+    if text and text[-1] not in ".!?":
+        text = f"{text}."
+    return text
+
+
+def rate_card_item_sentence(item: dict) -> str:
+    service = service_label(item)
+    parts = [f"{service} is listed at {price_text(item)}"]
+    turnaround = item.get("turnaround_days")
+    if turnaround and str(turnaround).upper() != "N/A":
+        parts.append(f"with a {turnaround} day turnaround")
+    includes = item.get("includes")
+    if includes:
+        parts.append(f"and includes {includes}")
+    note = item.get("notes")
+    sentence = ", ".join(parts)
+    if note:
+        sentence = f"{sentence}. {note}"
+    return sentence.rstrip(".") + "."
+
+
+def select_relevant_rate_cards(text: str, items: list[dict]) -> list[dict]:
+    ranked = []
+    query_tokens = set(re.findall(r"[a-z0-9]+", text))
+    for index, item in enumerate(items):
+        service = str(item.get("service", "")).lower()
+        score = sum(1 for token in query_tokens if token and token in service)
+        ranked.append((score, -index, item))
+    ranked.sort(reverse=True)
+    return [item for _, _, item in ranked if item][:2] or items[:1]
+
+
+def price_text(item: dict) -> str:
+    price = item.get("price_sgd")
+    if price is None:
+        return "the listed rate"
+    return f"SGD {format_money(price)}"
+
+
+def service_label(item: dict) -> str:
+    return (
+        str(item.get("service") or "This service")
+        .replace("\u2014", "-")
+        .replace("\u2013", "-")
+    )
+
+
+def note_sentence(item: dict) -> str:
+    note = item.get("notes")
+    if not note:
+        return ""
+    note_text = str(note).strip()
+    if note_text and note_text[-1] not in ".!?":
+        note_text = f"{note_text}."
+    return note_text
+
+
+def format_money(value) -> str:
+    amount = float(value)
+    if amount.is_integer():
+        return str(int(amount))
+    return f"{amount:g}"
+
+
+def clean_whitespace(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def has_raw_evidence_artifacts(text: str) -> bool:
+    if RAW_EVIDENCE_REPLY_PREFIX.lower() in text.lower():
+        return True
+    if " | " in text:
+        return True
+    if RAW_TABLE_ROW_PATTERN.search(text):
+        return True
+    if text.strip().startswith("...") or text.strip().endswith("..."):
+        return True
+    return False
 
 
 def compose_internal_note(
@@ -447,6 +822,7 @@ def run_guardrails(
         and classification.answerability == "order_lookup_required"
         and bool(re.search(r"\b(delayed|delivered|refunded|cancelled|shipped)\b", text, re.I))
     )
+    raw_evidence_artifacts = decision.customer_facing and has_raw_evidence_artifacts(text)
 
     return [
         GuardrailCheck(
@@ -469,6 +845,13 @@ def run_guardrails(
             message="Unsupported themes are not claimed as facts."
             if not unsupported_claim_terms
             else f"Unsupported terms claimed: {', '.join(unsupported_claim_terms)}",
+        ),
+        GuardrailCheck(
+            name="customer_safe_wording",
+            passed=not raw_evidence_artifacts,
+            message="Customer-facing reply is written in readable support language."
+            if not raw_evidence_artifacts
+            else "Customer-facing reply contains raw evidence or table formatting.",
         ),
         GuardrailCheck(
             name="order_status_not_invented",
