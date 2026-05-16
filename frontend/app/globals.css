@@ -126,6 +126,7 @@ a {
   display: flex;
   flex: 1;
   min-width: 0;
+  max-width: 100%;
   flex-direction: column;
   gap: 24px;
 }
@@ -238,6 +239,7 @@ a {
 
 .panel {
   padding: 24px;
+  min-width: 0;
 }
 
 .panel-heading {
@@ -370,10 +372,15 @@ a {
   padding: 14px;
 }
 
+.source-row > div {
+  min-width: 0;
+}
+
 .source-title {
   margin: 0;
   color: var(--foreground);
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .source-row p:last-child {
@@ -457,8 +464,19 @@ a {
     padding: 16px;
   }
 
+  .panel,
+  .hero-panel {
+    padding: 20px;
+  }
+
   .hero-content {
     flex-direction: column;
+  }
+
+  .source-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .health-badge {

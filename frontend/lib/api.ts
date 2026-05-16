@@ -107,6 +107,26 @@ export type AIOverview = {
   detail?: string;
 };
 
+export type DraftEvaluation = {
+  total_tickets: number;
+  generated_ticket_count: number;
+  customer_reply_count: number;
+  holding_reply_count: number;
+  internal_note_count: number;
+  answerable_draft_count: number;
+  blocked_unsupported_count: number;
+  order_lookup_note_count: number;
+  guardrail_failures_count: number;
+  evidence_backed_customer_reply_count: number;
+  approval_status_counts: Record<string, number>;
+};
+
+export type DraftOverview = {
+  evaluation: DraftEvaluation | null;
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export async function getBackendHealth(): Promise<BackendHealth> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -246,6 +266,35 @@ export async function getAIOverview(): Promise<AIOverview> {
     return {
       status: "unavailable",
       statusReport: null,
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getDraftOverview(): Promise<DraftOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/drafts/evaluation`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        status: "unavailable",
+        evaluation: null,
+        detail: `Draft endpoint returned ${response.status}`,
+      };
+    }
+
+    return {
+      status: "ok",
+      evaluation: (await response.json()) as DraftEvaluation,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      evaluation: null,
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }

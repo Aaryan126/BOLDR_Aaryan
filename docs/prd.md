@@ -782,6 +782,29 @@ GET  /api/external/benchmarks
 POST /api/external/benchmarks/generate
 ```
 
+Implemented through Phase 6:
+
+```text
+GET  /health
+GET  /api/meta
+GET  /api/datasets/diagnostics
+GET  /api/datasets/sources
+GET  /api/datasets/samples
+GET  /api/intelligence/classifications
+GET  /api/intelligence/classifications/{ticket_id}
+GET  /api/intelligence/evaluation
+GET  /api/retrieval/search
+GET  /api/retrieval/tickets/{ticket_id}
+GET  /api/retrieval/evaluation
+GET  /api/ai/status
+GET  /api/ai/schemas
+GET  /api/ai/prompt-preview/{ticket_id}
+GET  /api/drafts
+GET  /api/drafts/evaluation
+GET  /api/drafts/tickets/{ticket_id}
+POST /api/drafts/tickets/{ticket_id}/review
+```
+
 ## 15. AI Output Contracts
 
 All LLM calls that drive product behavior must return validated JSON. Free-form text is acceptable only inside fields such as `draft_reply`, `internal_note`, or `brief_markdown`.

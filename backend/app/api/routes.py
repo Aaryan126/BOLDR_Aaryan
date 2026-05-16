@@ -4,6 +4,7 @@ from app.core.config import get_settings
 from app.models.ai import AIProviderStatus, AISchemaSummary, StructuredPromptPreview
 from app.models.classification import ClassificationEvaluation, TicketClassification
 from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
+from app.models.drafting import DraftEvaluation, DraftReviewRequest, TicketDraft
 from app.models.retrieval import RetrievalEvaluation, RetrievalResult
 from app.services.ai import get_ai_schema_catalog, get_ai_status, get_evidence_prompt_preview
 from app.services.classifications import (
@@ -12,6 +13,12 @@ from app.services.classifications import (
     list_ticket_classifications,
 )
 from app.services.datasets import get_dataset_samples, get_dataset_snapshot
+from app.services.drafts import (
+    get_draft_evaluation,
+    get_ticket_draft,
+    list_ticket_drafts,
+    review_ticket_draft,
+)
 from app.services.retrieval import (
     get_retrieval_evaluation,
     search_knowledge,
@@ -144,3 +151,29 @@ def ai_prompt_preview(ticket_id: str) -> StructuredPromptPreview:
     if preview is None:
         raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
     return preview
+
+
+@router.get("/api/drafts", tags=["drafts"])
+def ticket_drafts() -> list[TicketDraft]:
+    return list_ticket_drafts()
+
+
+@router.get("/api/drafts/evaluation", tags=["drafts"])
+def draft_evaluation() -> DraftEvaluation:
+    return get_draft_evaluation()
+
+
+@router.get("/api/drafts/tickets/{ticket_id}", tags=["drafts"])
+def ticket_draft(ticket_id: str) -> TicketDraft:
+    draft = get_ticket_draft(ticket_id)
+    if draft is None:
+        raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
+    return draft
+
+
+@router.post("/api/drafts/tickets/{ticket_id}/review", tags=["drafts"])
+def draft_review(ticket_id: str, review: DraftReviewRequest) -> TicketDraft:
+    draft = review_ticket_draft(ticket_id, review)
+    if draft is None:
+        raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
+    return draft

@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-5: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, and a GLM-5.1/FPT AI Factory structured-output layer. Draft replies and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-6: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, and grounded reply drafting with answerability guardrails. KB loops, theme radar, marketing briefs, and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -120,6 +120,20 @@ cd backend
 env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.ai_cli prompt-preview --ticket-id TKT-1048
 ```
 
+Drafting evaluation:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.draft_cli evaluate
+```
+
+Generate a draft for one ticket:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.draft_cli ticket --ticket-id TKT-1048
+```
+
 ## Frontend
 
 ```bash
@@ -196,3 +210,12 @@ docker compose down
 - Structured JSON schemas exist for intent refinement, persona reasoning, evidence sufficiency, draft replies, gap records, KB drafts, theme clusters, and marketing briefs.
 - Tests validate fake-provider outputs, FPT response parsing, schema rejection, and prompt redaction without a live API key.
 - Frontend shows GLM/FPT provider readiness and structured-contract count.
+
+## Phase 6 Exit Criteria
+
+- Answerable tickets produce evidence-backed customer drafts.
+- Unsupported themes produce holding replies and gap records instead of unsupported claims.
+- Order lookup tickets produce internal notes and do not invent delivery, refund, or cancellation status.
+- Backend serves `/api/drafts`, `/api/drafts/evaluation`, `/api/drafts/tickets/{ticket_id}`, and `/api/drafts/tickets/{ticket_id}/review`.
+- Frontend shows draft counts, holding replies, internal notes, and guardrail failure count.
+- Backend and frontend checks pass.

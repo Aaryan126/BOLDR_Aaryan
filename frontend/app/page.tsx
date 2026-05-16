@@ -4,6 +4,7 @@ import {
   getAIOverview,
   getClassificationOverview,
   getDatasetOverview,
+  getDraftOverview,
   getRetrievalOverview,
 } from "@/lib/api";
 
@@ -14,12 +15,14 @@ export default async function Home() {
     classificationOverview,
     retrievalOverview,
     aiOverview,
+    draftOverview,
   ] = await Promise.all([
     getBackendHealth(),
     getDatasetOverview(),
     getClassificationOverview(),
     getRetrievalOverview(),
     getAIOverview(),
+    getDraftOverview(),
   ]);
 
   return (
@@ -29,6 +32,7 @@ export default async function Home() {
       classificationOverview={classificationOverview}
       retrievalOverview={retrievalOverview}
       aiOverview={aiOverview}
+      draftOverview={draftOverview}
     />
   );
 }

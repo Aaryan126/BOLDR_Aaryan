@@ -3,6 +3,7 @@ import type {
   BackendHealth,
   ClassificationOverview,
   DatasetOverview,
+  DraftOverview,
   RetrievalOverview,
 } from "@/lib/api";
 
@@ -23,12 +24,6 @@ const phaseCards = [
     tone: "blue",
   },
   {
-    title: "Phase 3",
-    label: "Deterministic classification baseline",
-    value: "Complete",
-    tone: "green",
-  },
-  {
     title: "Phase 4",
     label: "Retrieval evidence and source priority",
     value: "Complete",
@@ -37,6 +32,12 @@ const phaseCards = [
   {
     title: "Phase 5",
     label: "GLM-5.1 provider and structured outputs",
+    value: "Complete",
+    tone: "green",
+  },
+  {
+    title: "Phase 6",
+    label: "Grounded draft replies and guardrails",
     value: "Active",
     tone: "gold",
   },
@@ -44,12 +45,12 @@ const phaseCards = [
 
 const upcomingModules = [
   {
-    title: "Phase 6",
-    body: "Generate grounded draft replies only after evidence checks.",
-  },
-  {
     title: "Phase 7",
     body: "Stabilize workflow APIs for review, approval, and batch processing.",
+  },
+  {
+    title: "Phase 8",
+    body: "Turn the dashboard into a full ticket review and gap-management workbench.",
   },
 ];
 
@@ -59,6 +60,7 @@ type DashboardShellProps = {
   classificationOverview: ClassificationOverview;
   retrievalOverview: RetrievalOverview;
   aiOverview: AIOverview;
+  draftOverview: DraftOverview;
 };
 
 export function DashboardShell({
@@ -67,12 +69,14 @@ export function DashboardShell({
   classificationOverview,
   retrievalOverview,
   aiOverview,
+  draftOverview,
 }: DashboardShellProps) {
   const isHealthy = health.status === "ok";
   const diagnostics = datasetOverview.diagnostics;
   const evaluation = classificationOverview.evaluation;
   const retrievalEvaluation = retrievalOverview.evaluation;
   const aiStatus = aiOverview.statusReport;
+  const draftEvaluation = draftOverview.evaluation;
 
   return (
     <main className="workbench">
@@ -99,14 +103,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 5 Structured AI Layer</p>
+                <p className="eyebrow">Phase 6 Drafting Layer</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
                   The core pipeline now ingests local tickets, assigns the five
-                  required personas, retrieves explainable evidence, and now has
-                  GLM-5.1 structured-output contracts ready for draft generation.
+                  required personas, retrieves explainable evidence, and creates
+                  guarded drafts only when the evidence is strong enough.
                 </p>
               </div>
               <div
@@ -424,6 +428,66 @@ export function DashboardShell({
             ) : (
               <p className="dataset-unavailable">
                 AI provider status will appear here when the backend is running.
+              </p>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Phase 6 Drafting Judge</p>
+                <h3>Grounded reply generation</h3>
+              </div>
+              <span className="count-pill">
+                {draftOverview.status === "ok" ? "Ready" : "Unavailable"}
+              </span>
+            </div>
+
+            {draftEvaluation ? (
+              <>
+                <div className="diagnostic-grid">
+                  <div>
+                    <p className="diagnostic-value">
+                      {draftEvaluation.customer_reply_count}
+                    </p>
+                    <p className="diagnostic-label">Customer drafts</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {draftEvaluation.holding_reply_count}
+                    </p>
+                    <p className="diagnostic-label">Holding replies</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {draftEvaluation.internal_note_count}
+                    </p>
+                    <p className="diagnostic-label">Internal notes</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {draftEvaluation.guardrail_failures_count}
+                    </p>
+                    <p className="diagnostic-label">Guardrail failures</p>
+                  </div>
+                </div>
+                <div className="note-box">
+                  Evidence-backed customer replies:
+                  {" "}
+                  {draftEvaluation.evidence_backed_customer_reply_count}
+                  . Unsupported themes blocked:
+                  {" "}
+                  {draftEvaluation.blocked_unsupported_count}
+                  . Approval queue:
+                  {" "}
+                  {draftEvaluation.approval_status_counts.needs_review ?? 0}
+                  {" "}
+                  needs review.
+                </div>
+              </>
+            ) : (
+              <p className="dataset-unavailable">
+                Draft metrics will appear here when the backend is running.
               </p>
             )}
           </section>

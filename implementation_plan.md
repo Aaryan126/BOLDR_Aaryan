@@ -415,6 +415,8 @@ Decision to proceed: Pending user review
 
 ## 10. Phase 6: Reply Drafting And Answerability Judge
 
+Status: Implemented; awaiting human verification.
+
 Goal: Generate grounded reply drafts only when evidence is sufficient.
 
 Deliverables:
@@ -464,7 +466,39 @@ Exit criteria:
 - Unsupported tickets produce gap/holding outputs.
 - Approval workflow exists.
 
+Implementation notes:
+
+- Added deterministic evidence-sufficiency judging that combines classification, retrieval evidence, unsupported-theme detection, and structured-output schemas.
+- Added draft generation for:
+  - customer replies when local evidence is sufficient
+  - holding replies for knowledge gaps
+  - internal notes for order/system lookup or human review
+- Added evidence traces and guardrails for banned tone patterns, unsupported claims, missing evidence IDs, and invented order status.
+- Added in-memory draft review state for approve, edit-and-approve, and reject actions.
+- Added API endpoints:
+  - `/api/drafts`
+  - `/api/drafts/evaluation`
+  - `/api/drafts/tickets/{ticket_id}`
+  - `/api/drafts/tickets/{ticket_id}/review`
+- Added draft CLI: `python -m app.intelligence.draft_cli`.
+- Added backend regression tests for answerable golden tickets, unsupported themes, order lookup notes, guardrail coverage, metrics, and review flow.
+- Updated the dashboard to show Phase 6 draft, holding-reply, internal-note, and guardrail metrics.
+
+Phase gate record:
+
+```text
+Phase: 6 - Reply Drafting And Answerability Judge
+Status: Implemented; awaiting human verification
+Implemented: Evidence-gated customer drafts, holding replies, internal notes, guardrails, approval/review state, API/CLI/UI summary
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit
+Human verification completed: Pending
+Known issues: Draft approvals are in-memory for this phase; persistence moves to the stable workflow API/storage phase
+Decision to proceed: Pending user review
+```
+
 ## 11. Phase 7: Core Backend API
+
+Status: Planned.
 
 Goal: Expose the intelligence workflow through stable API endpoints.
 
@@ -841,4 +875,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Start Phase 1 by scaffolding the backend and frontend, then add a README with local setup commands. Do not begin AI/RAG work until the app scaffold and ingestion foundation are stable.
+Complete Phase 6 human verification, then start Phase 7 by stabilizing persistent workflow APIs for tickets, drafts, gap records, batch processing, and reviewer actions.
