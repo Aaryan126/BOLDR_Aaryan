@@ -2,6 +2,7 @@ import type {
   BackendHealth,
   ClassificationOverview,
   DatasetOverview,
+  RetrievalOverview,
 } from "@/lib/api";
 
 const navigationItems = [
@@ -15,12 +16,6 @@ const navigationItems = [
 
 const phaseCards = [
   {
-    title: "Phase 1",
-    label: "Repository and app scaffold",
-    value: "Complete",
-    tone: "green",
-  },
-  {
     title: "Phase 2",
     label: "Local dataset ingestion and diagnostics",
     value: "Complete",
@@ -29,16 +24,18 @@ const phaseCards = [
   {
     title: "Phase 3",
     label: "Deterministic classification baseline",
+    value: "Complete",
+    tone: "green",
+  },
+  {
+    title: "Phase 4",
+    label: "Retrieval evidence and source priority",
     value: "Active",
     tone: "gold",
   },
 ];
 
 const upcomingModules = [
-  {
-    title: "Phase 4",
-    body: "Build retrieval evidence with source priority and conflict handling.",
-  },
   {
     title: "Phase 5",
     body: "Add the Qwen adapter and structured AI output contracts.",
@@ -53,16 +50,19 @@ type DashboardShellProps = {
   health: BackendHealth;
   datasetOverview: DatasetOverview;
   classificationOverview: ClassificationOverview;
+  retrievalOverview: RetrievalOverview;
 };
 
 export function DashboardShell({
   health,
   datasetOverview,
   classificationOverview,
+  retrievalOverview,
 }: DashboardShellProps) {
   const isHealthy = health.status === "ok";
   const diagnostics = datasetOverview.diagnostics;
   const evaluation = classificationOverview.evaluation;
+  const retrievalEvaluation = retrievalOverview.evaluation;
 
   return (
     <main className="workbench">
@@ -89,14 +89,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 3 Baseline</p>
+                <p className="eyebrow">Phase 4 Evidence Layer</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
-                  The foundation is ready for the BOLDR challenge flow: ingest
-                  local tickets, ground answers in knowledge sources, flag gaps,
-                  and turn support themes into marketing intelligence.
+                  The core pipeline now ingests local tickets, assigns the five
+                  required personas, retrieves explainable evidence, and blocks
+                  known unsupported themes before any AI draft can be trusted.
                 </p>
               </div>
               <div
@@ -152,7 +152,7 @@ export function DashboardShell({
                     <p>
                       {item === "External Benchmarking"
                         ? "Bonus challenge placeholder for market sentiment comparison."
-                        : "Core challenge workspace ready for Phase 2 data wiring."}
+                        : "Core challenge workspace connected to local data and evidence metrics."}
                     </p>
                   </div>
                 ))}
@@ -299,6 +299,64 @@ export function DashboardShell({
             ) : (
               <p className="dataset-unavailable">
                 Classification summary will appear here when the backend is running.
+              </p>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Phase 4 Evidence Layer</p>
+                <h3>Knowledge retrieval quality</h3>
+              </div>
+              <span className="count-pill">
+                {retrievalOverview.status === "ok" ? "Ready" : "Unavailable"}
+              </span>
+            </div>
+
+            {retrievalEvaluation ? (
+              <>
+                <div className="diagnostic-grid">
+                  <div>
+                    <p className="diagnostic-value">
+                      {retrievalEvaluation.answerable_with_evidence_count}
+                    </p>
+                    <p className="diagnostic-label">Answerable with evidence</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {retrievalEvaluation.known_unsupported_blocked_count}
+                    </p>
+                    <p className="diagnostic-label">Unsupported blocked</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {retrievalEvaluation.golden_query_pass_count}/
+                      {retrievalEvaluation.golden_query_count}
+                    </p>
+                    <p className="diagnostic-label">Golden queries</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {retrievalEvaluation.conflict_warning_count}
+                    </p>
+                    <p className="diagnostic-label">Conflict warnings</p>
+                  </div>
+                </div>
+                <div className="note-box">
+                  Source-priority checks:
+                  {" "}
+                  {retrievalEvaluation.source_priority_checks_passed
+                    ? "rate cards win for pricing and turnaround"
+                    : "needs review"}
+                  . Search methods:
+                  {" "}
+                  {retrievalEvaluation.search_methods.join(", ")}.
+                </div>
+              </>
+            ) : (
+              <p className="dataset-unavailable">
+                Retrieval metrics will appear here when the backend is running.
               </p>
             )}
           </section>

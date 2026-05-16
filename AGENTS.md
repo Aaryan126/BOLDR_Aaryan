@@ -17,6 +17,7 @@ This repository is for the BOLDR watch e-commerce challenge: build a customer in
 - Do not invent missing files from the brief. If the workflow needs data such as a gap log, decision tree, buyer persona table, or external sentiment table, create it as a generated output or project artifact.
 - Use the five buyer personas from `docs/personas.md` exactly. The CSV contains different internal labels, so map them into the five required personas instead of exposing the CSV labels as final persona names.
 - Treat rate card CSVs as authoritative for pricing, limits, and turnaround times. Use the SOP for routing, escalation, tone, and team process.
+- Current implementation reaches Phase 4: local ingestion, deterministic classification, and explainable retrieval evidence. Retrieval APIs live under `/api/retrieval/*`.
 - Preserve human approval gates. The core system should draft replies and KB updates, not auto-send or auto-publish without review.
 
 ## Expected Core System Shape

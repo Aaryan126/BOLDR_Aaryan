@@ -3,13 +3,15 @@ import {
   getBackendHealth,
   getClassificationOverview,
   getDatasetOverview,
+  getRetrievalOverview,
 } from "@/lib/api";
 
 export default async function Home() {
-  const [health, datasetOverview, classificationOverview] = await Promise.all([
+  const [health, datasetOverview, classificationOverview, retrievalOverview] = await Promise.all([
     getBackendHealth(),
     getDatasetOverview(),
     getClassificationOverview(),
+    getRetrievalOverview(),
   ]);
 
   return (
@@ -17,6 +19,7 @@ export default async function Home() {
       health={health}
       datasetOverview={datasetOverview}
       classificationOverview={classificationOverview}
+      retrievalOverview={retrievalOverview}
     />
   );
 }

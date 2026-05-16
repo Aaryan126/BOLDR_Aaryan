@@ -70,6 +70,25 @@ export type ClassificationOverview = {
   detail?: string;
 };
 
+export type RetrievalEvaluation = {
+  total_tickets: number;
+  answerable_ticket_count: number;
+  answerable_with_evidence_count: number;
+  known_unsupported_ticket_count: number;
+  known_unsupported_blocked_count: number;
+  golden_query_count: number;
+  golden_query_pass_count: number;
+  conflict_warning_count: number;
+  source_priority_checks_passed: boolean;
+  search_methods: string[];
+};
+
+export type RetrievalOverview = {
+  evaluation: RetrievalEvaluation | null;
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export async function getBackendHealth(): Promise<BackendHealth> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -146,6 +165,35 @@ export async function getClassificationOverview(): Promise<ClassificationOvervie
     return {
       status: "ok",
       evaluation: (await response.json()) as ClassificationEvaluation,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      evaluation: null,
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getRetrievalOverview(): Promise<RetrievalOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/retrieval/evaluation`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        status: "unavailable",
+        evaluation: null,
+        detail: `Retrieval endpoint returned ${response.status}`,
+      };
+    }
+
+    return {
+      status: "ok",
+      evaluation: (await response.json()) as RetrievalEvaluation,
     };
   } catch (error) {
     return {

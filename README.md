@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-3: repository scaffold, local dataset ingestion/diagnostics, and deterministic ticket classification. RAG, Qwen calls, draft replies, and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-4: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, and an explainable retrieval evidence layer. Qwen calls, draft replies, and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -27,7 +27,7 @@ Create a local environment file when needed:
 cp .env.example .env
 ```
 
-Qwen credentials are not required for Phase 1.
+Qwen credentials are not required for Phases 1-4.
 
 ## Backend
 
@@ -76,6 +76,27 @@ Classify a single ticket:
 ```bash
 cd backend
 env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.cli classify --ticket-id TKT-1048
+```
+
+Retrieval evaluation:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.retrieval_cli evaluate
+```
+
+Search the local knowledge base:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.retrieval_cli search --query "What is your return policy?"
+```
+
+Retrieve evidence for a ticket:
+
+```bash
+cd backend
+env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.retrieval_cli ticket --ticket-id TKT-1048
 ```
 
 ## Frontend
@@ -135,4 +156,13 @@ docker compose down
 - Frontend shows a deterministic classification summary when the backend is running.
 - The final persona set uses only the five required personas from `docs/personas.md`.
 - `transactional` remains an operational context, not a final buyer persona.
+- Backend and frontend checks pass.
+
+## Phase 4 Exit Criteria
+
+- Every answerable ticket has at least one retrieved evidence source.
+- Known unsupported themes such as carbon-neutral shipping, strap recycling, and MRI/magnetic resistance remain blocked.
+- Backend serves `/api/retrieval/search`, `/api/retrieval/tickets/{ticket_id}`, and `/api/retrieval/evaluation`.
+- Retrieval evaluation passes all golden questions and rate-card source-priority checks.
+- Frontend shows the evidence coverage, unsupported-blocking, golden-query, and conflict-warning metrics.
 - Backend and frontend checks pass.

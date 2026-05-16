@@ -261,6 +261,8 @@ Exit criteria:
 
 ## 8. Phase 4: Knowledge Retrieval And Evidence Layer
 
+Status: Implemented; awaiting human verification.
+
 Goal: Search the knowledge base with explainable evidence before drafting answers.
 
 Deliverables:
@@ -308,6 +310,29 @@ Exit criteria:
 
 - Every answerable ticket has at least one evidence source.
 - Known unsupported questions remain unsupported.
+
+Implementation notes:
+
+- Added local hybrid retrieval in `backend/app/intelligence/retrieval.py`.
+- Added retrieval API endpoints:
+  - `/api/retrieval/search`
+  - `/api/retrieval/tickets/{ticket_id}`
+  - `/api/retrieval/evaluation`
+- Added retrieval CLI: `python -m app.intelligence.retrieval_cli`.
+- Added backend regression tests for golden questions, rate-card priority, unsupported themes, ticket evidence, and API endpoints.
+- Updated the dashboard to show Phase 4 evidence coverage and source-priority metrics.
+
+Phase gate record:
+
+```text
+Phase: 4 - Knowledge Retrieval And Evidence Layer
+Status: Implemented; awaiting human verification
+Implemented: Hybrid local retrieval, evidence cards, unsupported-theme blocking, source-priority checks, API/CLI/UI summary
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit
+Human verification completed: Pending
+Known issues: No semantic embedding database yet; current vector scoring is standard-library TF-IDF until the planned pgvector/local-embedding phase
+Decision to proceed: Pending user review
+```
 
 ## 9. Phase 5: Qwen Adapter And Structured AI Outputs
 
