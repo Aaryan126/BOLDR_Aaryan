@@ -310,6 +310,17 @@ a {
   font-weight: 700;
 }
 
+.note-box {
+  margin-top: 20px;
+  border: 1px solid #c9d9ec;
+  border-radius: 6px;
+  background: #f4f8fb;
+  padding: 12px 14px;
+  color: #294865;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .diagnostic-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -393,6 +404,36 @@ a {
   line-height: 1.6;
 }
 
+.persona-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.persona-row {
+  display: flex;
+  min-height: 86px;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.persona-row span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.persona-row strong {
+  color: var(--navy);
+  font-size: 28px;
+}
+
 @media (max-width: 1040px) {
   .workbench-layout {
     display: block;
@@ -422,7 +463,8 @@ a {
 
   .metric-grid,
   .module-grid,
-  .diagnostic-grid {
+  .diagnostic-grid,
+  .persona-list {
     grid-template-columns: 1fr;
   }
 

@@ -1,4 +1,8 @@
-import type { BackendHealth, DatasetOverview } from "@/lib/api";
+import type {
+  BackendHealth,
+  ClassificationOverview,
+  DatasetOverview,
+} from "@/lib/api";
 
 const navigationItems = [
   "Inbox Intelligence",
@@ -13,46 +17,52 @@ const phaseCards = [
   {
     title: "Phase 1",
     label: "Repository and app scaffold",
-    value: "Active",
+    value: "Complete",
     tone: "green",
   },
   {
-    title: "Core Scope",
-    label: "Local dataset first; Gmail and Shopify later",
-    value: "Defined",
+    title: "Phase 2",
+    label: "Local dataset ingestion and diagnostics",
+    value: "Complete",
     tone: "blue",
   },
   {
-    title: "Guardrail",
-    label: "Drafts require human approval",
-    value: "Locked",
+    title: "Phase 3",
+    label: "Deterministic classification baseline",
+    value: "Active",
     tone: "gold",
   },
 ];
 
 const upcomingModules = [
   {
-    title: "Phase 2",
-    body: "Parse the six actual files in Boldr Data and expose dataset diagnostics.",
-  },
-  {
-    title: "Phase 3",
-    body: "Add deterministic ticket classification, required persona mapping, and routing tags.",
-  },
-  {
     title: "Phase 4",
     body: "Build retrieval evidence with source priority and conflict handling.",
+  },
+  {
+    title: "Phase 5",
+    body: "Add the Qwen adapter and structured AI output contracts.",
+  },
+  {
+    title: "Phase 6",
+    body: "Generate grounded draft replies only after evidence checks.",
   },
 ];
 
 type DashboardShellProps = {
   health: BackendHealth;
   datasetOverview: DatasetOverview;
+  classificationOverview: ClassificationOverview;
 };
 
-export function DashboardShell({ health, datasetOverview }: DashboardShellProps) {
+export function DashboardShell({
+  health,
+  datasetOverview,
+  classificationOverview,
+}: DashboardShellProps) {
   const isHealthy = health.status === "ok";
   const diagnostics = datasetOverview.diagnostics;
+  const evaluation = classificationOverview.evaluation;
 
   return (
     <main className="workbench">
@@ -79,7 +89,7 @@ export function DashboardShell({ health, datasetOverview }: DashboardShellProps)
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 1 Scaffold</p>
+                <p className="eyebrow">Phase 3 Baseline</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
@@ -225,6 +235,70 @@ export function DashboardShell({ health, datasetOverview }: DashboardShellProps)
             ) : (
               <p className="dataset-unavailable">
                 Dataset diagnostics will appear here when the backend is running.
+              </p>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Phase 3 Intelligence Baseline</p>
+                <h3>Deterministic classification</h3>
+              </div>
+              <span className="count-pill">
+                {classificationOverview.status === "ok" ? "Ready" : "Unavailable"}
+              </span>
+            </div>
+
+            {evaluation ? (
+              <>
+                <div className="diagnostic-grid">
+                  <div>
+                    <p className="diagnostic-value">
+                      {evaluation.classified_tickets}
+                    </p>
+                    <p className="diagnostic-label">Tickets classified</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {Object.keys(evaluation.required_persona_counts).length}
+                    </p>
+                    <p className="diagnostic-label">Required personas used</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {evaluation.order_lookup_required_count}
+                    </p>
+                    <p className="diagnostic-label">Order lookups</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {evaluation.knowledge_gap_count}
+                    </p>
+                    <p className="diagnostic-label">Knowledge gaps</p>
+                  </div>
+                </div>
+                <div className="persona-list">
+                  {evaluation.final_personas.map((persona) => (
+                    <div className="persona-row" key={persona}>
+                      <span>{persona}</span>
+                      <strong>{evaluation.required_persona_counts[persona] ?? 0}</strong>
+                    </div>
+                  ))}
+                </div>
+                <div className="note-box">
+                  Transactional remains an operational tag only:
+                  {" "}
+                  {evaluation.exposes_transactional_persona ? "Needs review" : "Confirmed"}
+                  . Escalation label alignment:
+                  {" "}
+                  {Math.round(evaluation.escalation_accuracy * 100)}
+                  %.
+                </div>
+              </>
+            ) : (
+              <p className="dataset-unavailable">
+                Classification summary will appear here when the backend is running.
               </p>
             )}
           </section>

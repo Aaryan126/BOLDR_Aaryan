@@ -44,6 +44,32 @@ export type DatasetOverview = {
   detail?: string;
 };
 
+export type ClassificationEvaluation = {
+  total_tickets: number;
+  classified_tickets: number;
+  required_persona_counts: Record<string, number>;
+  csv_persona_counts: Record<string, number>;
+  answerability_counts: Record<string, number>;
+  operational_tag_counts: Record<string, number>;
+  question_type_counts: Record<string, number>;
+  order_lookup_required_count: number;
+  knowledge_gap_count: number;
+  needs_human_review_count: number;
+  escalation_matches_csv: number;
+  escalation_accuracy: number;
+  answerability_matches_csv: number;
+  answerability_label_accuracy: number;
+  final_personas: string[];
+  exposes_transactional_persona: boolean;
+  tricky_case_ticket_ids: string[];
+};
+
+export type ClassificationOverview = {
+  evaluation: ClassificationEvaluation | null;
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export async function getBackendHealth(): Promise<BackendHealth> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -96,6 +122,35 @@ export async function getDatasetOverview(): Promise<DatasetOverview> {
       status: "unavailable",
       diagnostics: null,
       sources: [],
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getClassificationOverview(): Promise<ClassificationOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/intelligence/evaluation`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        status: "unavailable",
+        evaluation: null,
+        detail: `Classification endpoint returned ${response.status}`,
+      };
+    }
+
+    return {
+      status: "ok",
+      evaluation: (await response.json()) as ClassificationEvaluation,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      evaluation: null,
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }

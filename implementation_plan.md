@@ -201,6 +201,8 @@ Exit criteria:
 
 ## 7. Phase 3: Deterministic Classification Baseline
 
+Status: Implemented; awaiting human verification.
+
 Goal: Build a non-LLM baseline for ticket classification, persona mapping, routing, and answerability so the system has predictable behavior before adding generation.
 
 Deliverables:

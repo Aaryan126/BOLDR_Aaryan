@@ -1,7 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.core.config import get_settings
+from app.models.classification import ClassificationEvaluation, TicketClassification
 from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
+from app.services.classifications import (
+    get_classification_evaluation,
+    get_ticket_classification,
+    list_ticket_classifications,
+)
 from app.services.datasets import get_dataset_samples, get_dataset_snapshot
 
 router = APIRouter()
@@ -73,3 +79,21 @@ def dataset_sources() -> list[SourceFile]:
 @router.get("/api/datasets/samples", tags=["datasets"])
 def dataset_record_samples() -> DatasetSamples:
     return get_dataset_samples()
+
+
+@router.get("/api/intelligence/classifications", tags=["intelligence"])
+def ticket_classifications() -> list[TicketClassification]:
+    return list_ticket_classifications()
+
+
+@router.get("/api/intelligence/classifications/{ticket_id}", tags=["intelligence"])
+def ticket_classification(ticket_id: str) -> TicketClassification:
+    classification = get_ticket_classification(ticket_id)
+    if classification is None:
+        raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
+    return classification
+
+
+@router.get("/api/intelligence/evaluation", tags=["intelligence"])
+def classification_evaluation() -> ClassificationEvaluation:
+    return get_classification_evaluation()
