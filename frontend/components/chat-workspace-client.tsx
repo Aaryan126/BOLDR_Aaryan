@@ -940,7 +940,9 @@ export function ChatWorkspaceClient({
                   key={opportunity.theme_name}
                 >
                   <strong>{opportunity.campaign_angle}</strong>
-                  <span>{opportunity.persona_focus.join(", ")}</span>
+                  <span className={badgeToneClass(opportunity.persona_focus[0] ?? "")}>
+                    {opportunity.persona_focus.join(", ")}
+                  </span>
                   <p>{opportunity.recommended_action}</p>
                 </article>
               ))}
