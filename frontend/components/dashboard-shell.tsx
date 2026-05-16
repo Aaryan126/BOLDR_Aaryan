@@ -20,13 +20,13 @@ import { QualityPanel } from "@/components/quality-panel";
 import { WorkbenchClient } from "@/components/workbench-client";
 
 const navigationItems = [
-  "Inbox Intelligence",
-  "Ticket Review",
-  "Knowledge Gaps",
-  "Theme Radar",
-  "Marketing Brief",
-  "Quality Dashboard",
-  "External Benchmarking",
+  { label: "Core Loop", href: "#core-loop" },
+  { label: "Personas", href: "#personas" },
+  { label: "Demo Flow", href: "#demo-flow" },
+  { label: "Workbench", href: "#workbench-console" },
+  { label: "Theme Radar", href: "#theme-radar" },
+  { label: "Quality", href: "#quality-dashboard" },
+  { label: "External Bonus", href: "#external-benchmarking" },
 ];
 
 const phaseCards = [
@@ -92,10 +92,100 @@ const phaseCards = [
   },
 ];
 
-const upcomingModules = [
+const coreLoopSteps = [
   {
-    title: "Phase 13",
-    body: "Polish the final demo, reset flow, and competition story.",
+    step: "1",
+    action: "Ingest enquiry",
+    detail: "Receive customer enquiry and extract intent, context, identifiers, and source channel.",
+    output: "Local ticket inbox",
+  },
+  {
+    step: "2",
+    action: "Search Knowledge Base",
+    detail: "Query FAQ, rate cards, SOP, and product reference for source-backed answers.",
+    output: "Evidence trace",
+  },
+  {
+    step: "3",
+    action: "Answerable? Draft reply",
+    detail: "If evidence is sufficient, draft a customer reply in BOLDR's voice and queue it for approval.",
+    output: "Human review draft",
+  },
+  {
+    step: "4",
+    action: "Not answerable? Flag gap",
+    detail: "If evidence is missing, create a knowledge gap and route it without hallucinating.",
+    output: "Gap queue",
+  },
+  {
+    step: "5",
+    action: "Auto-draft Knowledge Base entry",
+    detail: "After a human verifies the answer, draft a new FAQ entry for approval.",
+    output: "FAQ draft",
+  },
+  {
+    step: "6",
+    action: "Theme clustering",
+    detail: "Group weekly and monthly questions by theme, persona, answerability, and business signal.",
+    output: "Theme Radar",
+  },
+  {
+    step: "7",
+    action: "Marketing brief",
+    detail: "Produce a monthly brief on what customers ask that product pages do not answer well.",
+    output: "Marketing intelligence",
+  },
+];
+
+const personaCards = [
+  {
+    name: "Health-Conscious Buyer",
+    tone: "green",
+    triggers: "BPA-free, nickel-free, hypoallergenic, EU REACH, safe for kids",
+    action: 'Product badge: "BPA-Free Straps"',
+  },
+  {
+    name: "Gifter",
+    tone: "gold",
+    triggers: "Engraving, gift wrap, birthday, anniversary, turnaround time",
+    action: "Seasonal campaigns: Valentines, Fathers Day",
+  },
+  {
+    name: "Enthusiast / Collector",
+    tone: "navy",
+    triggers: "Grade 5 titanium, Miyota movement, limited editions",
+    action: "Collector content: specs & craftsmanship",
+  },
+  {
+    name: "Active / Outdoor Buyer",
+    tone: "blue",
+    triggers: "Water resistance, shock, trail running, FKM rubber strap",
+    action: "Segment: adventure lifestyle content",
+  },
+  {
+    name: "Sustainability Advocate",
+    tone: "purple",
+    triggers: "Vegan straps, carbon offset shipping, eco packaging",
+    action: "New: vegan strap angle to develop",
+  },
+];
+
+const demoFlow = [
+  {
+    label: "Pick a ticket",
+    body: "Start in Inbox Intelligence with a concrete enquiry such as TKT-1048 or a sustainability gap ticket.",
+  },
+  {
+    label: "Inspect the intelligence",
+    body: "Show persona, intent, answerability, routing reason, evidence cards, and guardrails.",
+  },
+  {
+    label: "Approve or route",
+    body: "Approve an answerable draft, or resolve a gap and generate a reviewed FAQ draft.",
+  },
+  {
+    label: "Show business output",
+    body: "Move to Theme Radar, Marketing Brief, Quality Dashboard, and the external benchmark bonus.",
   },
 ];
 
@@ -139,6 +229,30 @@ export function DashboardShell({
   const aiStatus = aiOverview.statusReport;
   const draftEvaluation = draftOverview.evaluation;
   const workflowStatus = workflowOverview.statusReport;
+  const themeRadar = insightsOverview.themeRadar;
+  const marketingBrief = insightsOverview.marketingBrief;
+
+  const coreStepOutputs: Record<string, string> = {
+    "1": diagnostics ? `${diagnostics.ticket_count} tickets parsed` : "Waiting for backend",
+    "2": retrievalEvaluation
+      ? `${retrievalEvaluation.answerable_with_evidence_count} answerable tickets with evidence`
+      : "Waiting for retrieval",
+    "3": draftEvaluation
+      ? `${draftEvaluation.customer_reply_count} customer drafts`
+      : "Waiting for drafts",
+    "4": workflowStatus
+      ? `${workflowStatus.gap_count} gaps, ${workflowStatus.unresolved_gap_count} unresolved`
+      : "Waiting for gaps",
+    "5": workflowStatus
+      ? `${workflowStatus.kb_draft_ready_count} ready, ${workflowStatus.approved_gap_count} approved`
+      : "Waiting for KB drafts",
+    "6": themeRadar
+      ? `${themeRadar.meta.theme_count} themes from ${themeRadar.meta.clustered_ticket_count} tickets`
+      : "Waiting for themes",
+    "7": marketingBrief
+      ? `${marketingBrief.opportunities.length} opportunities`
+      : "Waiting for brief",
+  };
 
   return (
     <main className="workbench">
@@ -151,28 +265,33 @@ export function DashboardShell({
           <nav className="sidebar-nav" aria-label="Workbench navigation">
             {navigationItems.map((item, index) => (
               <a
-                href="#"
-                key={item}
+                href={item.href}
+                key={item.label}
                 className={index === 0 ? "nav-link nav-link-active" : "nav-link"}
               >
-                {item}
+                {item.label}
               </a>
             ))}
           </nav>
         </aside>
 
         <section className="content">
-          <header className="hero-panel">
+          <header
+            className="hero-panel challenge-hero"
+            data-testid="core-demo-page"
+            id="core-loop"
+          >
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 12 External Benchmarking</p>
+                <p className="eyebrow">Core Challenge</p>
                 <h2>
-                  Customer Intelligence Workbench
+                  The Intelligence Loop
                 </h2>
                 <p className="hero-copy">
-                  The core pipeline now ingests local tickets, assigns the five
-                  required personas, retrieves explainable evidence, and creates
-                  guarded drafts, KB improvements, marketing intelligence, quality metrics, and external market benchmarks.
+                  A live demo path for BOLDR support: ingest an enquiry, find
+                  source-backed answers, draft only when evidence exists, flag
+                  gaps, turn resolved gaps into FAQ drafts, and surface recurring
+                  questions as marketing intelligence.
                 </p>
               </div>
               <div
@@ -185,95 +304,136 @@ export function DashboardShell({
             </div>
           </header>
 
-          <section className="metric-grid">
-            {phaseCards.map((card) => (
-              <article
-                key={card.title}
-                className="metric-card"
-              >
-                <div className={`tone-bar tone-${card.tone}`} />
-                <p className="card-kicker">
-                  {card.title}
-                </p>
-                <h3>
-                  {card.value}
-                </h3>
-                <p>
-                  {card.label}
-                </p>
-              </article>
-            ))}
+          <section className="panel core-loop-panel" aria-labelledby="core-loop-heading">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Demo Backbone</p>
+                <h3 id="core-loop-heading">Core Challenge: The Intelligence Loop</h3>
+              </div>
+              <span className="count-pill">7 steps</span>
+            </div>
+            <div className="core-loop-table-wrap">
+              <table className="core-loop-table">
+                <thead>
+                  <tr>
+                    <th>Step</th>
+                    <th>Action</th>
+                    <th>Detail</th>
+                    <th>Live output</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coreLoopSteps.map((step) => (
+                    <tr key={step.step}>
+                      <td data-label="Step">{step.step}</td>
+                      <td data-label="Action">
+                        <strong>{step.action}</strong>
+                      </td>
+                      <td data-label="Detail">{step.detail}</td>
+                      <td data-label="Live output">
+                        <span className="core-output-pill">
+                          {coreStepOutputs[step.step] ?? step.output}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
 
-          <section className="detail-grid">
-            <article className="panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Workbench Areas</p>
-                  <h3>
-                    Core navigation is in place
-                  </h3>
-                </div>
-                <span className="count-pill">
-                  {navigationItems.length} areas
-                </span>
+          <section className="panel persona-demo-panel" id="personas">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Required Persona Tags</p>
+                <h3>Buyer Personas to Identify</h3>
               </div>
-              <div className="module-grid">
-                {navigationItems.map((item) => (
-                  <div
-                    key={item}
-                    className="module-card"
-                  >
-                    <p className="module-title">{item}</p>
-                    <p>
-                      {item === "External Benchmarking"
-                        ? "Bonus market sentiment comparison with source URLs and limitations."
-                        : item === "Quality Dashboard"
-                          ? "Evaluation scorecard for accuracy, evidence, guardrails, and golden fixtures."
-                        : "Core challenge workspace connected to local data and evidence metrics."}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </article>
-
-            <article className="panel">
-              <p className="eyebrow">Next Build Steps</p>
-              <h3>Review before intelligence reports</h3>
-              <div className="timeline">
-                {upcomingModules.map((module) => (
-                  <div
-                    key={module.title}
-                    className="timeline-item"
-                  >
-                    <p className="timeline-title">{module.title}</p>
-                    <p>
-                      {module.body}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </article>
+              <span className="count-pill">Exact challenge set</span>
+            </div>
+            <p className="section-copy">
+              The workflow tags every enquiry against one of these five
+              challenge personas. The tag then informs routing, draft tone, gap
+              grouping, and marketing output.
+            </p>
+            <div className="persona-demo-grid">
+              {personaCards.map((persona) => (
+                <article
+                  className={`persona-demo-card persona-tone-${persona.tone}`}
+                  key={persona.name}
+                >
+                  <h4>{persona.name}</h4>
+                  <p>{persona.triggers}</p>
+                  <strong>{persona.action}</strong>
+                </article>
+              ))}
+            </div>
           </section>
 
-          <WorkbenchClient
-            initialGaps={initialGaps}
-            initialGapMetrics={initialGapMetrics}
-            initialTicketDetail={initialTicketDetail}
-            initialTickets={initialTickets}
-          />
+          <section className="panel demo-flow-panel" id="demo-flow">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Presentation Flow</p>
+                <h3>How to demo the system</h3>
+              </div>
+              <span className="count-pill">Core first, bonus last</span>
+            </div>
+            <div className="demo-flow-grid">
+              {demoFlow.map((step, index) => (
+                <article className="demo-flow-card" key={step.label}>
+                  <span>{index + 1}</span>
+                  <h4>{step.label}</h4>
+                  <p>{step.body}</p>
+                </article>
+              ))}
+            </div>
+          </section>
 
-          <InsightsClient
-            initialMarketingBrief={insightsOverview.marketingBrief}
-            initialThemeRadar={insightsOverview.themeRadar}
-          />
+          <div id="workbench-console">
+            <WorkbenchClient
+              initialGaps={initialGaps}
+              initialGapMetrics={initialGapMetrics}
+              initialTicketDetail={initialTicketDetail}
+              initialTickets={initialTickets}
+            />
+          </div>
 
-          <QualityPanel scorecard={qualityOverview.scorecard} />
+          <div id="theme-radar">
+            <InsightsClient
+              initialMarketingBrief={insightsOverview.marketingBrief}
+              initialThemeRadar={insightsOverview.themeRadar}
+            />
+          </div>
 
-          <ExternalBenchmarkClient
-            initialBenchmarks={externalBenchmarkOverview.benchmarks}
-            initialSources={externalBenchmarkOverview.sources}
-          />
+          <div id="quality-dashboard">
+            <QualityPanel scorecard={qualityOverview.scorecard} />
+          </div>
+
+          <div id="external-benchmarking">
+            <ExternalBenchmarkClient
+              initialBenchmarks={externalBenchmarkOverview.benchmarks}
+              initialSources={externalBenchmarkOverview.sources}
+            />
+          </div>
+
+          <section className="panel build-progress-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Build Progress</p>
+                <h3>Implementation status</h3>
+              </div>
+              <span className="count-pill">{phaseCards.length} phases</span>
+            </div>
+            <div className="phase-strip">
+              {phaseCards.map((card) => (
+                <article key={card.title} className="metric-card">
+                  <div className={`tone-bar tone-${card.tone}`} />
+                  <p className="card-kicker">{card.title}</p>
+                  <h3>{card.value}</h3>
+                  <p>{card.label}</p>
+                </article>
+              ))}
+            </div>
+          </section>
 
           <section className="panel">
             <div className="panel-heading">

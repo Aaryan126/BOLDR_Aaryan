@@ -165,6 +165,12 @@ a {
   line-height: 1.7;
 }
 
+.challenge-hero {
+  background:
+    linear-gradient(135deg, rgba(77, 175, 105, 0.1), rgba(67, 134, 184, 0.06)),
+    var(--panel);
+}
+
 .health-badge {
   flex: 0 0 auto;
   border: 1px solid;
@@ -184,6 +190,235 @@ a {
   border-color: #efc3c0;
   background: #fff0ef;
   color: #9b2f2b;
+}
+
+.section-copy {
+  max-width: 880px;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.core-loop-panel {
+  padding-bottom: 18px;
+}
+
+.core-loop-table-wrap {
+  margin-top: 18px;
+  overflow-x: auto;
+}
+
+.core-loop-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.core-loop-table th {
+  background: var(--navy);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 850;
+  text-align: left;
+}
+
+.core-loop-table th,
+.core-loop-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 13px 14px;
+  vertical-align: top;
+}
+
+.core-loop-table th:first-child,
+.core-loop-table td:first-child {
+  width: 64px;
+}
+
+.core-loop-table th:nth-child(2),
+.core-loop-table td:nth-child(2) {
+  width: 220px;
+}
+
+.core-loop-table th:nth-child(4),
+.core-loop-table td:nth-child(4) {
+  width: 210px;
+}
+
+.core-loop-table tbody tr:nth-child(even) {
+  background: #f3f6fb;
+}
+
+.core-loop-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.core-loop-table td {
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.core-loop-table strong {
+  color: var(--navy);
+}
+
+.core-output-pill {
+  display: inline-flex;
+  max-width: 100%;
+  border-radius: 6px;
+  background: #eef2f7;
+  padding: 6px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.persona-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.persona-demo-card {
+  --persona-color: var(--navy);
+  --persona-faint: #f4f8fb;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  min-height: 230px;
+  overflow: hidden;
+  border: 2px solid var(--persona-color);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.persona-demo-card h4 {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  background: var(--persona-color);
+  color: #ffffff;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.persona-demo-card p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 18px 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.persona-demo-card strong {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 12px 14px;
+  border-radius: 6px;
+  background: var(--persona-faint);
+  color: var(--persona-color);
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.persona-tone-green {
+  --persona-color: var(--green);
+  --persona-faint: #edf8f1;
+}
+
+.persona-tone-gold {
+  --persona-color: var(--gold);
+  --persona-faint: #fbf5e7;
+}
+
+.persona-tone-navy {
+  --persona-color: var(--navy);
+  --persona-faint: #f0f3f8;
+}
+
+.persona-tone-blue {
+  --persona-color: var(--blue);
+  --persona-faint: #edf6fb;
+}
+
+.persona-tone-purple {
+  --persona-color: var(--purple);
+  --persona-faint: #f5eff8;
+}
+
+.demo-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.demo-flow-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfd;
+  padding: 16px;
+}
+
+.demo-flow-card span {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.demo-flow-card h4 {
+  margin: 14px 0 0;
+  color: var(--navy);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.demo-flow-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.phase-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .metric-grid {
@@ -1190,6 +1425,12 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .persona-demo-grid,
+  .demo-flow-grid,
+  .phase-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .workbench-columns,
   .gap-layout,
   .evidence-layout,
@@ -1236,6 +1477,9 @@ a {
   .module-grid,
   .diagnostic-grid,
   .persona-list,
+  .persona-demo-grid,
+  .demo-flow-grid,
+  .phase-strip,
   .workbench-stat-grid,
   .gap-signal-grid,
   .theme-grid,
@@ -1250,5 +1494,83 @@ a {
 
   .hero-panel h2 {
     font-size: 28px;
+  }
+
+  .core-loop-table-wrap {
+    overflow-x: visible;
+  }
+
+  .core-loop-table {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .core-loop-table thead {
+    display: none;
+  }
+
+  .core-loop-table,
+  .core-loop-table tbody,
+  .core-loop-table tr,
+  .core-loop-table td {
+    display: block;
+  }
+
+  .core-loop-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .core-loop-table tr {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #ffffff;
+  }
+
+  .core-loop-table td {
+    border-bottom: 0;
+    padding: 8px 12px;
+  }
+
+  .core-loop-table td:first-child {
+    display: flex;
+    grid-row: 1 / span 3;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    background: #eef2f7;
+    color: var(--navy);
+    font-weight: 850;
+  }
+
+  .core-loop-table td:nth-child(2) {
+    padding-top: 12px;
+  }
+
+  .core-loop-table td:nth-child(4) {
+    padding-bottom: 12px;
+  }
+
+  .core-loop-table td:nth-child(n+2)::before {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--muted);
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
+  .persona-demo-card {
+    min-height: 0;
+  }
+
+  .persona-demo-card p,
+  .persona-demo-card strong {
+    min-height: 0;
   }
 }
