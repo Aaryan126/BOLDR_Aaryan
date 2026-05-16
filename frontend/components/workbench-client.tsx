@@ -452,8 +452,8 @@ export function WorkbenchClient({
                   <p className="block-label">Routing</p>
                   <p>{selectedTicket.classification.routing_reason}</p>
                   <div className="tag-row">
-                    {selectedTicket.classification.operational_tags.map((tag) => (
-                      <span key={tag}>{tag.replaceAll("_", " ")}</span>
+                    {selectedTicket.classification.operational_tags.map((tag, index) => (
+                      <span key={`${tag}-${index}`}>{tag.replaceAll("_", " ")}</span>
                     ))}
                   </div>
                 </div>
@@ -512,8 +512,8 @@ export function WorkbenchClient({
                     <strong>{selectedTicket.retrieval.evidence.length}</strong>
                   </div>
                   <div className="evidence-list">
-                    {selectedTicket.retrieval.evidence.slice(0, 5).map((evidence) => (
-                      <article className="evidence-row" key={evidence.evidence_id}>
+                    {selectedTicket.retrieval.evidence.slice(0, 5).map((evidence, index) => (
+                      <article className="evidence-row" key={`${evidence.evidence_id}-${index}`}>
                         <div>
                           <strong>{evidence.source_file}</strong>
                           <span>{evidence.section_title}</span>
@@ -530,8 +530,8 @@ export function WorkbenchClient({
                     <strong>{selectedTicket.draft.guardrails.filter((item) => !item.passed).length}</strong>
                   </div>
                   <div className="guardrail-list">
-                    {selectedTicket.draft.guardrails.map((guardrail) => (
-                      <div className="guardrail-row" key={guardrail.name}>
+                    {selectedTicket.draft.guardrails.map((guardrail, index) => (
+                      <div className="guardrail-row" key={`${guardrail.name}-${index}`}>
                         <span>{guardrail.passed ? "Pass" : "Review"}</span>
                         <p>{guardrail.message}</p>
                       </div>

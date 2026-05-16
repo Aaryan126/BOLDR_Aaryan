@@ -269,7 +269,7 @@ export function DashboardShell({
             {navigationItems.map((item, index) => (
               <a
                 href={item.href}
-                key={item.label}
+                key={`${item.label}-${index}`}
                 className={index === 0 ? "nav-link nav-link-active" : "nav-link"}
               >
                 {item.label}
@@ -326,8 +326,8 @@ export function DashboardShell({
                   </tr>
                 </thead>
                 <tbody>
-                  {coreLoopSteps.map((step) => (
-                    <tr key={step.step}>
+                  {coreLoopSteps.map((step, index) => (
+                    <tr key={`${step.step}-${index}`}>
                       <td data-label="Step">{step.step}</td>
                       <td data-label="Action">
                         <strong>{step.action}</strong>
@@ -359,10 +359,10 @@ export function DashboardShell({
               grouping, and marketing output.
             </p>
             <div className="persona-demo-grid">
-              {personaCards.map((persona) => (
+              {personaCards.map((persona, index) => (
                 <article
                   className={`persona-demo-card persona-tone-${persona.tone}`}
-                  key={persona.name}
+                  key={`${persona.name}-${index}`}
                 >
                   <h4>{persona.name}</h4>
                   <p>{persona.triggers}</p>
@@ -382,7 +382,7 @@ export function DashboardShell({
             </div>
             <div className="demo-flow-grid">
               {demoFlow.map((step, index) => (
-                <article className="demo-flow-card" key={step.label}>
+                <article className="demo-flow-card" key={`${step.label}-${index}`}>
                   <span>{index + 1}</span>
                   <h4>{step.label}</h4>
                   <p>{step.body}</p>
@@ -427,8 +427,8 @@ export function DashboardShell({
               <span className="count-pill">{phaseCards.length} phases</span>
             </div>
             <div className="phase-strip">
-              {phaseCards.map((card) => (
-                <article key={card.title} className="metric-card">
+              {phaseCards.map((card, index) => (
+                <article key={`${card.title}-${index}`} className="metric-card">
                   <div className={`tone-bar tone-${card.tone}`} />
                   <p className="card-kicker">{card.title}</p>
                   <h3>{card.value}</h3>
@@ -477,8 +477,8 @@ export function DashboardShell({
                   </div>
                 </div>
                 <div className="source-list">
-                  {datasetOverview.sources.map((source) => (
-                    <div className="source-row" key={source.file_name}>
+                  {datasetOverview.sources.map((source, index) => (
+                    <div className="source-row" key={`${source.file_name}-${index}`}>
                       <div>
                         <p className="source-title">{source.file_name}</p>
                         <p>{source.role}</p>
@@ -537,8 +537,8 @@ export function DashboardShell({
                   </div>
                 </div>
                 <div className="persona-list">
-                  {evaluation.final_personas.map((persona) => (
-                    <div className="persona-row" key={persona}>
+                  {evaluation.final_personas.map((persona, index) => (
+                    <div className="persona-row" key={`${persona}-${index}`}>
                       <span>{persona}</span>
                       <strong>{evaluation.required_persona_counts[persona] ?? 0}</strong>
                     </div>

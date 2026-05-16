@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   AdhocEnquiryRecord,
@@ -21,6 +21,7 @@ type WorkspaceTab =
   | "kb"
   | "marketing"
   | "system";
+type WorkspaceTheme = "dark" | "light";
 
 type ChatWorkspaceClientProps = {
   datasetOverview: DatasetOverview;
@@ -41,6 +42,8 @@ const tabs: Array<{ id: WorkspaceTab; label: string }> = [
   { id: "marketing", label: "Marketing Intel" },
   { id: "system", label: "System Details" },
 ];
+
+const themeStorageKey = "boldr-ui-theme-v1";
 
 const requiredPersonas = [
   "Health-Conscious Buyer",
@@ -82,6 +85,50 @@ function formatLabel(value: string) {
   return value.replaceAll("_", " ");
 }
 
+function badgeToneClass(value: string) {
+  const normalized = value.toLowerCase();
+  if (normalized.includes("approved") || normalized.includes("connected") || normalized === "completed") {
+    return "tone-success";
+  }
+  if (normalized.includes("reject") || normalized.includes("offline") || normalized.includes("blocked")) {
+    return "tone-danger";
+  }
+  if (
+    normalized.includes("awaiting") ||
+    normalized.includes("needs") ||
+    normalized.includes("draft") ||
+    normalized.includes("priority")
+  ) {
+    return "tone-warning";
+  }
+  if (normalized.includes("health-conscious")) {
+    return "tone-health";
+  }
+  if (normalized.includes("gifter")) {
+    return "tone-gifter";
+  }
+  if (normalized.includes("collector") || normalized.includes("enthusiast")) {
+    return "tone-collector";
+  }
+  if (normalized.includes("outdoor") || normalized.includes("active")) {
+    return "tone-outdoor";
+  }
+  if (normalized.includes("sustainability")) {
+    return "tone-sustainability";
+  }
+  if (
+    normalized.includes("product-page") ||
+    normalized.includes("marketing") ||
+    normalized.includes("evidence") ||
+    normalized.includes("materials") ||
+    normalized.includes("engraving") ||
+    normalized.includes("servicing")
+  ) {
+    return "tone-accent";
+  }
+  return "tone-neutral";
+}
+
 function samplePriority(ticket: TicketWorkflowSummary) {
   const text = `${ticket.ticket_id} ${ticket.subject} ${ticket.intent} ${ticket.persona}`.toLowerCase();
   const patterns = [
@@ -115,6 +162,7 @@ export function ChatWorkspaceClient({
   isHealthy,
 }: ChatWorkspaceClientProps) {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("chat");
+  const [theme, setTheme] = useState<WorkspaceTheme>("dark");
   const [enquiries, setEnquiries] = useState<AdhocEnquiryRecord[]>([]);
   const [composer, setComposer] = useState("");
   const [selectedSampleId, setSelectedSampleId] = useState("");
@@ -127,6 +175,7 @@ export function ChatWorkspaceClient({
   const [gapResolution, setGapResolution] = useState("");
   const [gapNote, setGapNote] = useState("");
   const [kbReviewNote, setKbReviewNote] = useState("");
+  const messageStreamRef = useRef<HTMLDivElement | null>(null);
 
   const sampleOptions = useMemo(
     () =>
@@ -194,6 +243,51 @@ export function ChatWorkspaceClient({
   const productPageSignals = gapQueue.filter(
     (record) => record.gap_state?.product_page_update_needed,
   );
+
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const stream = messageStreamRef.current;
+    if (!stream) {
+      return;
+    }
+    stream.scrollTo({
+      top: stream.scrollHeight,
+      behavior,
+    });
+  }, []);
+
+  function startNewConversation() {
+    setEnquiries([]);
+    setComposer("");
+    setSelectedSampleId("");
+    setSelectedApprovalId("");
+    setSelectedGapId("");
+    setApprovalDraft("");
+    setApprovalNote("");
+    setGapResolution("");
+    setGapNote("");
+    setKbReviewNote("");
+    setStatusMessage("");
+    requestAnimationFrame(() => scrollMessagesToBottom("auto"));
+  }
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem(themeStorageKey);
+    if (storedTheme === "dark" || storedTheme === "light") {
+      setTheme(storedTheme);
+      return;
+    }
+
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setTheme(prefersDark ? "dark" : "light");
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "chat") {
+      return;
+    }
+    const frame = requestAnimationFrame(() => scrollMessagesToBottom());
+    return () => cancelAnimationFrame(frame);
+  }, [activeTab, enquiries, scrollMessagesToBottom]);
 
   useEffect(() => {
     let cancelled = false;
@@ -399,8 +493,16 @@ export function ChatWorkspaceClient({
     }
   }
 
+  function toggleTheme() {
+    setTheme((current) => {
+      const next = current === "dark" ? "light" : "dark";
+      window.localStorage.setItem(themeStorageKey, next);
+      return next;
+    });
+  }
+
   return (
-    <main className="chat-product-shell">
+    <main className="chat-product-shell" data-theme={theme}>
       <header className="chat-product-topbar">
         <div className="chat-product-brand">
           <span>BOLDR</span>
@@ -418,8 +520,19 @@ export function ChatWorkspaceClient({
             </button>
           ))}
         </nav>
-        <div className={isHealthy ? "backend-pill ok" : "backend-pill bad"}>
-          Backend {isHealthy ? "connected" : "offline"}
+        <div className="topbar-actions">
+          <button
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            aria-pressed={theme === "dark"}
+            className="theme-toggle"
+            onClick={toggleTheme}
+            type="button"
+          >
+            {theme === "dark" ? "Dark" : "Light"}
+          </button>
+          <div className={isHealthy ? "backend-pill ok" : "backend-pill bad"}>
+            Backend {isHealthy ? "connected" : "offline"}
+          </div>
         </div>
       </header>
 
@@ -437,14 +550,23 @@ export function ChatWorkspaceClient({
                 <p className="eyebrow">Customer Chat</p>
                 <h1 id="chat-heading">Ask BOLDR support intelligence anything.</h1>
               </div>
-              <div className="chat-counts">
-                <span>{enquiries.length} demo enquiries</span>
-                <span>{approvalQueue.filter((record) => record.state === "awaiting_approval").length} approvals</span>
-                <span>{gapQueue.filter((record) => record.gap_state?.status === "needs_resolution").length} CS gaps</span>
+              <div className="chat-heading-actions">
+                <div className="chat-counts">
+                  <span>{enquiries.length} demo enquiries</span>
+                  <span>{approvalQueue.filter((record) => record.state === "awaiting_approval").length} approvals</span>
+                  <span>{gapQueue.filter((record) => record.gap_state?.status === "needs_resolution").length} CS gaps</span>
+                </div>
+                <button
+                  className="secondary-action new-conversation-action"
+                  onClick={startNewConversation}
+                  type="button"
+                >
+                  New conversation
+                </button>
               </div>
             </div>
 
-            <div className="message-stream" aria-live="polite">
+            <div className="message-stream" aria-live="polite" ref={messageStreamRef}>
               {enquiries.length === 0 ? (
                 <div className="empty-chat-state">
                   <p className="eyebrow">Ready</p>
@@ -477,13 +599,17 @@ export function ChatWorkspaceClient({
               </select>
               <textarea
                 aria-label="Customer question"
-                onChange={(event) => setComposer(event.target.value)}
+                onChange={(event) => {
+                  setComposer(event.target.value);
+                  requestAnimationFrame(() => scrollMessagesToBottom());
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                     event.preventDefault();
                     void submitEnquiry();
                   }
                 }}
+                onFocus={() => scrollMessagesToBottom()}
                 placeholder="Example: Are BOLDR's FKM rubber straps BPA-free and safe for kids?"
                 value={composer}
               />
@@ -771,7 +897,7 @@ export function ChatWorkspaceClient({
               <h2>Five-persona breakdown</h2>
               <div className="persona-signal-list">
                 {requiredPersonas.map((persona) => (
-                  <div key={persona}>
+                  <div className={badgeToneClass(persona)} key={persona}>
                     <span>{persona}</span>
                     <strong>{livePersonaCounts[persona] ?? 0}</strong>
                   </div>
@@ -785,7 +911,7 @@ export function ChatWorkspaceClient({
                 <p className="muted-copy">Submit a gap enquiry to create a live signal.</p>
               ) : (
                 liveGapThemes.map(([theme, count]) => (
-                  <article className="signal-card" key={theme}>
+                  <article className="signal-card tone-warning" key={theme}>
                     <strong>{theme}</strong>
                     <span>{count} enquiry signal{count === 1 ? "" : "s"}</span>
                     <p>
@@ -800,7 +926,10 @@ export function ChatWorkspaceClient({
             <section className="marketing-panel">
               <h2>Existing theme radar</h2>
               {(themeRadar?.data ?? []).slice(0, 4).map((theme) => (
-                <article className="signal-card" key={theme.theme_name}>
+                <article
+                  className={`signal-card ${theme.product_page_gap ? "tone-warning" : "tone-accent"}`}
+                  key={theme.theme_name}
+                >
                   <strong>{theme.theme_name}</strong>
                   <span>{theme.frequency} tickets</span>
                   <p>{theme.recommended_marketing_action}</p>
@@ -811,7 +940,10 @@ export function ChatWorkspaceClient({
             <section className="marketing-panel">
               <h2>Campaign and page actions</h2>
               {(marketingBrief?.opportunities ?? []).slice(0, 4).map((opportunity) => (
-                <article className="signal-card" key={opportunity.theme_name}>
+                <article
+                  className={`signal-card ${opportunity.product_page_update_needed ? "tone-warning" : "tone-accent"}`}
+                  key={opportunity.theme_name}
+                >
                   <strong>{opportunity.campaign_angle}</strong>
                   <span>{opportunity.persona_focus.join(", ")}</span>
                   <p>{opportunity.recommended_action}</p>
@@ -829,7 +961,7 @@ export function ChatWorkspaceClient({
             <span>{initialGaps.length} dataset gaps</span>
             <span>{initialGapMetrics?.product_page_update_needed_count ?? 0} product-page gaps</span>
           </div>
-          {systemDetails}
+          <div className="system-details-content">{systemDetails}</div>
         </section>
       ) : null}
     </main>
@@ -849,8 +981,8 @@ function ConversationRecord({ record }: { record: AdhocEnquiryRecord }) {
           <strong>{record.enquiry_id}</strong>
         </div>
         <div className="trace-list">
-          {record.processing_trace.map((event) => (
-            <TraceRow event={event} key={event.step} />
+          {record.processing_trace.map((event, index) => (
+            <TraceRow event={event} key={`${event.step}-${index}`} />
           ))}
         </div>
       </div>
@@ -898,13 +1030,13 @@ function TraceRow({ event }: { event: TraceEvent }) {
     <details className={`trace-row ${event.status}`} open={event.status === "blocked"}>
       <summary>
         <span>{event.title}</span>
-        <strong>{formatLabel(event.status)}</strong>
+        <strong className={badgeToneClass(event.status)}>{formatLabel(event.status)}</strong>
       </summary>
       <p>{event.detail}</p>
       {event.source_refs.length > 0 ? (
         <div className="trace-source-list">
-          {event.source_refs.map((source) => (
-            <em key={source}>{source}</em>
+          {event.source_refs.map((source, index) => (
+            <em key={`${source}-${index}`}>{source}</em>
           ))}
         </div>
       ) : null}
@@ -946,7 +1078,7 @@ function QueueList({
                 <strong>{record.enquiry_id}</strong>
                 <small>{record.ticket.subject}</small>
               </span>
-              <em>{formatLabel(record.state)}</em>
+              <em className={badgeToneClass(record.state)}>{formatLabel(record.state)}</em>
             </button>
           ))}
         </div>
@@ -970,7 +1102,7 @@ function PanelHeading({
         <p className="eyebrow">{eyebrow}</p>
         <h2>{title}</h2>
       </div>
-      <span className="status-pill">{status}</span>
+      <span className={`status-pill ${badgeToneClass(status)}`}>{status}</span>
     </div>
   );
 }
@@ -978,8 +1110,8 @@ function PanelHeading({
 function SignalRow({ values }: { values: string[] }) {
   return (
     <div className="signal-row">
-      {values.map((value) => (
-        <span key={value}>{value}</span>
+      {values.map((value, index) => (
+        <span className={badgeToneClass(value)} key={`${value}-${index}`}>{value}</span>
       ))}
     </div>
   );
@@ -999,8 +1131,8 @@ function EvidenceGrid({ record }: { record: AdhocEnquiryRecord }) {
     <div className="evidence-grid">
       <section>
         <h3>Evidence</h3>
-        {record.retrieval.evidence.slice(0, 4).map((evidence) => (
-          <article className="evidence-card" key={evidence.evidence_id}>
+        {record.retrieval.evidence.slice(0, 4).map((evidence, index) => (
+          <article className="evidence-card" key={`${evidence.evidence_id}-${index}`}>
             <strong>{evidence.source_file}</strong>
             <span>{evidence.section_title}</span>
             <p>{evidence.excerpt}</p>
@@ -1009,10 +1141,10 @@ function EvidenceGrid({ record }: { record: AdhocEnquiryRecord }) {
       </section>
       <section>
         <h3>Guardrails</h3>
-        {record.draft.guardrails.map((guardrail) => (
+        {record.draft.guardrails.map((guardrail, index) => (
           <article
             className={guardrail.passed ? "guardrail-card pass" : "guardrail-card fail"}
-            key={guardrail.name}
+            key={`${guardrail.name}-${index}`}
           >
             <strong>{guardrail.passed ? "Pass" : "Review"}</strong>
             <p>{guardrail.message}</p>
