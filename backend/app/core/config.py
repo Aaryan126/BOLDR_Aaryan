@@ -10,7 +10,11 @@ class Settings(BaseSettings):
     app_phase: str = "phase-12-external-benchmarking"
     app_env: str = "development"
     cors_origins_raw: str = Field(
-        default="http://localhost:3000,http://127.0.0.1:3000",
+        default=(
+            "http://localhost:3000,http://127.0.0.1:3000,"
+            "http://localhost:3001,http://127.0.0.1:3001,"
+            "http://localhost:3002,http://127.0.0.1:3002"
+        ),
         validation_alias="CORS_ORIGINS",
     )
     ai_provider: str = Field(default="fpt_ai_factory", validation_alias="AI_PROVIDER")

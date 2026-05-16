@@ -14,8 +14,8 @@ import type {
   TicketWorkflowSummary,
   WorkflowOverview,
 } from "@/lib/api";
+import { ChatWorkspaceClient } from "@/components/chat-workspace-client";
 import { ExternalBenchmarkClient } from "@/components/external-benchmark-client";
-import { GuidedLoopDemo } from "@/components/guided-loop-demo";
 import { InsightsClient } from "@/components/insights-client";
 import { QualityPanel } from "@/components/quality-panel";
 import { WorkbenchClient } from "@/components/workbench-client";
@@ -210,8 +210,6 @@ type DashboardShellProps = {
 };
 
 export function DashboardShell({
-  answerCaseDetail,
-  gapCaseDetail,
   health,
   datasetOverview,
   classificationOverview,
@@ -804,16 +802,13 @@ export function DashboardShell({
   );
 
   return (
-    <GuidedLoopDemo
-      answerCaseDetail={answerCaseDetail}
-      draftOverview={draftOverview}
-      gapCaseDetail={gapCaseDetail}
-      health={health}
+    <ChatWorkspaceClient
+      datasetOverview={datasetOverview}
       initialGapMetrics={initialGapMetrics}
       initialGaps={initialGaps}
       initialTickets={initialTickets}
       insightsOverview={insightsOverview}
-      retrievalOverview={retrievalOverview}
+      isHealthy={isHealthy}
       systemDetails={systemDetails}
       workflowOverview={workflowOverview}
     />

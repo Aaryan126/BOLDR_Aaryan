@@ -1,0 +1,1075 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import type {
+  AdhocEnquiryRecord,
+  DatasetOverview,
+  GapMetrics,
+  InsightsOverview,
+  KnowledgeGapRecord,
+  TicketWorkflowSummary,
+  TraceEvent,
+  WorkflowOverview,
+} from "@/lib/api";
+
+type WorkspaceTab =
+  | "chat"
+  | "approvals"
+  | "cs"
+  | "kb"
+  | "marketing"
+  | "system";
+
+type ChatWorkspaceClientProps = {
+  datasetOverview: DatasetOverview;
+  initialTickets: TicketWorkflowSummary[];
+  initialGaps: KnowledgeGapRecord[];
+  initialGapMetrics: GapMetrics | null;
+  insightsOverview: InsightsOverview;
+  workflowOverview: WorkflowOverview;
+  systemDetails: ReactNode;
+  isHealthy: boolean;
+};
+
+const tabs: Array<{ id: WorkspaceTab; label: string }> = [
+  { id: "chat", label: "Customer Chat" },
+  { id: "approvals", label: "Approvals" },
+  { id: "cs", label: "CS Queue" },
+  { id: "kb", label: "Knowledge Base" },
+  { id: "marketing", label: "Marketing Intel" },
+  { id: "system", label: "System Details" },
+];
+
+const requiredPersonas = [
+  "Health-Conscious Buyer",
+  "Gifter",
+  "Enthusiast / Collector",
+  "Active / Outdoor Buyer",
+  "Sustainability Advocate",
+];
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const detail = body?.detail ?? `Request failed with ${response.status}`;
+    throw new Error(Array.isArray(detail) ? "Validation failed" : detail);
+  }
+
+  return (await response.json()) as T;
+}
+
+function getApiBaseUrl() {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  }
+  return "http://localhost:8000";
+}
+
+function formatLabel(value: string) {
+  return value.replaceAll("_", " ");
+}
+
+function samplePriority(ticket: TicketWorkflowSummary) {
+  const text = `${ticket.ticket_id} ${ticket.subject} ${ticket.intent} ${ticket.persona}`.toLowerCase();
+  const patterns = [
+    /bpa|safe|hypoallergenic/,
+    /vegan|sustain|carbon|eco/,
+    /engraving|engrave/,
+    /service|regulation|battery/,
+    /strap|lug|nato|quick-release/,
+    /order|tracking|refund/,
+  ];
+  const index = patterns.findIndex((pattern) => pattern.test(text));
+  return index === -1 ? patterns.length : index;
+}
+
+function upsertRecord(records: AdhocEnquiryRecord[], next: AdhocEnquiryRecord) {
+  const existing = records.some((record) => record.enquiry_id === next.enquiry_id);
+  if (!existing) {
+    return [...records, next];
+  }
+  return records.map((record) => (record.enquiry_id === next.enquiry_id ? next : record));
+}
+
+export function ChatWorkspaceClient({
+  datasetOverview,
+  initialTickets,
+  initialGaps,
+  initialGapMetrics,
+  insightsOverview,
+  workflowOverview,
+  systemDetails,
+  isHealthy,
+}: ChatWorkspaceClientProps) {
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("chat");
+  const [enquiries, setEnquiries] = useState<AdhocEnquiryRecord[]>([]);
+  const [composer, setComposer] = useState("");
+  const [selectedSampleId, setSelectedSampleId] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [selectedApprovalId, setSelectedApprovalId] = useState("");
+  const [selectedGapId, setSelectedGapId] = useState("");
+  const [approvalDraft, setApprovalDraft] = useState("");
+  const [approvalNote, setApprovalNote] = useState("");
+  const [gapResolution, setGapResolution] = useState("");
+  const [gapNote, setGapNote] = useState("");
+  const [kbReviewNote, setKbReviewNote] = useState("");
+
+  const sampleOptions = useMemo(
+    () =>
+      [...initialTickets]
+        .sort((a, b) => samplePriority(a) - samplePriority(b) || a.ticket_id.localeCompare(b.ticket_id))
+        .slice(0, 10),
+    [initialTickets],
+  );
+
+  const approvalQueue = useMemo(
+    () =>
+      enquiries.filter(
+        (record) =>
+          record.draft.decision.reply_type === "customer_reply" &&
+          ["awaiting_approval", "approved", "rejected"].includes(record.state),
+      ),
+    [enquiries],
+  );
+
+  const gapQueue = useMemo(
+    () => enquiries.filter((record) => Boolean(record.gap_state)),
+    [enquiries],
+  );
+
+  const selectedApproval =
+    approvalQueue.find((record) => record.enquiry_id === selectedApprovalId) ??
+    approvalQueue[0] ??
+    null;
+  const selectedGap =
+    gapQueue.find((record) => record.enquiry_id === selectedGapId) ?? gapQueue[0] ?? null;
+
+  const diagnostics = datasetOverview.diagnostics;
+  const workflowStatus = workflowOverview.statusReport;
+  const themeRadar = insightsOverview.themeRadar;
+  const marketingBrief = insightsOverview.marketingBrief;
+
+  const livePersonaCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    enquiries.forEach((record) => {
+      counts[record.classification.persona] =
+        (counts[record.classification.persona] ?? 0) + 1;
+    });
+    return counts;
+  }, [enquiries]);
+
+  const liveGapThemes = useMemo(() => {
+    const counts: Record<string, number> = {};
+    gapQueue.forEach((record) => {
+      const theme = record.gap_state?.gap_theme ?? "Unclassified gap";
+      counts[theme] = (counts[theme] ?? 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [gapQueue]);
+
+  const approvedKbAdditions = gapQueue.filter(
+    (record) => record.gap_state?.status === "approved" && record.gap_state.kb_draft,
+  );
+  const pendingKbDrafts = gapQueue.filter(
+    (record) =>
+      record.gap_state?.status === "kb_draft_ready" ||
+      record.gap_state?.status === "resolved_needs_kb_draft" ||
+      record.gap_state?.status === "needs_resolution" ||
+      record.gap_state?.status === "rejected",
+  );
+  const productPageSignals = gapQueue.filter(
+    (record) => record.gap_state?.product_page_update_needed,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEnquiries() {
+      try {
+        const data = await fetchJson<AdhocEnquiryRecord[]>("/api/enquiries");
+        if (!cancelled) {
+          setEnquiries(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setStatusMessage(
+            error instanceof Error ? error.message : "Could not load demo enquiries.",
+          );
+        }
+      }
+    }
+
+    void loadEnquiries();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedApproval && approvalQueue[0]) {
+      setSelectedApprovalId(approvalQueue[0].enquiry_id);
+    }
+  }, [approvalQueue, selectedApproval]);
+
+  useEffect(() => {
+    if (!selectedGap && gapQueue[0]) {
+      setSelectedGapId(gapQueue[0].enquiry_id);
+    }
+  }, [gapQueue, selectedGap]);
+
+  useEffect(() => {
+    if (!selectedApproval) {
+      setApprovalDraft("");
+      setApprovalNote("");
+      return;
+    }
+    setApprovalDraft(
+      selectedApproval.approval_state.edited_reply ??
+        selectedApproval.draft.draft.draft_reply,
+    );
+    setApprovalNote(selectedApproval.approval_state.reviewer_note ?? "");
+  }, [selectedApproval?.enquiry_id, selectedApproval]);
+
+  useEffect(() => {
+    if (!selectedGap?.gap_state) {
+      setGapResolution("");
+      setGapNote("");
+      setKbReviewNote("");
+      return;
+    }
+    setGapResolution(selectedGap.gap_state.human_resolution ?? "");
+    setGapNote(selectedGap.gap_state.reviewer_note ?? "");
+    setKbReviewNote(selectedGap.gap_state.kb_review_note ?? "");
+  }, [selectedGap?.enquiry_id, selectedGap]);
+
+  async function submitEnquiry() {
+    const selectedSample = sampleOptions.find(
+      (sample) => sample.ticket_id === selectedSampleId,
+    );
+    const message = composer.trim() || selectedSample?.subject || "";
+    if (!message.trim()) {
+      setStatusMessage("Enter a customer question or choose a sample enquiry.");
+      return;
+    }
+
+    setLoadingAction("submit");
+    setStatusMessage("");
+    try {
+      const record = await fetchJson<AdhocEnquiryRecord>("/api/enquiries", {
+        method: "POST",
+        body: JSON.stringify({
+          message,
+          customer_name: "Demo Customer",
+          customer_email: "demo.customer@example.com",
+          source: selectedSample ? "sample_dropdown" : "judge_chat",
+          sample_ticket_id: selectedSample?.ticket_id ?? null,
+        }),
+      });
+      setEnquiries((current) => upsertRecord(current, record));
+      if (record.draft.decision.reply_type === "customer_reply") {
+        setSelectedApprovalId(record.enquiry_id);
+      }
+      if (record.gap_state) {
+        setSelectedGapId(record.enquiry_id);
+      }
+      setComposer("");
+      setSelectedSampleId("");
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Enquiry failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function reviewAnswer(status: "approved" | "edited_and_approved" | "rejected") {
+    if (!selectedApproval) {
+      return;
+    }
+    setLoadingAction(status);
+    setStatusMessage("");
+    try {
+      const record = await fetchJson<AdhocEnquiryRecord>(
+        `/api/enquiries/${selectedApproval.enquiry_id}/approve`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            status,
+            edited_reply: status === "edited_and_approved" ? approvalDraft : null,
+            reviewer_note: approvalNote || null,
+          }),
+        },
+      );
+      setEnquiries((current) => upsertRecord(current, record));
+      setStatusMessage(`Updated ${record.enquiry_id}: ${formatLabel(record.state)}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Review failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function resolveGap() {
+    if (!selectedGap) {
+      return;
+    }
+    setLoadingAction("resolve-gap");
+    setStatusMessage("");
+    try {
+      const record = await fetchJson<AdhocEnquiryRecord>(
+        `/api/enquiries/${selectedGap.enquiry_id}/resolve-gap`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            human_resolution: gapResolution,
+            reviewer_note: gapNote || "Resolved in the CS queue.",
+          }),
+        },
+      );
+      setEnquiries((current) => upsertRecord(current, record));
+      setStatusMessage(`Resolved gap for ${record.enquiry_id}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Gap resolution failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function draftKbEntry() {
+    if (!selectedGap) {
+      return;
+    }
+    setLoadingAction("draft-kb");
+    setStatusMessage("");
+    try {
+      const record = await fetchJson<AdhocEnquiryRecord>(
+        `/api/enquiries/${selectedGap.enquiry_id}/draft-kb`,
+        { method: "POST" },
+      );
+      setEnquiries((current) => upsertRecord(current, record));
+      setActiveTab("kb");
+      setStatusMessage(`KB draft ready for ${record.enquiry_id}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "KB draft failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function reviewKbEntry(status: "approved" | "rejected") {
+    if (!selectedGap) {
+      return;
+    }
+    setLoadingAction(`kb-${status}`);
+    setStatusMessage("");
+    try {
+      const record = await fetchJson<AdhocEnquiryRecord>(
+        `/api/enquiries/${selectedGap.enquiry_id}/review-kb`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            status,
+            reviewer_note:
+              kbReviewNote ||
+              (status === "approved"
+                ? "Approved for the demo knowledge base."
+                : "Rejected for revision."),
+          }),
+        },
+      );
+      setEnquiries((current) => upsertRecord(current, record));
+      setStatusMessage(`KB draft ${status} for ${record.enquiry_id}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "KB review failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  return (
+    <main className="chat-product-shell">
+      <header className="chat-product-topbar">
+        <div className="chat-product-brand">
+          <span>BOLDR</span>
+          <strong>Revenue Rocket</strong>
+        </div>
+        <nav className="workspace-tabs" aria-label="Workspace tabs">
+          {tabs.map((tab) => (
+            <button
+              className={activeTab === tab.id ? "workspace-tab active" : "workspace-tab"}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              type="button"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+        <div className={isHealthy ? "backend-pill ok" : "backend-pill bad"}>
+          Backend {isHealthy ? "connected" : "offline"}
+        </div>
+      </header>
+
+      {statusMessage ? (
+        <div className="workspace-status" role="status">
+          {statusMessage}
+        </div>
+      ) : null}
+
+      {activeTab === "chat" ? (
+        <section className="workspace-view chat-view" aria-labelledby="chat-heading">
+          <div className="chat-main-panel">
+            <div className="chat-heading">
+              <div>
+                <p className="eyebrow">Customer Chat</p>
+                <h1 id="chat-heading">Ask BOLDR support intelligence anything.</h1>
+              </div>
+              <div className="chat-counts">
+                <span>{enquiries.length} demo enquiries</span>
+                <span>{approvalQueue.filter((record) => record.state === "awaiting_approval").length} approvals</span>
+                <span>{gapQueue.filter((record) => record.gap_state?.status === "needs_resolution").length} CS gaps</span>
+              </div>
+            </div>
+
+            <div className="message-stream" aria-live="polite">
+              {enquiries.length === 0 ? (
+                <div className="empty-chat-state">
+                  <p className="eyebrow">Ready</p>
+                  <h2>Type a question or run a real sample enquiry.</h2>
+                  <p>
+                    The system will classify the buyer persona, search BOLDR sources,
+                    expose the evidence path, and pause for human approval before a
+                    customer answer is shown.
+                  </p>
+                </div>
+              ) : (
+                enquiries.map((record) => (
+                  <ConversationRecord key={record.enquiry_id} record={record} />
+                ))
+              )}
+            </div>
+
+            <div className="chat-composer">
+              <select
+                aria-label="Try a sample enquiry"
+                onChange={(event) => setSelectedSampleId(event.target.value)}
+                value={selectedSampleId}
+              >
+                <option value="">Try a sample enquiry</option>
+                {sampleOptions.map((ticket) => (
+                  <option key={ticket.ticket_id} value={ticket.ticket_id}>
+                    {ticket.ticket_id} - {ticket.subject}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                aria-label="Customer question"
+                onChange={(event) => setComposer(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                    event.preventDefault();
+                    void submitEnquiry();
+                  }
+                }}
+                placeholder="Example: Are BOLDR's FKM rubber straps BPA-free and safe for kids?"
+                value={composer}
+              />
+              <button
+                className="primary-action rugged-action"
+                disabled={loadingAction === "submit"}
+                onClick={submitEnquiry}
+                type="button"
+              >
+                {loadingAction === "submit" ? "Processing" : "Send"}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "approvals" ? (
+        <section className="workspace-view queue-view" aria-labelledby="approvals-heading">
+          <QueueList
+            emptyLabel="No answerable demo drafts yet."
+            items={approvalQueue}
+            selectedId={selectedApproval?.enquiry_id ?? ""}
+            title="Approval Queue"
+            onSelect={setSelectedApprovalId}
+          />
+          <div className="queue-detail-panel">
+            {selectedApproval ? (
+              <>
+                <PanelHeading
+                  eyebrow={selectedApproval.enquiry_id}
+                  title={selectedApproval.ticket.subject}
+                  status={formatLabel(selectedApproval.approval_state.status)}
+                />
+                <SignalRow
+                  values={[
+                    selectedApproval.classification.persona,
+                    selectedApproval.classification.intent,
+                    `${selectedApproval.retrieval.evidence.length} evidence cards`,
+                    formatLabel(selectedApproval.state),
+                  ]}
+                />
+                <div className="detail-grid two">
+                  <InfoBlock label="Customer Question" text={selectedApproval.ticket.message_body} />
+                  <InfoBlock
+                    label="Routing Guardrail"
+                    text={selectedApproval.classification.routing_reason}
+                  />
+                </div>
+                <label className="field-stack">
+                  <span>Draft Reply</span>
+                  <textarea
+                    onChange={(event) => setApprovalDraft(event.target.value)}
+                    value={approvalDraft}
+                  />
+                </label>
+                <label className="field-stack">
+                  <span>Reviewer Note</span>
+                  <input
+                    onChange={(event) => setApprovalNote(event.target.value)}
+                    placeholder="Optional note"
+                    value={approvalNote}
+                  />
+                </label>
+                <div className="action-row">
+                  <button
+                    className="secondary-action"
+                    disabled={loadingAction !== null || selectedApproval.state === "approved"}
+                    onClick={() => void reviewAnswer("approved")}
+                    type="button"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    className="primary-action"
+                    disabled={loadingAction !== null || approvalDraft.trim().length < 5}
+                    onClick={() => void reviewAnswer("edited_and_approved")}
+                    type="button"
+                  >
+                    Edit & Approve
+                  </button>
+                  <button
+                    className="danger-action"
+                    disabled={loadingAction !== null}
+                    onClick={() => void reviewAnswer("rejected")}
+                    type="button"
+                  >
+                    Reject
+                  </button>
+                </div>
+                <EvidenceGrid record={selectedApproval} />
+              </>
+            ) : (
+              <EmptyPanel title="No pending approvals" text="Answerable demo enquiries will appear here." />
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "cs" ? (
+        <section className="workspace-view queue-view" aria-labelledby="cs-heading">
+          <QueueList
+            emptyLabel="No unresolved demo gaps yet."
+            items={gapQueue}
+            selectedId={selectedGap?.enquiry_id ?? ""}
+            title="CS Queue"
+            onSelect={setSelectedGapId}
+          />
+          <div className="queue-detail-panel">
+            {selectedGap?.gap_state ? (
+              <>
+                <PanelHeading
+                  eyebrow={`${selectedGap.gap_state.priority} priority`}
+                  title={selectedGap.gap_state.gap_theme}
+                  status={formatLabel(selectedGap.gap_state.status)}
+                />
+                <SignalRow
+                  values={[
+                    selectedGap.classification.persona,
+                    selectedGap.gap_state.owner,
+                    selectedGap.gap_state.product_page_update_needed
+                      ? "Product-page gap"
+                      : "Support-only gap",
+                    selectedGap.gap_state.marketing_signal
+                      ? "Marketing signal"
+                      : "No marketing flag",
+                  ]}
+                />
+                <div className="detail-grid two">
+                  <InfoBlock label="Customer Question" text={selectedGap.ticket.message_body} />
+                  <InfoBlock label="Missing Knowledge" text={selectedGap.gap_state.missing_knowledge} />
+                  <InfoBlock label="Suggested Next Action" text={selectedGap.gap_state.suggested_next_action} />
+                  <InfoBlock
+                    label="Evidence Attempted"
+                    text={
+                      selectedGap.retrieval.evidence[0]?.excerpt ??
+                      "No local evidence produced a definitive answer."
+                    }
+                  />
+                </div>
+                <label className="field-stack">
+                  <span>Verified Resolution</span>
+                  <textarea
+                    onChange={(event) => setGapResolution(event.target.value)}
+                    value={gapResolution}
+                  />
+                </label>
+                <label className="field-stack">
+                  <span>Resolution Note</span>
+                  <input
+                    onChange={(event) => setGapNote(event.target.value)}
+                    placeholder="Optional CS note"
+                    value={gapNote}
+                  />
+                </label>
+                <div className="action-row">
+                  <button
+                    className="secondary-action"
+                    disabled={loadingAction !== null || gapResolution.trim().length < 3}
+                    onClick={resolveGap}
+                    type="button"
+                  >
+                    Resolve Gap
+                  </button>
+                  <button
+                    className="primary-action"
+                    disabled={loadingAction !== null || !selectedGap.gap_state.human_resolution}
+                    onClick={draftKbEntry}
+                    type="button"
+                  >
+                    Draft KB Entry
+                  </button>
+                </div>
+              </>
+            ) : (
+              <EmptyPanel title="No CS ticket selected" text="Unanswerable enquiries will route here." />
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "kb" ? (
+        <section className="workspace-view kb-view" aria-labelledby="kb-heading">
+          <div className="knowledge-summary">
+            <PanelHeading
+              eyebrow="Knowledge Base"
+              title="Source coverage and generated additions"
+              status={`${diagnostics?.document_chunk_count ?? 0} chunks`}
+            />
+            <div className="metric-strip">
+              <Metric label="FAQ entries" value={diagnostics?.faq_entry_count ?? 0} />
+              <Metric label="Product models" value={diagnostics?.product_model_count ?? 0} />
+              <Metric label="Strap SKUs" value={diagnostics?.strap_item_count ?? 0} />
+              <Metric label="Demo KB drafts" value={gapQueue.filter((record) => record.gap_state?.kb_draft).length} />
+            </div>
+            <div className="source-chip-grid">
+              {datasetOverview.sources.map((source) => (
+                <span key={source.file_name}>
+                  {source.file_name} - {source.exists ? "ready" : "missing"}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="kb-columns">
+            <section className="kb-column">
+              <h2>Draft Queue</h2>
+              {pendingKbDrafts.length === 0 ? (
+                <EmptyPanel title="No generated KB drafts" text="Resolve a CS gap to create a draft." />
+              ) : (
+                pendingKbDrafts.map((record) => (
+                  <KBDraftCard
+                    key={record.enquiry_id}
+                    record={record}
+                    selected={selectedGap?.enquiry_id === record.enquiry_id}
+                    onSelect={() => setSelectedGapId(record.enquiry_id)}
+                  />
+                ))
+              )}
+            </section>
+            <section className="kb-column">
+              <h2>Approved Additions</h2>
+              {approvedKbAdditions.length === 0 ? (
+                <EmptyPanel title="No approved additions yet" text="Approved KB drafts will collect here." />
+              ) : (
+                approvedKbAdditions.map((record) => <KBDraftCard key={record.enquiry_id} record={record} />)
+              )}
+            </section>
+          </div>
+
+          {selectedGap?.gap_state?.kb_draft ? (
+            <div className="kb-review-panel">
+              <PanelHeading
+                eyebrow={selectedGap.enquiry_id}
+                title={selectedGap.gap_state.kb_draft.question}
+                status={formatLabel(selectedGap.gap_state.status)}
+              />
+              <p>{selectedGap.gap_state.kb_draft.answer}</p>
+              <label className="field-stack">
+                <span>KB Review Note</span>
+                <input
+                  onChange={(event) => setKbReviewNote(event.target.value)}
+                  placeholder="Optional KB review note"
+                  value={kbReviewNote}
+                />
+              </label>
+              <div className="action-row">
+                <button
+                  className="secondary-action"
+                  disabled={loadingAction !== null}
+                  onClick={() => void reviewKbEntry("approved")}
+                  type="button"
+                >
+                  Approve KB Draft
+                </button>
+                <button
+                  className="danger-action"
+                  disabled={loadingAction !== null}
+                  onClick={() => void reviewKbEntry("rejected")}
+                  type="button"
+                >
+                  Reject KB Draft
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {activeTab === "marketing" ? (
+        <section className="workspace-view marketing-view" aria-labelledby="marketing-heading">
+          <PanelHeading
+            eyebrow="Marketing Intel"
+            title="Customer questions becoming product and campaign signals"
+            status={`${themeRadar?.meta.theme_count ?? 0} existing themes`}
+          />
+          <div className="metric-strip">
+            <Metric label="Dataset themes" value={themeRadar?.meta.theme_count ?? 0} />
+            <Metric label="Demo signals" value={enquiries.length} />
+            <Metric label="Live gaps" value={gapQueue.length} />
+            <Metric label="Product-page gaps" value={productPageSignals.length} />
+          </div>
+
+          <div className="marketing-grid">
+            <section className="marketing-panel">
+              <h2>Five-persona breakdown</h2>
+              <div className="persona-signal-list">
+                {requiredPersonas.map((persona) => (
+                  <div key={persona}>
+                    <span>{persona}</span>
+                    <strong>{livePersonaCounts[persona] ?? 0}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="marketing-panel">
+              <h2>Live demo signals</h2>
+              {liveGapThemes.length === 0 ? (
+                <p className="muted-copy">Submit a gap enquiry to create a live signal.</p>
+              ) : (
+                liveGapThemes.map(([theme, count]) => (
+                  <article className="signal-card" key={theme}>
+                    <strong>{theme}</strong>
+                    <span>{count} enquiry signal{count === 1 ? "" : "s"}</span>
+                    <p>
+                      Recommended action: add product-page proof points and FAQ copy before
+                      using this claim in campaigns.
+                    </p>
+                  </article>
+                ))
+              )}
+            </section>
+
+            <section className="marketing-panel">
+              <h2>Existing theme radar</h2>
+              {(themeRadar?.data ?? []).slice(0, 4).map((theme) => (
+                <article className="signal-card" key={theme.theme_name}>
+                  <strong>{theme.theme_name}</strong>
+                  <span>{theme.frequency} tickets</span>
+                  <p>{theme.recommended_marketing_action}</p>
+                </article>
+              ))}
+            </section>
+
+            <section className="marketing-panel">
+              <h2>Campaign and page actions</h2>
+              {(marketingBrief?.opportunities ?? []).slice(0, 4).map((opportunity) => (
+                <article className="signal-card" key={opportunity.theme_name}>
+                  <strong>{opportunity.campaign_angle}</strong>
+                  <span>{opportunity.persona_focus.join(", ")}</span>
+                  <p>{opportunity.recommended_action}</p>
+                </article>
+              ))}
+            </section>
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "system" ? (
+        <section className="workspace-view system-details-view">
+          <div className="system-summary-bar">
+            <span>{workflowStatus?.stable_endpoint_count ?? 0} stable endpoints</span>
+            <span>{initialGaps.length} dataset gaps</span>
+            <span>{initialGapMetrics?.product_page_update_needed_count ?? 0} product-page gaps</span>
+          </div>
+          {systemDetails}
+        </section>
+      ) : null}
+    </main>
+  );
+}
+
+function ConversationRecord({ record }: { record: AdhocEnquiryRecord }) {
+  return (
+    <article className="conversation-record">
+      <div className="chat-message user">
+        <span>{record.customer_name}</span>
+        <p>{record.ticket.message_body}</p>
+      </div>
+      <div className="ai-review-block">
+        <div className="ai-review-heading">
+          <span>AI review</span>
+          <strong>{record.enquiry_id}</strong>
+        </div>
+        <div className="trace-list">
+          {record.processing_trace.map((event) => (
+            <TraceRow event={event} key={event.step} />
+          ))}
+        </div>
+      </div>
+      <div className="chat-message assistant">
+        <span>BOLDR Intelligence</span>
+        <p>{customerStateMessage(record)}</p>
+        {record.customer_visible_response ? (
+          <blockquote>{record.customer_visible_response}</blockquote>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function customerStateMessage(record: AdhocEnquiryRecord) {
+  if (record.customer_visible_response) {
+    return "Approved answer released to the customer chat.";
+  }
+  if (record.state === "awaiting_approval") {
+    return "Draft prepared. Awaiting BOLDR team approval.";
+  }
+  if (record.state === "rejected") {
+    return "Draft rejected. The BOLDR team should revise before replying.";
+  }
+  if (record.state === "needs_team_confirmation") {
+    return "This needs team confirmation. A CS ticket has been created.";
+  }
+  if (record.state === "gap_resolved") {
+    return "Team confirmation added. A KB draft can now be generated.";
+  }
+  if (record.state === "kb_draft_ready") {
+    return "Verified resolution converted into a KB draft for approval.";
+  }
+  if (record.state === "kb_approved") {
+    return "KB addition approved and available for future support answers.";
+  }
+  if (record.state === "kb_rejected") {
+    return "KB draft rejected for revision.";
+  }
+  return formatLabel(record.state);
+}
+
+function TraceRow({ event }: { event: TraceEvent }) {
+  return (
+    <details className={`trace-row ${event.status}`} open={event.status === "blocked"}>
+      <summary>
+        <span>{event.title}</span>
+        <strong>{formatLabel(event.status)}</strong>
+      </summary>
+      <p>{event.detail}</p>
+      {event.source_refs.length > 0 ? (
+        <div className="trace-source-list">
+          {event.source_refs.map((source) => (
+            <em key={source}>{source}</em>
+          ))}
+        </div>
+      ) : null}
+    </details>
+  );
+}
+
+function QueueList({
+  emptyLabel,
+  items,
+  selectedId,
+  title,
+  onSelect,
+}: {
+  emptyLabel: string;
+  items: AdhocEnquiryRecord[];
+  selectedId: string;
+  title: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <aside className="queue-list-panel">
+      <div className="queue-title">
+        <p className="eyebrow">{title}</p>
+        <strong>{items.length}</strong>
+      </div>
+      {items.length === 0 ? (
+        <p className="muted-copy">{emptyLabel}</p>
+      ) : (
+        <div className="queue-list">
+          {items.map((record) => (
+            <button
+              className={selectedId === record.enquiry_id ? "queue-row active" : "queue-row"}
+              key={record.enquiry_id}
+              onClick={() => onSelect(record.enquiry_id)}
+              type="button"
+            >
+              <span>
+                <strong>{record.enquiry_id}</strong>
+                <small>{record.ticket.subject}</small>
+              </span>
+              <em>{formatLabel(record.state)}</em>
+            </button>
+          ))}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function PanelHeading({
+  eyebrow,
+  status,
+  title,
+}: {
+  eyebrow: string;
+  status: string;
+  title: string;
+}) {
+  return (
+    <div className="panel-heading rugged-heading">
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2>{title}</h2>
+      </div>
+      <span className="status-pill">{status}</span>
+    </div>
+  );
+}
+
+function SignalRow({ values }: { values: string[] }) {
+  return (
+    <div className="signal-row">
+      {values.map((value) => (
+        <span key={value}>{value}</span>
+      ))}
+    </div>
+  );
+}
+
+function InfoBlock({ label, text }: { label: string; text: string }) {
+  return (
+    <div className="info-block">
+      <span>{label}</span>
+      <p>{text}</p>
+    </div>
+  );
+}
+
+function EvidenceGrid({ record }: { record: AdhocEnquiryRecord }) {
+  return (
+    <div className="evidence-grid">
+      <section>
+        <h3>Evidence</h3>
+        {record.retrieval.evidence.slice(0, 4).map((evidence) => (
+          <article className="evidence-card" key={evidence.evidence_id}>
+            <strong>{evidence.source_file}</strong>
+            <span>{evidence.section_title}</span>
+            <p>{evidence.excerpt}</p>
+          </article>
+        ))}
+      </section>
+      <section>
+        <h3>Guardrails</h3>
+        {record.draft.guardrails.map((guardrail) => (
+          <article
+            className={guardrail.passed ? "guardrail-card pass" : "guardrail-card fail"}
+            key={guardrail.name}
+          >
+            <strong>{guardrail.passed ? "Pass" : "Review"}</strong>
+            <p>{guardrail.message}</p>
+          </article>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function KBDraftCard({
+  onSelect,
+  record,
+  selected = false,
+}: {
+  onSelect?: () => void;
+  record: AdhocEnquiryRecord;
+  selected?: boolean;
+}) {
+  const draft = record.gap_state?.kb_draft;
+  const content = (
+    <>
+      <span>{record.enquiry_id} - {formatLabel(record.gap_state?.status ?? record.state)}</span>
+      <strong>{draft?.question ?? record.gap_state?.gap_theme ?? record.ticket.subject}</strong>
+      <p>{draft?.answer ?? record.gap_state?.missing_knowledge ?? record.ticket.message_body}</p>
+    </>
+  );
+
+  if (onSelect) {
+    return (
+      <button
+        className={selected ? "kb-draft-tile active" : "kb-draft-tile"}
+        onClick={onSelect}
+        type="button"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <article className="kb-draft-tile approved">{content}</article>;
+}
+
+function Metric({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function EmptyPanel({ text, title }: { text: string; title: string }) {
+  return (
+    <div className="empty-panel">
+      <h2>{title}</h2>
+      <p>{text}</p>
+    </div>
+  );
+}

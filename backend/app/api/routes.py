@@ -9,8 +9,15 @@ from app.models.classification import (
     RequiredPersona,
     TicketClassification,
 )
-from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
+from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile, TicketRecord
 from app.models.drafting import ApprovalStatus, DraftEvaluation, DraftReviewRequest, TicketDraft
+from app.models.enquiry import (
+    AdhocEnquiryRecord,
+    AdhocEnquiryRequest,
+    EnquiryApprovalRequest,
+    EnquiryGapResolutionRequest,
+    EnquiryKBReviewRequest,
+)
 from app.models.evaluation import QualityScorecardResponse
 from app.models.external import (
     ExternalBenchmarkResponse,
@@ -51,6 +58,17 @@ from app.services.drafts import (
     get_ticket_draft,
     list_ticket_drafts,
     review_ticket_draft,
+)
+from app.services.enquiries import (
+    EnquiryTransitionError,
+    create_enquiry,
+    draft_enquiry_kb_entry,
+    get_enquiry,
+    list_enquiries,
+    list_prioritized_sample_tickets,
+    resolve_enquiry_gap,
+    review_enquiry_answer,
+    review_enquiry_kb_entry,
 )
 from app.services.evaluation import get_quality_scorecard
 from app.services.external import (
@@ -217,6 +235,85 @@ def ai_prompt_preview(ticket_id: str) -> StructuredPromptPreview:
 @router.get("/api/drafts", tags=["drafts"])
 def ticket_drafts() -> list[TicketDraft]:
     return list_ticket_drafts()
+
+
+@router.post("/api/enquiries", tags=["enquiries"])
+def adhoc_enquiry_create(request: AdhocEnquiryRequest) -> AdhocEnquiryRecord:
+    try:
+        return create_enquiry(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/api/enquiries", tags=["enquiries"])
+def adhoc_enquiry_list() -> list[AdhocEnquiryRecord]:
+    return list_enquiries()
+
+
+@router.get("/api/enquiries/samples", tags=["enquiries"])
+def adhoc_enquiry_samples() -> list[TicketRecord]:
+    return list_prioritized_sample_tickets()
+
+
+@router.get("/api/enquiries/{enquiry_id}", tags=["enquiries"])
+def adhoc_enquiry_detail(enquiry_id: str) -> AdhocEnquiryRecord:
+    record = get_enquiry(enquiry_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Enquiry not found: {enquiry_id}")
+    return record
+
+
+@router.post("/api/enquiries/{enquiry_id}/approve", tags=["enquiries"])
+def adhoc_enquiry_approve(
+    enquiry_id: str,
+    request: EnquiryApprovalRequest,
+) -> AdhocEnquiryRecord:
+    try:
+        record = review_enquiry_answer(enquiry_id, request)
+    except EnquiryTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Enquiry not found: {enquiry_id}")
+    return record
+
+
+@router.post("/api/enquiries/{enquiry_id}/resolve-gap", tags=["enquiries"])
+def adhoc_enquiry_resolve_gap(
+    enquiry_id: str,
+    request: EnquiryGapResolutionRequest,
+) -> AdhocEnquiryRecord:
+    try:
+        record = resolve_enquiry_gap(enquiry_id, request)
+    except EnquiryTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Enquiry not found: {enquiry_id}")
+    return record
+
+
+@router.post("/api/enquiries/{enquiry_id}/draft-kb", tags=["enquiries"])
+def adhoc_enquiry_draft_kb(enquiry_id: str) -> AdhocEnquiryRecord:
+    try:
+        record = draft_enquiry_kb_entry(enquiry_id)
+    except EnquiryTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Enquiry not found: {enquiry_id}")
+    return record
+
+
+@router.post("/api/enquiries/{enquiry_id}/review-kb", tags=["enquiries"])
+def adhoc_enquiry_review_kb(
+    enquiry_id: str,
+    request: EnquiryKBReviewRequest,
+) -> AdhocEnquiryRecord:
+    try:
+        record = review_enquiry_kb_entry(enquiry_id, request)
+    except EnquiryTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Enquiry not found: {enquiry_id}")
+    return record
 
 
 @router.get("/api/drafts/evaluation", tags=["drafts"])

@@ -502,6 +502,80 @@ export type TicketWorkflowDetail = {
   draft: TicketDraftDetail;
 };
 
+export type TraceEvent = {
+  step: string;
+  status: "pending" | "running" | "completed" | "blocked";
+  title: string;
+  detail: string;
+  source_refs: string[];
+  evidence_ids: string[];
+};
+
+export type EnquiryState =
+  | "awaiting_approval"
+  | "approved"
+  | "rejected"
+  | "needs_team_confirmation"
+  | "gap_resolved"
+  | "kb_draft_ready"
+  | "kb_approved"
+  | "kb_rejected";
+
+export type AdhocGapState = {
+  status:
+    | "needs_resolution"
+    | "resolved_needs_kb_draft"
+    | "kb_draft_ready"
+    | "approved"
+    | "rejected";
+  gap_theme: string;
+  missing_knowledge: string;
+  owner: string;
+  priority: "low" | "medium" | "high";
+  suggested_next_action: string;
+  product_page_update_needed: boolean;
+  marketing_signal: boolean;
+  human_resolution: string | null;
+  reviewer_note: string | null;
+  kb_draft: {
+    gap_theme: string;
+    faq_section: string;
+    question: string;
+    answer: string;
+    source_ticket_ids: string[];
+    confidence: number;
+    reviewer_notes: string;
+  } | null;
+  kb_review_note: string | null;
+  kb_reviewed_at: string | null;
+};
+
+export type AdhocApprovalState = {
+  status: ApprovalStatus;
+  reviewer_note: string | null;
+  edited_reply: string | null;
+  approved_reply: string | null;
+};
+
+export type AdhocEnquiryRecord = {
+  enquiry_id: string;
+  created_at: string;
+  updated_at: string;
+  state: EnquiryState;
+  customer_name: string;
+  customer_email: string;
+  source: string;
+  sample_ticket_id: string | null;
+  ticket: TicketRecord;
+  classification: TicketClassificationDetail;
+  retrieval: RetrievalDetail;
+  draft: TicketDraftDetail;
+  approval_state: AdhocApprovalState;
+  gap_state: AdhocGapState | null;
+  processing_trace: TraceEvent[];
+  customer_visible_response: string | null;
+};
+
 export type TicketListResponse = {
   status: "ok";
   data: TicketWorkflowSummary[];

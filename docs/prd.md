@@ -93,6 +93,17 @@ The system must create a repeatable intelligence loop:
 - Reveal emerging buyer motivations before they become obvious.
 - Give a small CS team a tool they could realistically own.
 
+### 4.4 Current Demo Experience
+
+- The primary UI is a chat-first support intelligence workspace, not a guided loop.
+- Judges can type any customer question or run a real sample enquiry from the local ticket dataset.
+- Every ad-hoc enquiry shows a visible processing trace: reading, persona classification, knowledge search, evidence review, answerability check, and draft-or-route decision.
+- Answerable questions create a draft that waits in Approvals until a human approves, edits, or rejects it.
+- Unsupported questions create CS Queue items with missing knowledge, owner, priority, evidence attempted, and next action.
+- Human CS resolution can generate a KB draft, and KB drafts require approve/reject review before they appear as approved additions.
+- Marketing Intel combines existing theme radar data with live demo enquiry signals and explicitly maps those signals to the five required personas.
+- The prior implementation workbench, quality dashboard, external benchmarking, diagnostics, and status panels remain available under System Details.
+
 ## 5. Non-Goals
 
 - Do not auto-send customer emails in the first version.
@@ -961,11 +972,12 @@ Expected:
 
 ### Milestone 3: Workbench UI
 
-- Inbox Intelligence.
-- Ticket Review.
-- Evidence cards.
-- Approval controls.
-- Gap queue.
+- Chat-first Customer Chat landing view.
+- Real sample enquiry dropdown and free-text judge input.
+- Transparent AI review trace with source references.
+- Approval controls for answerable drafts.
+- CS Queue for unresolved gaps.
+- System Details tab preserving Inbox Intelligence, Ticket Review, evidence cards, diagnostics, quality, and external benchmarking.
 
 ### Milestone 4: Self-Improving KB Loop
 
@@ -1055,10 +1067,12 @@ Later integration should:
 Core challenge is complete when:
 
 - The app processes all 70 local tickets.
+- The app can process ad-hoc judge questions through the same deterministic classification, retrieval, and drafting gates.
 - It searches all six actual dataset files.
 - Each processed ticket has intent, persona, answerability, evidence, and action.
 - Answerable tickets receive source-grounded reply drafts.
 - Non-answerable tickets create gap or order-lookup records.
+- Ad-hoc customer-facing replies and KB entries remain behind human approval gates.
 - Human resolution can produce a draft FAQ entry with an explicit approve/reject review gate.
 - Weekly theme clusters can be generated across all 70 tickets.
 - Monthly marketing brief can be generated with evidence-backed opportunities.

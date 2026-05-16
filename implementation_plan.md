@@ -920,10 +920,17 @@ Decision to proceed: Pending user review
 
 ## 17. Phase 13: Demo Polish And Competition Readiness
 
+Status: Partially implemented; chat-first workspace and ad-hoc enquiry loop complete.
+
 Goal: Turn the working system into a polished, stable demo.
 
 Deliverables:
 
+- Chat-first judge workflow with free-text enquiries and sample ticket dropdown. Complete.
+- In-memory ad-hoc enquiry API with approval, CS resolution, KB draft, and KB review state. Complete.
+- Dark BOLDR-styled tabbed workspace with Customer Chat, Approvals, CS Queue, Knowledge Base, Marketing Intel, and System Details. Complete.
+- Existing implementation dashboard preserved under System Details. Complete.
+- Browser smoke path for answerable approval, knowledge gap resolution, KB drafting/review, and desktop/mobile overflow. Complete.
 - Seeded demo data state.
 - One-command or documented startup.
 - Demo script.
@@ -963,6 +970,18 @@ Human verification:
 Exit criteria:
 
 - Ready for presentation/submission.
+
+Phase record:
+
+```text
+Phase: 13A Chat-first demo workflow
+Status: Implemented; awaiting human demo-owner verification
+Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval queue, CS queue, KB draft/review surface, live demo marketing signals, dev-port CORS fallback
+Default tests run: backend pytest, frontend lint/typecheck/build, git diff check, Playwright desktop/mobile smoke on answerable and gap flows
+Human verification completed: Pending
+Known issues: Demo enquiry state is in-memory and resets with backend restart; live GLM inference remains optional and is not required for this deterministic demo path
+Decision to proceed: Pending user review
+```
 
 ## 18. Future Integration Phases
 
@@ -1030,4 +1049,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 12 human verification, then start Phase 13 by polishing the final demo, reset flow, and competition story.
+Complete Phase 13A human verification, then finish the remaining Phase 13 polish: reset/seed workflow, demo script, README startup path, and final presentation story.
