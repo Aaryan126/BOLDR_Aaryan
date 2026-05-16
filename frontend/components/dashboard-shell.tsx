@@ -15,6 +15,7 @@ import type {
   WorkflowOverview,
 } from "@/lib/api";
 import { ExternalBenchmarkClient } from "@/components/external-benchmark-client";
+import { GuidedLoopDemo } from "@/components/guided-loop-demo";
 import { InsightsClient } from "@/components/insights-client";
 import { QualityPanel } from "@/components/quality-panel";
 import { WorkbenchClient } from "@/components/workbench-client";
@@ -190,6 +191,8 @@ const demoFlow = [
 ];
 
 type DashboardShellProps = {
+  answerCaseDetail: TicketWorkflowDetail | null;
+  gapCaseDetail: TicketWorkflowDetail | null;
   health: BackendHealth;
   datasetOverview: DatasetOverview;
   classificationOverview: ClassificationOverview;
@@ -207,6 +210,8 @@ type DashboardShellProps = {
 };
 
 export function DashboardShell({
+  answerCaseDetail,
+  gapCaseDetail,
   health,
   datasetOverview,
   classificationOverview,
@@ -254,8 +259,8 @@ export function DashboardShell({
       : "Waiting for brief",
   };
 
-  return (
-    <main className="workbench">
+  const systemDetails = (
+    <div className="workbench system-workbench">
       <div className="workbench-layout">
         <aside className="sidebar">
           <div className="sidebar-brand">
@@ -795,6 +800,22 @@ export function DashboardShell({
           </section>
         </section>
       </div>
-    </main>
+    </div>
+  );
+
+  return (
+    <GuidedLoopDemo
+      answerCaseDetail={answerCaseDetail}
+      draftOverview={draftOverview}
+      gapCaseDetail={gapCaseDetail}
+      health={health}
+      initialGapMetrics={initialGapMetrics}
+      initialGaps={initialGaps}
+      initialTickets={initialTickets}
+      insightsOverview={insightsOverview}
+      retrievalOverview={retrievalOverview}
+      systemDetails={systemDetails}
+      workflowOverview={workflowOverview}
+    />
   );
 }
