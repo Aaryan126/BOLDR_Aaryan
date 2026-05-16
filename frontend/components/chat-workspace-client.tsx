@@ -190,7 +190,7 @@ export function ChatWorkspaceClient({
       enquiries.filter(
         (record) =>
           record.draft.decision.reply_type === "customer_reply" &&
-          ["awaiting_approval", "approved", "rejected"].includes(record.state),
+          record.state === "awaiting_approval",
       ),
     [enquiries],
   );
