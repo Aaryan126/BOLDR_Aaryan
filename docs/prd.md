@@ -782,7 +782,7 @@ GET  /api/external/benchmarks
 POST /api/external/benchmarks/generate
 ```
 
-Implemented through Phase 9:
+Implemented through Phase 10:
 
 ```text
 GET  /health
@@ -815,13 +815,18 @@ GET  /api/gaps/{gap_id}
 POST /api/gaps/{gap_id}/resolve
 POST /api/gaps/{gap_id}/draft-kb-entry
 POST /api/gaps/{gap_id}/review-kb-entry
+GET  /api/themes/radar
+GET  /api/marketing-briefs/current
+POST /api/marketing-briefs/generate
 ```
 
-The Phase 9 frontend consumes these APIs in a single interactive workbench:
+The Phase 10 frontend consumes these APIs in a single interactive workbench:
 
 - inbox list with search, filters, and batch processing
 - ticket review with customer message, routing tags, editable draft, evidence, guardrails, and review actions
 - knowledge gap queue with verified resolution, FAQ draft generation, suggested FAQ section, product-page update flags, gap metrics, generated FAQ preview, and FAQ approve/reject review gates
+- theme radar cards with frequency, trend, persona mix, answerability mix, source ticket IDs, product-page gap flags, and recommended actions
+- monthly marketing intelligence brief with Markdown and structured opportunity cards
 
 ## 15. AI Output Contracts
 
@@ -1048,8 +1053,8 @@ Core challenge is complete when:
 - Answerable tickets receive source-grounded reply drafts.
 - Non-answerable tickets create gap or order-lookup records.
 - Human resolution can produce a draft FAQ entry with an explicit approve/reject review gate.
-- Weekly theme clusters can be generated.
-- Monthly marketing brief can be generated.
+- Weekly theme clusters can be generated across all 70 tickets.
+- Monthly marketing brief can be generated with evidence-backed opportunities.
 - Five required personas are used exactly.
 - No customer-facing answer is auto-sent.
 

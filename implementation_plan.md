@@ -722,6 +722,8 @@ Decision to proceed: Pending user review
 
 ## 14. Phase 10: Theme Radar And Marketing Brief
 
+Status: Implemented; awaiting human verification.
+
 Goal: Generate the required weekly clustering and monthly marketing intelligence outputs.
 
 Deliverables:
@@ -734,6 +736,14 @@ Deliverables:
 - Persona distribution per theme.
 - Product page gap flags.
 - Campaign/action recommendations.
+
+Implementation notes:
+
+- Added `/api/themes/radar`, `/api/marketing-briefs/current`, and `/api/marketing-briefs/generate`.
+- Theme radar deterministically clusters all 70 tickets into the nine planned business themes.
+- Theme records include frequency, trend direction, representative ticket IDs, customer wording, answerability breakdown, persona breakdown, product-page gap flag, marketing signal flag, gap count, and recommendations.
+- Monthly marketing brief outputs Markdown plus structured opportunities with persona focus, campaign angle, recommended action, evidence ticket IDs, and product-page update flag.
+- Frontend now includes Theme Radar cards, opportunity cards, and the generated marketing brief.
 
 Default tests:
 
@@ -764,6 +774,18 @@ Human verification:
 Exit criteria:
 
 - The core challenge can be demonstrated completely.
+
+Phase gate record:
+
+```text
+Phase: 10 - Theme Radar And Marketing Brief
+Status: Implemented; awaiting human verification
+Implemented: Theme radar API, marketing brief API, deterministic 70-ticket clustering, evidence-backed opportunity generation, Theme Radar UI, Markdown brief UI
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit, git diff check, Playwright desktop/mobile smoke
+Human verification completed: Pending
+Known issues: Trend direction is inferred from the sample ticket date split; durable report persistence/export files are planned later
+Decision to proceed: Pending user review
+```
 
 ## 15. Phase 11: Evaluation And Quality Dashboard
 
@@ -964,4 +986,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 9 human verification, then start Phase 10 by generating the weekly theme radar and monthly marketing intelligence outputs.
+Complete Phase 10 human verification, then start Phase 11 by adding the evaluation and quality dashboard.

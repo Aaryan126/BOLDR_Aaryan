@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-9: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, and a reviewable knowledge-gap/FAQ loop. Theme radar, marketing briefs, and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-10: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, and monthly marketing intelligence. Quality scorecards and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -254,4 +254,12 @@ docker compose down
 - Gap records include suggested FAQ section, product-page update flag, marketing signal, KB review note, and review timestamp.
 - The workbench shows gap metrics and supports approve/reject actions for drafted FAQ entries.
 - Human resolution remains required before FAQ generation, and human review remains required before publication.
+- Backend and frontend checks pass.
+
+## Phase 10 Exit Criteria
+
+- Backend serves `/api/themes/radar`, `/api/marketing-briefs/current`, and `/api/marketing-briefs/generate`.
+- Theme radar clusters all 70 tickets into the nine planned business themes with persona, answerability, evidence, trend, product-page gap, and marketing action fields.
+- Monthly marketing brief answers what customers are asking that product pages should answer better, which themes need decisions, and which campaign angles are useful.
+- Frontend shows Theme Radar cards, opportunity cards, and the generated Markdown brief.
 - Backend and frontend checks pass.

@@ -148,6 +148,73 @@ export type WorkflowOverview = {
   detail?: string;
 };
 
+export type ThemeEvidence = {
+  ticket_id: string;
+  subject: string;
+  persona: string;
+  answerability: string;
+  customer_wording: string;
+};
+
+export type ThemeRadarItem = {
+  theme_name: string;
+  frequency: number;
+  trend_direction: "rising" | "stable" | "falling";
+  representative_ticket_ids: string[];
+  common_customer_wording: string[];
+  answerability_breakdown: Record<string, number>;
+  persona_breakdown: Record<string, number>;
+  recommended_kb_action: string;
+  recommended_marketing_action: string;
+  product_page_gap: boolean;
+  marketing_signal: boolean;
+  gap_count: number;
+  evidence: ThemeEvidence[];
+};
+
+export type ThemeRadarResponse = {
+  status: "ok";
+  data: ThemeRadarItem[];
+  meta: {
+    total_ticket_count: number;
+    clustered_ticket_count: number;
+    theme_count: number;
+    generated_at: string;
+  };
+};
+
+export type MarketingOpportunity = {
+  theme_name: string;
+  persona_focus: string[];
+  insight: string;
+  recommended_action: string;
+  campaign_angle: string;
+  evidence_ticket_ids: string[];
+  product_page_update_needed: boolean;
+};
+
+export type MarketingBrief = {
+  brief_id: string;
+  period_label: string;
+  generated_at: string;
+  source_ticket_count: number;
+  theme_count: number;
+  markdown: string;
+  opportunities: MarketingOpportunity[];
+};
+
+export type MarketingBriefResponse = {
+  status: "ok";
+  data: MarketingBrief;
+};
+
+export type InsightsOverview = {
+  themeRadar: ThemeRadarResponse | null;
+  marketingBrief: MarketingBrief | null;
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export type ReplyType = "customer_reply" | "holding_reply" | "internal_note";
 
 export type ApprovalStatus =
@@ -685,6 +752,40 @@ export async function getWorkflowOverview(): Promise<WorkflowOverview> {
     return {
       status: "unavailable",
       statusReport: null,
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getInsightsOverview(): Promise<InsightsOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const [themeResponse, briefResponse] = await Promise.all([
+      fetch(`${baseUrl}/api/themes/radar`, { cache: "no-store" }),
+      fetch(`${baseUrl}/api/marketing-briefs/current`, { cache: "no-store" }),
+    ]);
+
+    if (!themeResponse.ok || !briefResponse.ok) {
+      return {
+        status: "unavailable",
+        themeRadar: null,
+        marketingBrief: null,
+        detail: "Insights endpoints are unavailable.",
+      };
+    }
+
+    const brief = (await briefResponse.json()) as MarketingBriefResponse;
+    return {
+      status: "ok",
+      themeRadar: (await themeResponse.json()) as ThemeRadarResponse,
+      marketingBrief: brief.data,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      themeRadar: null,
+      marketingBrief: null,
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }

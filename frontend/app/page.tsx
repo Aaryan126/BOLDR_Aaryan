@@ -7,6 +7,7 @@ import {
   getDraftOverview,
   getGapList,
   getGapMetrics,
+  getInsightsOverview,
   getRetrievalOverview,
   getTicketDetail,
   getTicketList,
@@ -25,6 +26,7 @@ export default async function Home() {
     ticketList,
     gapList,
     gapMetrics,
+    insightsOverview,
   ] = await Promise.all([
     getBackendHealth(),
     getDatasetOverview(),
@@ -36,6 +38,7 @@ export default async function Home() {
     getTicketList(),
     getGapList(),
     getGapMetrics(),
+    getInsightsOverview(),
   ]);
   const initialTicketId = ticketList?.data[0]?.ticket_id ?? "TKT-1048";
   const initialTicketDetail = await getTicketDetail(initialTicketId);
@@ -49,6 +52,7 @@ export default async function Home() {
       aiOverview={aiOverview}
       draftOverview={draftOverview}
       workflowOverview={workflowOverview}
+      insightsOverview={insightsOverview}
       initialTickets={ticketList?.data ?? []}
       initialGaps={gapList?.data ?? []}
       initialGapMetrics={gapMetrics?.data ?? null}

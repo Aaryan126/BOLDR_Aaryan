@@ -5,12 +5,14 @@ import type {
   DatasetOverview,
   DraftOverview,
   GapMetrics,
+  InsightsOverview,
   KnowledgeGapRecord,
   RetrievalOverview,
   TicketWorkflowDetail,
   TicketWorkflowSummary,
   WorkflowOverview,
 } from "@/lib/api";
+import { InsightsClient } from "@/components/insights-client";
 import { WorkbenchClient } from "@/components/workbench-client";
 
 const navigationItems = [
@@ -62,15 +64,21 @@ const phaseCards = [
   {
     title: "Phase 9",
     label: "Knowledge gap metrics and FAQ review loop",
-    value: "Active",
+    value: "Complete",
     tone: "green",
+  },
+  {
+    title: "Phase 10",
+    label: "Theme radar and monthly marketing brief",
+    value: "Active",
+    tone: "purple",
   },
 ];
 
 const upcomingModules = [
   {
-    title: "Phase 10",
-    body: "Generate theme radar and monthly marketing intelligence outputs.",
+    title: "Phase 11",
+    body: "Add evaluation and quality scorecards for the demo.",
   },
 ];
 
@@ -82,6 +90,7 @@ type DashboardShellProps = {
   aiOverview: AIOverview;
   draftOverview: DraftOverview;
   workflowOverview: WorkflowOverview;
+  insightsOverview: InsightsOverview;
   initialTickets: TicketWorkflowSummary[];
   initialGaps: KnowledgeGapRecord[];
   initialGapMetrics: GapMetrics | null;
@@ -96,6 +105,7 @@ export function DashboardShell({
   aiOverview,
   draftOverview,
   workflowOverview,
+  insightsOverview,
   initialTickets,
   initialGaps,
   initialGapMetrics,
@@ -134,14 +144,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 9 KB Loop</p>
+                <p className="eyebrow">Phase 10 Theme Radar</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
                   The core pipeline now ingests local tickets, assigns the five
                   required personas, retrieves explainable evidence, and creates
-                  guarded drafts inside an interactive review and KB approval workbench.
+                  guarded drafts, KB improvements, and monthly marketing intelligence.
                 </p>
               </div>
               <div
@@ -228,6 +238,11 @@ export function DashboardShell({
             initialGapMetrics={initialGapMetrics}
             initialTicketDetail={initialTicketDetail}
             initialTickets={initialTickets}
+          />
+
+          <InsightsClient
+            initialMarketingBrief={insightsOverview.marketingBrief}
+            initialThemeRadar={insightsOverview.themeRadar}
           />
 
           <section className="panel">

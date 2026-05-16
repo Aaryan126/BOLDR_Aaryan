@@ -11,6 +11,11 @@ from app.models.classification import (
 )
 from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
 from app.models.drafting import ApprovalStatus, DraftEvaluation, DraftReviewRequest, TicketDraft
+from app.models.insights import (
+    MarketingBriefRequest,
+    MarketingBriefResponse,
+    ThemeRadarResponse,
+)
 from app.models.retrieval import RetrievalEvaluation, RetrievalResult
 from app.models.workflow import (
     BatchProcessRequest,
@@ -41,6 +46,7 @@ from app.services.drafts import (
     list_ticket_drafts,
     review_ticket_draft,
 )
+from app.services.insights import generate_marketing_brief, get_theme_radar
 from app.services.retrieval import (
     get_retrieval_evaluation,
     search_knowledge,
@@ -102,12 +108,12 @@ def meta() -> dict[str, object]:
             },
             {
                 "name": "Theme Radar",
-                "status": "scaffolded",
+                "status": "insights_ready",
                 "description": "Weekly clustering and emerging signal view.",
             },
             {
                 "name": "Marketing Brief",
-                "status": "scaffolded",
+                "status": "insights_ready",
                 "description": "Monthly product and marketing intelligence output.",
             },
             {
@@ -215,6 +221,24 @@ def draft_review(ticket_id: str, review: DraftReviewRequest) -> TicketDraft:
     if draft is None:
         raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
     return draft
+
+
+@router.get("/api/themes/radar", tags=["insights"])
+def theme_radar() -> ThemeRadarResponse:
+    data, meta = get_theme_radar()
+    return ThemeRadarResponse(data=data, meta=meta)
+
+
+@router.get("/api/marketing-briefs/current", tags=["insights"])
+def current_marketing_brief() -> MarketingBriefResponse:
+    return MarketingBriefResponse(data=generate_marketing_brief())
+
+
+@router.post("/api/marketing-briefs/generate", tags=["insights"])
+def marketing_brief_generate(
+    request: MarketingBriefRequest | None = None,
+) -> MarketingBriefResponse:
+    return MarketingBriefResponse(data=generate_marketing_brief(request))
 
 
 @router.get("/api/workflow/overview", tags=["workflow"])

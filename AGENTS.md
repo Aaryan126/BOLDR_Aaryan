@@ -17,8 +17,8 @@ This repository is for the BOLDR watch e-commerce challenge: build a customer in
 - Do not invent missing files from the brief. If the workflow needs data such as a gap log, decision tree, buyer persona table, or external sentiment table, create it as a generated output or project artifact.
 - Use the five buyer personas from `docs/personas.md` exactly. The CSV contains different internal labels, so map them into the five required personas instead of exposing the CSV labels as final persona names.
 - Treat rate card CSVs as authoritative for pricing, limits, and turnaround times. Use the SOP for routing, escalation, tone, and team process.
-- Current implementation reaches Phase 9: local ingestion, deterministic classification, explainable retrieval evidence, structured AI provider contracts, evidence-gated reply drafting, stable workflow APIs, an interactive workbench UI, and a reviewable knowledge-gap/FAQ loop.
-- Retrieval APIs live under `/api/retrieval/*`, AI config/status APIs live under `/api/ai/*`, draft review APIs live under `/api/drafts/*`, and workflow APIs live under `/api/tickets`, `/api/gaps`, and `/api/workflow/overview`. Gap metrics and KB draft review are under `/api/gaps/metrics` and `/api/gaps/{gap_id}/review-kb-entry`.
+- Current implementation reaches Phase 10: local ingestion, deterministic classification, explainable retrieval evidence, structured AI provider contracts, evidence-gated reply drafting, stable workflow APIs, an interactive workbench UI, a reviewable knowledge-gap/FAQ loop, theme radar, and monthly marketing intelligence.
+- Retrieval APIs live under `/api/retrieval/*`, AI config/status APIs live under `/api/ai/*`, draft review APIs live under `/api/drafts/*`, workflow APIs live under `/api/tickets`, `/api/gaps`, and `/api/workflow/overview`, and insight APIs live under `/api/themes/radar` and `/api/marketing-briefs/*`.
 - Phase 5+ uses GLM-5.1 through FPT AI Factory. AI config lives in `.env.example`; tests must still pass without live AI credentials.
 - Preserve human approval gates. The core system should draft replies and KB updates, not auto-send or auto-publish without review.
 
