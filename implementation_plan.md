@@ -937,7 +937,7 @@ Deliverables:
 - Seeded demo data state.
 - One-command or documented startup.
 - Demo script.
-- Reset script.
+- Reset script/API/UI.
 - Screenshots or short screen recording.
 - Final README.
 - Known limitations section.
@@ -983,6 +983,18 @@ Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval q
 Default tests run: backend pytest, frontend lint/typecheck/build, git diff check, Playwright desktop/mobile smoke on answerable and gap flows
 Human verification completed: Pending
 Known issues: Demo enquiry state is in-memory and resets with backend restart; offline/test mode uses deterministic drafting, while live GLM mode blocks invalid model output for human review instead of using a template fallback
+Decision to proceed: Pending user review
+```
+
+Phase record:
+
+```text
+Phase: 13B Submission packaging and demo reset
+Status: Implemented; awaiting human verification
+Implemented: SUBMISSION.md, VIDEO_SCRIPT.md, README competition submission section, POST /api/enquiries/reset, Customer Chat Reset demo action, reset endpoint tests
+Default tests run: backend pytest, frontend lint, frontend typecheck, live reset API smoke, served frontend reset-button check
+Human verification completed: Pending
+Known issues: Live GLM/FPT smoke remains conditional on credentials; the published submission should say tests use fake/validated structured outputs when credentials are not available
 Decision to proceed: Pending user review
 ```
 
@@ -1052,4 +1064,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 13A human verification, then finish the remaining Phase 13 polish: reset/seed workflow, demo script, README startup path, and final presentation story.
+Complete human demo-owner verification, then record the final video and submit the public repo package.

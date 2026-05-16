@@ -105,6 +105,7 @@ The system must create a repeatable intelligence loop:
 - Marketing Intel now presents the two brief deliverables as explicit first-class sections: Weekly Theme Clustering and the monthly "What customers are asking that is not on your product pages" brief.
 - Marketing Intel also surfaces the bonus External Sentiment Benchmarking output with a visible shortcut, source-group counts, market-wide signal count, benchmark cards, and source links so judges do not need to open System Details.
 - The prior implementation workbench, quality dashboard, external benchmarking, diagnostics, and status panels remain available under System Details.
+- Customer Chat includes a Reset demo action that clears only in-memory ad-hoc enquiries, approval selections, CS queue selections, and draft demo state. It does not modify the source dataset, generated theme radar, marketing intelligence, or project documentation.
 
 ## 5. Non-Goals
 
@@ -1080,6 +1081,7 @@ Core challenge is complete when:
 
 - The app processes all 70 local tickets.
 - The app can process ad-hoc judge questions through the same deterministic classification, retrieval, and drafting gates.
+- The app can reset ad-hoc demo enquiry state without changing fixture-backed metrics or source records.
 - It searches all six actual dataset files.
 - Each processed ticket has intent, persona, answerability, evidence, and action.
 - Answerable tickets receive source-grounded reply drafts.

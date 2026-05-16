@@ -18,6 +18,7 @@ from app.models.enquiry import (
     EnquiryApprovalRequest,
     EnquiryGapResolutionRequest,
     EnquiryKBReviewRequest,
+    EnquiryResetResponse,
     TraceEvent,
 )
 from app.services.datasets import get_dataset_snapshot
@@ -105,6 +106,19 @@ def create_enquiry(request: AdhocEnquiryRequest) -> AdhocEnquiryRecord:
 
 def list_enquiries() -> list[AdhocEnquiryRecord]:
     return sorted(_ENQUIRIES.values(), key=lambda record: record.created_at)
+
+
+def reset_enquiries() -> EnquiryResetResponse:
+    global _ENQUIRY_SEQUENCE
+
+    cleared_count = len(_ENQUIRIES)
+    _ENQUIRIES.clear()
+    _ENQUIRY_SEQUENCE = 0
+    return EnquiryResetResponse(
+        status="reset",
+        cleared_count=cleared_count,
+        next_enquiry_id="ENQ-0001",
+    )
 
 
 def get_enquiry(enquiry_id: str) -> AdhocEnquiryRecord | None:

@@ -48,6 +48,12 @@ class AdhocEnquiryRequest(BaseModel):
     sample_ticket_id: str | None = None
 
 
+class EnquiryResetResponse(BaseModel):
+    status: Literal["reset"]
+    cleared_count: int
+    next_enquiry_id: str
+
+
 class EnquiryApprovalRequest(BaseModel):
     status: Literal["approved", "edited_and_approved", "rejected"] = "approved"
     edited_reply: str | None = None
@@ -105,4 +111,3 @@ class AdhocEnquiryRecord(BaseModel):
     gap_state: AdhocGapState | None = None
     processing_trace: list[TraceEvent]
     customer_visible_response: str | None = None
-

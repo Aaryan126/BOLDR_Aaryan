@@ -4482,6 +4482,11 @@ button {
   white-space: nowrap;
 }
 
+.reset-demo-action {
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+
 .chat-composer {
   position: sticky;
   bottom: 0;

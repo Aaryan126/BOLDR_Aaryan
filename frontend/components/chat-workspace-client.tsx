@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { resetDemoEnquiries } from "@/lib/api";
 import type {
   AdhocEnquiryRecord,
   DatasetOverview,
@@ -326,6 +327,12 @@ export function ChatWorkspaceClient({
   }, []);
 
   function startNewConversation() {
+    clearLocalDemoState();
+    setStatusMessage("");
+    requestAnimationFrame(() => scrollMessagesToBottom("auto"));
+  }
+
+  function clearLocalDemoState() {
     setEnquiries([]);
     setComposer("");
     setPendingMessage("");
@@ -337,8 +344,24 @@ export function ChatWorkspaceClient({
     setGapResolution("");
     setGapNote("");
     setKbReviewNote("");
+  }
+
+  async function resetDemo() {
+    setLoadingAction("reset-demo");
     setStatusMessage("");
-    requestAnimationFrame(() => scrollMessagesToBottom("auto"));
+    try {
+      const result = await resetDemoEnquiries();
+      clearLocalDemoState();
+      setActiveTab("chat");
+      setStatusMessage(
+        `Demo reset. Cleared ${result.cleared_count} enquiries; next ID ${result.next_enquiry_id}.`,
+      );
+      requestAnimationFrame(() => scrollMessagesToBottom("auto"));
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Demo reset failed.");
+    } finally {
+      setLoadingAction(null);
+    }
   }
 
   useEffect(() => {
@@ -632,6 +655,14 @@ export function ChatWorkspaceClient({
                   type="button"
                 >
                   New conversation
+                </button>
+                <button
+                  className="secondary-action new-conversation-action reset-demo-action"
+                  disabled={loadingAction !== null}
+                  onClick={() => void resetDemo()}
+                  type="button"
+                >
+                  {loadingAction === "reset-demo" ? "Resetting" : "Reset demo"}
                 </button>
               </div>
             </div>

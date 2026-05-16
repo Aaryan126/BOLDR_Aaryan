@@ -576,6 +576,12 @@ export type AdhocEnquiryRecord = {
   customer_visible_response: string | null;
 };
 
+export type EnquiryResetResponse = {
+  status: "reset";
+  cleared_count: number;
+  next_enquiry_id: string;
+};
+
 export type TicketListResponse = {
   status: "ok";
   data: TicketWorkflowSummary[];
@@ -1055,4 +1061,26 @@ export async function getExternalBenchmarkOverview(): Promise<ExternalBenchmarkO
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }
+}
+
+export async function resetDemoEnquiries(): Promise<EnquiryResetResponse> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    (typeof window !== "undefined"
+      ? `${window.location.protocol}//${window.location.hostname}:8000`
+      : "http://localhost:8000");
+  const response = await fetch(`${baseUrl}/api/enquiries/reset`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const detail = body?.detail ?? `Reset failed with ${response.status}`;
+    throw new Error(Array.isArray(detail) ? "Validation failed" : detail);
+  }
+
+  return (await response.json()) as EnquiryResetResponse;
 }

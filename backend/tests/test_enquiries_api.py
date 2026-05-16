@@ -140,3 +140,35 @@ def test_sample_ticket_path_uses_dataset_ticket() -> None:
     assert body["ticket"]["ticket_id"].startswith("ENQ-")
     assert body["classification"]["ticket_id"] == body["enquiry_id"]
 
+
+def test_reset_enquiries_clears_demo_records_and_restarts_ids() -> None:
+    client = TestClient(create_app())
+    client.post("/api/enquiries/reset")
+
+    first = client.post(
+        "/api/enquiries",
+        json={"message": "Are BOLDR straps BPA-free for kids?"},
+    ).json()
+    second = client.post(
+        "/api/enquiries",
+        json={"message": "Do you offer carbon-neutral shipping?"},
+    ).json()
+
+    assert first["enquiry_id"] == "ENQ-0001"
+    assert second["enquiry_id"] == "ENQ-0002"
+
+    reset = client.post("/api/enquiries/reset")
+
+    assert reset.status_code == 200
+    assert reset.json() == {
+        "status": "reset",
+        "cleared_count": 2,
+        "next_enquiry_id": "ENQ-0001",
+    }
+    assert client.get("/api/enquiries").json() == []
+
+    restarted = client.post(
+        "/api/enquiries",
+        json={"message": "Can I engrave a caseback gift message?"},
+    ).json()
+    assert restarted["enquiry_id"] == "ENQ-0001"

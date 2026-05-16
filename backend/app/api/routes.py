@@ -17,6 +17,7 @@ from app.models.enquiry import (
     EnquiryApprovalRequest,
     EnquiryGapResolutionRequest,
     EnquiryKBReviewRequest,
+    EnquiryResetResponse,
 )
 from app.models.evaluation import QualityScorecardResponse
 from app.models.external import (
@@ -66,6 +67,7 @@ from app.services.enquiries import (
     get_enquiry,
     list_enquiries,
     list_prioritized_sample_tickets,
+    reset_enquiries,
     resolve_enquiry_gap,
     review_enquiry_answer,
     review_enquiry_kb_entry,
@@ -253,6 +255,11 @@ def adhoc_enquiry_list() -> list[AdhocEnquiryRecord]:
 @router.get("/api/enquiries/samples", tags=["enquiries"])
 def adhoc_enquiry_samples() -> list[TicketRecord]:
     return list_prioritized_sample_tickets()
+
+
+@router.post("/api/enquiries/reset", tags=["enquiries"])
+def adhoc_enquiry_reset() -> EnquiryResetResponse:
+    return reset_enquiries()
 
 
 @router.get("/api/enquiries/{enquiry_id}", tags=["enquiries"])

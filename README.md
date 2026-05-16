@@ -2,7 +2,12 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-12: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, monthly marketing intelligence, an evaluation quality scorecard, and bonus external sentiment benchmarking. Demo polish begins in later phases.
+The current implementation reaches Phase 13B: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, monthly marketing intelligence, an evaluation quality scorecard, bonus external sentiment benchmarking, submission packaging, and demo reset.
+
+Submission package:
+
+- `SUBMISSION.md`
+- `VIDEO_SCRIPT.md`
 
 ## References
 
@@ -28,6 +33,8 @@ cp .env.example .env
 ```
 
 GLM/FPT credentials are not required for local tests. Keep `AI_LIVE_ENABLED=false` unless you are intentionally smoke-testing live inference.
+
+Tests pass without live credentials. Live GLM/FPT should be smoke-tested only when credentials are available. If credentials are unavailable, describe the adapter honestly: the provider contract is implemented, and automated tests use fake/validated structured outputs.
 
 ## Backend
 
@@ -145,6 +152,12 @@ curl -X POST http://127.0.0.1:8000/api/tickets/process-batch \
   -d '{"ticket_ids":["TKT-1048","TKT-1013"]}'
 ```
 
+Reset ad-hoc demo enquiries:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/enquiries/reset
+```
+
 ## Frontend
 
 ```bash
@@ -162,6 +175,15 @@ cd frontend
 npm run lint
 npm run typecheck
 ```
+
+## Competition Submission
+
+- Submit through the competition Tally form when the repo and video are final.
+- Ensure the repository is public or shared exactly as required by the challenge.
+- Keep the video under 5 minutes; `VIDEO_SCRIPT.md` is paced for about 3:30.
+- Use `SUBMISSION.md` as the judge-facing written summary.
+- Use the Customer Chat `Reset demo` button, or `POST /api/enquiries/reset`, before recording each take.
+- Keep `AI_LIVE_ENABLED=false` as the safe default. Run a live GLM/FPT smoke only if credentials are available, and state that tests do not require live credentials.
 
 ## Database
 
