@@ -5,6 +5,7 @@ import type {
   DatasetOverview,
   DraftOverview,
   RetrievalOverview,
+  WorkflowOverview,
 } from "@/lib/api";
 
 const navigationItems = [
@@ -38,6 +39,12 @@ const phaseCards = [
   {
     title: "Phase 6",
     label: "Grounded draft replies and guardrails",
+    value: "Complete",
+    tone: "gold",
+  },
+  {
+    title: "Phase 7",
+    label: "Stable ticket, batch, and gap workflow APIs",
     value: "Active",
     tone: "gold",
   },
@@ -45,12 +52,12 @@ const phaseCards = [
 
 const upcomingModules = [
   {
-    title: "Phase 7",
-    body: "Stabilize workflow APIs for review, approval, and batch processing.",
-  },
-  {
     title: "Phase 8",
     body: "Turn the dashboard into a full ticket review and gap-management workbench.",
+  },
+  {
+    title: "Phase 9",
+    body: "Complete the knowledge gap resolution and FAQ drafting loop.",
   },
 ];
 
@@ -61,6 +68,7 @@ type DashboardShellProps = {
   retrievalOverview: RetrievalOverview;
   aiOverview: AIOverview;
   draftOverview: DraftOverview;
+  workflowOverview: WorkflowOverview;
 };
 
 export function DashboardShell({
@@ -70,6 +78,7 @@ export function DashboardShell({
   retrievalOverview,
   aiOverview,
   draftOverview,
+  workflowOverview,
 }: DashboardShellProps) {
   const isHealthy = health.status === "ok";
   const diagnostics = datasetOverview.diagnostics;
@@ -77,6 +86,7 @@ export function DashboardShell({
   const retrievalEvaluation = retrievalOverview.evaluation;
   const aiStatus = aiOverview.statusReport;
   const draftEvaluation = draftOverview.evaluation;
+  const workflowStatus = workflowOverview.statusReport;
 
   return (
     <main className="workbench">
@@ -103,14 +113,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 6 Drafting Layer</p>
+                <p className="eyebrow">Phase 7 Workflow API</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
                   The core pipeline now ingests local tickets, assigns the five
                   required personas, retrieves explainable evidence, and creates
-                  guarded drafts only when the evidence is strong enough.
+                  guarded drafts behind stable ticket, batch, and gap workflow APIs.
                 </p>
               </div>
               <div
@@ -175,9 +185,7 @@ export function DashboardShell({
 
             <article className="panel">
               <p className="eyebrow">Next Build Steps</p>
-              <h3>
-                Foundation before AI
-              </h3>
+              <h3>Workflow before full UI</h3>
               <div className="timeline">
                 {upcomingModules.map((module) => (
                   <div
@@ -488,6 +496,67 @@ export function DashboardShell({
             ) : (
               <p className="dataset-unavailable">
                 Draft metrics will appear here when the backend is running.
+              </p>
+            )}
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Phase 7 Workflow API</p>
+                <h3>Stable review endpoints</h3>
+              </div>
+              <span className="count-pill">
+                {workflowOverview.status === "ok" ? "Ready" : "Unavailable"}
+              </span>
+            </div>
+
+            {workflowStatus ? (
+              <>
+                <div className="diagnostic-grid">
+                  <div>
+                    <p className="diagnostic-value">
+                      {workflowStatus.stable_endpoint_count}
+                    </p>
+                    <p className="diagnostic-label">Stable endpoints</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {workflowStatus.ticket_count}
+                    </p>
+                    <p className="diagnostic-label">Tickets routable</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {workflowStatus.gap_count}
+                    </p>
+                    <p className="diagnostic-label">Gap records</p>
+                  </div>
+                  <div>
+                    <p className="diagnostic-value">
+                      {workflowStatus.approval_queue_count}
+                    </p>
+                    <p className="diagnostic-label">Review queue</p>
+                  </div>
+                </div>
+                <div className="note-box">
+                  Batch runs this session:
+                  {" "}
+                  {workflowStatus.process_run_count}
+                  . Unresolved gaps:
+                  {" "}
+                  {workflowStatus.unresolved_gap_count}
+                  . KB drafts ready:
+                  {" "}
+                  {workflowStatus.kb_draft_ready_count}
+                  . Actions:
+                  {" "}
+                  {workflowStatus.supported_review_actions.join(", ")}.
+                </div>
+              </>
+            ) : (
+              <p className="dataset-unavailable">
+                Workflow API readiness will appear here when the backend is running.
               </p>
             )}
           </section>

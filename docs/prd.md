@@ -782,7 +782,7 @@ GET  /api/external/benchmarks
 POST /api/external/benchmarks/generate
 ```
 
-Implemented through Phase 6:
+Implemented through Phase 7:
 
 ```text
 GET  /health
@@ -803,6 +803,16 @@ GET  /api/drafts
 GET  /api/drafts/evaluation
 GET  /api/drafts/tickets/{ticket_id}
 POST /api/drafts/tickets/{ticket_id}/review
+GET  /api/workflow/overview
+GET  /api/tickets
+GET  /api/tickets/{ticket_id}
+GET  /api/tickets/{ticket_id}/intelligence
+POST /api/tickets/{ticket_id}/process
+POST /api/tickets/process-batch
+GET  /api/gaps
+GET  /api/gaps/{gap_id}
+POST /api/gaps/{gap_id}/resolve
+POST /api/gaps/{gap_id}/draft-kb-entry
 ```
 
 ## 15. AI Output Contracts

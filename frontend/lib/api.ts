@@ -127,6 +127,25 @@ export type DraftOverview = {
   detail?: string;
 };
 
+export type WorkflowStatusReport = {
+  phase: string;
+  stable_endpoint_count: number;
+  ticket_count: number;
+  draft_count: number;
+  gap_count: number;
+  process_run_count: number;
+  approval_queue_count: number;
+  unresolved_gap_count: number;
+  kb_draft_ready_count: number;
+  supported_review_actions: string[];
+};
+
+export type WorkflowOverview = {
+  statusReport: WorkflowStatusReport | null;
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export async function getBackendHealth(): Promise<BackendHealth> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -295,6 +314,35 @@ export async function getDraftOverview(): Promise<DraftOverview> {
     return {
       status: "unavailable",
       evaluation: null,
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getWorkflowOverview(): Promise<WorkflowOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/workflow/overview`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        status: "unavailable",
+        statusReport: null,
+        detail: `Workflow endpoint returned ${response.status}`,
+      };
+    }
+
+    return {
+      status: "ok",
+      statusReport: (await response.json()) as WorkflowStatusReport,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      statusReport: null,
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }

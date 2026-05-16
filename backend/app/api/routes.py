@@ -2,10 +2,30 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.core.config import get_settings
 from app.models.ai import AIProviderStatus, AISchemaSummary, StructuredPromptPreview
-from app.models.classification import ClassificationEvaluation, TicketClassification
+from app.models.ai import ReplyType
+from app.models.classification import (
+    AnswerabilityState,
+    ClassificationEvaluation,
+    RequiredPersona,
+    TicketClassification,
+)
 from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
-from app.models.drafting import DraftEvaluation, DraftReviewRequest, TicketDraft
+from app.models.drafting import ApprovalStatus, DraftEvaluation, DraftReviewRequest, TicketDraft
 from app.models.retrieval import RetrievalEvaluation, RetrievalResult
+from app.models.workflow import (
+    BatchProcessRequest,
+    BatchProcessResponse,
+    GapDetailResponse,
+    GapKBDraftResponse,
+    GapListResponse,
+    GapResolutionRequest,
+    GapStatus,
+    TicketDetailResponse,
+    TicketListResponse,
+    TicketProcessRequest,
+    TicketProcessResponse,
+    WorkflowOverview,
+)
 from app.services.ai import get_ai_schema_catalog, get_ai_status, get_evidence_prompt_preview
 from app.services.classifications import (
     get_classification_evaluation,
@@ -23,6 +43,19 @@ from app.services.retrieval import (
     get_retrieval_evaluation,
     search_knowledge,
     search_ticket_evidence,
+)
+from app.services.workflow import (
+    draft_kb_entry_for_gap,
+    gap_has_resolution,
+    get_gap_list_meta,
+    get_knowledge_gap,
+    get_ticket_workflow_detail,
+    get_workflow_overview,
+    list_knowledge_gaps,
+    list_ticket_workflows,
+    process_ticket_batch,
+    process_ticket_workflow,
+    resolve_knowledge_gap,
 )
 
 router = APIRouter()
@@ -49,17 +82,17 @@ def meta() -> dict[str, object]:
         "modules": [
             {
                 "name": "Inbox Intelligence",
-                "status": "scaffolded",
+                "status": "workflow_api_ready",
                 "description": "Batch ticket triage and intelligence pass entry point.",
             },
             {
                 "name": "Ticket Review",
-                "status": "evidence_ready",
+                "status": "workflow_api_ready",
                 "description": "Single-ticket evidence and source trace workspace.",
             },
             {
                 "name": "Knowledge Gaps",
-                "status": "scaffolded",
+                "status": "workflow_api_ready",
                 "description": "Gap queue and future FAQ drafting workflow.",
             },
             {
@@ -177,3 +210,106 @@ def draft_review(ticket_id: str, review: DraftReviewRequest) -> TicketDraft:
     if draft is None:
         raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
     return draft
+
+
+@router.get("/api/workflow/overview", tags=["workflow"])
+def workflow_overview() -> WorkflowOverview:
+    return get_workflow_overview(get_settings().app_phase)
+
+
+@router.get("/api/tickets", tags=["workflow"])
+def tickets(
+    persona: RequiredPersona | None = None,
+    answerability: AnswerabilityState | None = None,
+    reply_type: ReplyType | None = None,
+    approval_status: ApprovalStatus | None = None,
+    search: str | None = None,
+    limit: int | None = Query(default=None, ge=1, le=70),
+) -> TicketListResponse:
+    summaries, meta = list_ticket_workflows(
+        persona=persona,
+        answerability=answerability,
+        reply_type=reply_type,
+        approval_status=approval_status,
+        search=search,
+        limit=limit,
+    )
+    return TicketListResponse(data=summaries, meta=meta)
+
+
+@router.post("/api/tickets/process-batch", tags=["workflow"])
+def tickets_process_batch(
+    request: BatchProcessRequest | None = None,
+) -> BatchProcessResponse:
+    summaries, run = process_ticket_batch(request)
+    return BatchProcessResponse(data=summaries, meta=run)
+
+
+@router.get("/api/tickets/{ticket_id}", tags=["workflow"])
+def ticket_detail(ticket_id: str) -> TicketDetailResponse:
+    detail = get_ticket_workflow_detail(ticket_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
+    return TicketDetailResponse(data=detail)
+
+
+@router.get("/api/tickets/{ticket_id}/intelligence", tags=["workflow"])
+def ticket_intelligence(ticket_id: str) -> TicketDetailResponse:
+    return ticket_detail(ticket_id)
+
+
+@router.post("/api/tickets/{ticket_id}/process", tags=["workflow"])
+def ticket_process(
+    ticket_id: str,
+    request: TicketProcessRequest | None = None,
+) -> TicketProcessResponse:
+    _ = request
+    result = process_ticket_workflow(ticket_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Ticket not found: {ticket_id}")
+    detail, run = result
+    return TicketProcessResponse(data=detail, meta=run)
+
+
+@router.get("/api/gaps", tags=["workflow"])
+def gaps(
+    status: GapStatus | None = None,
+    search: str | None = None,
+) -> GapListResponse:
+    filters = {}
+    if status:
+        filters["status"] = status
+    if search:
+        filters["search"] = search
+    records = list_knowledge_gaps(status=status, search=search)
+    return GapListResponse(data=records, meta=get_gap_list_meta(records, filters=filters))
+
+
+@router.get("/api/gaps/{gap_id}", tags=["workflow"])
+def gap_detail(gap_id: str) -> GapDetailResponse:
+    gap = get_knowledge_gap(gap_id)
+    if gap is None:
+        raise HTTPException(status_code=404, detail=f"Gap not found: {gap_id}")
+    return GapDetailResponse(data=gap)
+
+
+@router.post("/api/gaps/{gap_id}/resolve", tags=["workflow"])
+def gap_resolve(gap_id: str, request: GapResolutionRequest) -> GapDetailResponse:
+    gap = resolve_knowledge_gap(gap_id, request)
+    if gap is None:
+        raise HTTPException(status_code=404, detail=f"Gap not found: {gap_id}")
+    return GapDetailResponse(data=gap)
+
+
+@router.post("/api/gaps/{gap_id}/draft-kb-entry", tags=["workflow"])
+def gap_draft_kb_entry(gap_id: str) -> GapKBDraftResponse:
+    normalized_gap_id = gap_id.lower()
+    gap = draft_kb_entry_for_gap(normalized_gap_id)
+    if gap is None:
+        raise HTTPException(status_code=404, detail=f"Gap not found: {gap_id}")
+    if not gap_has_resolution(normalized_gap_id):
+        raise HTTPException(
+            status_code=409,
+            detail="Gap needs a human resolution before a KB entry can be drafted.",
+        )
+    return GapKBDraftResponse(data=gap)

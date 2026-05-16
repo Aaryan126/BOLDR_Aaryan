@@ -492,13 +492,13 @@ Status: Implemented; awaiting human verification
 Implemented: Evidence-gated customer drafts, holding replies, internal notes, guardrails, approval/review state, API/CLI/UI summary
 Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit
 Human verification completed: Pending
-Known issues: Draft approvals are in-memory for this phase; persistence moves to the stable workflow API/storage phase
+Known issues: Draft approvals are in-memory for this phase; durable persistence moves to the storage/database phase
 Decision to proceed: Pending user review
 ```
 
 ## 11. Phase 7: Core Backend API
 
-Status: Planned.
+Status: Implemented; awaiting human verification.
 
 Goal: Expose the intelligence workflow through stable API endpoints.
 
@@ -541,7 +541,40 @@ Exit criteria:
 - Backend supports all core UI needs.
 - Batch processing is repeatable.
 
+Implementation notes:
+
+- Added workflow API models for ticket summaries/details, process runs, gap records, gap resolution, KB draft output, and response envelopes.
+- Added workflow service that composes local tickets, classifications, retrieval results, draft outputs, guardrail results, and generated gap records.
+- Added stable workflow endpoints:
+  - `/api/workflow/overview`
+  - `/api/tickets`
+  - `/api/tickets/{ticket_id}`
+  - `/api/tickets/{ticket_id}/intelligence`
+  - `/api/tickets/{ticket_id}/process`
+  - `/api/tickets/process-batch`
+  - `/api/gaps`
+  - `/api/gaps/{gap_id}`
+  - `/api/gaps/{gap_id}/resolve`
+  - `/api/gaps/{gap_id}/draft-kb-entry`
+- Added consistent `{ status, data, meta }` envelopes for ticket lists, ticket detail, process responses, and gap responses.
+- Added backend contract tests for filters, full ticket traces, single/batch process runs, gap resolution, KB draft generation, and readable missing-resource errors.
+- Updated the dashboard to show Phase 7 workflow API readiness and review-queue metrics.
+
+Phase gate record:
+
+```text
+Phase: 7 - Core Backend API
+Status: Implemented; awaiting human verification
+Implemented: Ticket list/detail/intelligence APIs, single and batch process APIs, gap list/detail/resolve/KB-draft APIs, workflow overview, response envelopes, API contract tests, UI readiness panel
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit
+Human verification completed: Pending
+Known issues: Workflow run and gap-resolution state is process-memory only until the database persistence phase
+Decision to proceed: Pending user review
+```
+
 ## 12. Phase 8: Frontend Workbench UI
+
+Status: Planned.
 
 Goal: Build the main user-facing workbench for the core challenge.
 
@@ -875,4 +908,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 6 human verification, then start Phase 7 by stabilizing persistent workflow APIs for tickets, drafts, gap records, batch processing, and reviewer actions.
+Complete Phase 7 human verification, then start Phase 8 by turning the summary dashboard into the full workbench UI for ticket review, evidence inspection, draft approval, and gap management.

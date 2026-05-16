@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-6: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, and grounded reply drafting with answerability guardrails. KB loops, theme radar, marketing briefs, and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-7: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, and stable ticket/batch/gap workflow APIs. Full workbench UI, deeper KB loops, theme radar, marketing briefs, and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -134,6 +134,17 @@ cd backend
 env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.draft_cli ticket --ticket-id TKT-1048
 ```
 
+Workflow API smoke examples:
+
+```bash
+curl http://127.0.0.1:8000/api/workflow/overview
+curl "http://127.0.0.1:8000/api/tickets?reply_type=customer_reply&limit=5"
+curl http://127.0.0.1:8000/api/tickets/TKT-1048/intelligence
+curl -X POST http://127.0.0.1:8000/api/tickets/process-batch \
+  -H "Content-Type: application/json" \
+  -d '{"ticket_ids":["TKT-1048","TKT-1013"]}'
+```
+
 ## Frontend
 
 ```bash
@@ -218,4 +229,12 @@ docker compose down
 - Order lookup tickets produce internal notes and do not invent delivery, refund, or cancellation status.
 - Backend serves `/api/drafts`, `/api/drafts/evaluation`, `/api/drafts/tickets/{ticket_id}`, and `/api/drafts/tickets/{ticket_id}/review`.
 - Frontend shows draft counts, holding replies, internal notes, and guardrail failure count.
+- Backend and frontend checks pass.
+
+## Phase 7 Exit Criteria
+
+- Backend serves stable workflow endpoints for ticket lists, ticket intelligence, single-ticket processing, batch processing, gap lists/details, gap resolution, and KB draft generation.
+- New workflow responses use consistent `{ status, data, meta }` envelopes where list/process metadata matters.
+- Contract tests cover filters, full ticket traces, single/batch process runs, gap resolution, KB draft generation, and readable 404/409 errors.
+- Frontend shows workflow API readiness, stable endpoint count, routable ticket count, gap count, review queue count, and unresolved gap count.
 - Backend and frontend checks pass.
