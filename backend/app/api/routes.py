@@ -12,6 +12,11 @@ from app.models.classification import (
 from app.models.dataset import DatasetDiagnostics, DatasetSamples, SourceFile
 from app.models.drafting import ApprovalStatus, DraftEvaluation, DraftReviewRequest, TicketDraft
 from app.models.evaluation import QualityScorecardResponse
+from app.models.external import (
+    ExternalBenchmarkResponse,
+    ExternalMentionListResponse,
+    ExternalSourceListResponse,
+)
 from app.models.insights import (
     MarketingBriefRequest,
     MarketingBriefResponse,
@@ -48,6 +53,11 @@ from app.services.drafts import (
     review_ticket_draft,
 )
 from app.services.evaluation import get_quality_scorecard
+from app.services.external import (
+    generate_external_benchmarks,
+    list_external_mentions,
+    list_external_sources,
+)
 from app.services.insights import generate_marketing_brief, get_theme_radar
 from app.services.retrieval import (
     get_retrieval_evaluation,
@@ -125,7 +135,7 @@ def meta() -> dict[str, object]:
             },
             {
                 "name": "External Benchmarking",
-                "status": "planned",
+                "status": "benchmark_ready",
                 "description": "Bonus market sentiment comparison layer.",
             },
         ],
@@ -251,6 +261,26 @@ def marketing_brief_generate(
 @router.get("/api/evaluation/scorecard", tags=["evaluation"])
 def evaluation_scorecard() -> QualityScorecardResponse:
     return QualityScorecardResponse(data=get_quality_scorecard(get_settings().app_phase))
+
+
+@router.get("/api/external/sources", tags=["external"])
+def external_sources() -> ExternalSourceListResponse:
+    return ExternalSourceListResponse(data=list_external_sources())
+
+
+@router.get("/api/external/mentions", tags=["external"])
+def external_mentions() -> ExternalMentionListResponse:
+    return ExternalMentionListResponse(data=list_external_mentions())
+
+
+@router.get("/api/external/benchmarks", tags=["external"])
+def external_benchmarks() -> ExternalBenchmarkResponse:
+    return ExternalBenchmarkResponse(data=generate_external_benchmarks())
+
+
+@router.post("/api/external/benchmarks/generate", tags=["external"])
+def external_benchmarks_generate() -> ExternalBenchmarkResponse:
+    return ExternalBenchmarkResponse(data=generate_external_benchmarks())
 
 
 @router.get("/api/workflow/overview", tags=["workflow"])

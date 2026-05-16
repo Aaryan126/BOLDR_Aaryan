@@ -10,7 +10,7 @@ def test_quality_scorecard_reports_thresholds_and_documented_exception() -> None
 
     assert response.status_code == 200
     scorecard = response.json()["data"]
-    assert scorecard["phase"] == "phase-11-quality-dashboard"
+    assert scorecard["phase"] == "phase-12-external-benchmarking"
     assert scorecard["total_ticket_count"] == 70
     assert scorecard["overall_status"] == "pass_with_notes"
 

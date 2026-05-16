@@ -5,6 +5,7 @@ import {
   getClassificationOverview,
   getDatasetOverview,
   getDraftOverview,
+  getExternalBenchmarkOverview,
   getGapList,
   getGapMetrics,
   getInsightsOverview,
@@ -29,6 +30,7 @@ export default async function Home() {
     gapMetrics,
     insightsOverview,
     qualityOverview,
+    externalBenchmarkOverview,
   ] = await Promise.all([
     getBackendHealth(),
     getDatasetOverview(),
@@ -42,6 +44,7 @@ export default async function Home() {
     getGapMetrics(),
     getInsightsOverview(),
     getQualityOverview(),
+    getExternalBenchmarkOverview(),
   ]);
   const initialTicketId = ticketList?.data[0]?.ticket_id ?? "TKT-1048";
   const initialTicketDetail = await getTicketDetail(initialTicketId);
@@ -57,6 +60,7 @@ export default async function Home() {
       workflowOverview={workflowOverview}
       insightsOverview={insightsOverview}
       qualityOverview={qualityOverview}
+      externalBenchmarkOverview={externalBenchmarkOverview}
       initialTickets={ticketList?.data ?? []}
       initialGaps={gapList?.data ?? []}
       initialGapMetrics={gapMetrics?.data ?? null}

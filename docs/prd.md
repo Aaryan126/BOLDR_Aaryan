@@ -782,7 +782,7 @@ GET  /api/external/benchmarks
 POST /api/external/benchmarks/generate
 ```
 
-Implemented through Phase 11:
+Implemented through Phase 12:
 
 ```text
 GET  /health
@@ -819,9 +819,13 @@ GET  /api/themes/radar
 GET  /api/marketing-briefs/current
 POST /api/marketing-briefs/generate
 GET  /api/evaluation/scorecard
+GET  /api/external/sources
+GET  /api/external/mentions
+GET  /api/external/benchmarks
+POST /api/external/benchmarks/generate
 ```
 
-The Phase 11 frontend consumes these APIs in a single interactive workbench:
+The Phase 12 frontend consumes these APIs in a single interactive workbench:
 
 - inbox list with search, filters, and batch processing
 - ticket review with customer message, routing tags, editable draft, evidence, guardrails, and review actions
@@ -829,6 +833,7 @@ The Phase 11 frontend consumes these APIs in a single interactive workbench:
 - theme radar cards with frequency, trend, persona mix, answerability mix, source ticket IDs, product-page gap flags, and recommended actions
 - monthly marketing intelligence brief with Markdown and structured opportunity cards
 - quality scorecard with threshold metrics, documented exceptions, golden fixtures, and issue list
+- external benchmarking cards with source registry, public source URLs, source limitations, internal-vs-external signal comparison, sentiment, and recommended actions
 
 ## 15. AI Output Contracts
 
@@ -1058,6 +1063,7 @@ Core challenge is complete when:
 - Weekly theme clusters can be generated across all 70 tickets.
 - Monthly marketing brief can be generated with evidence-backed opportunities.
 - Quality scorecard can be generated with pass/fail/documented-exception metrics and golden fixtures.
+- External benchmark cards can compare internal themes against curated public watch-community and review-source signals.
 - Five required personas are used exactly.
 - No customer-facing answer is auto-sent.
 

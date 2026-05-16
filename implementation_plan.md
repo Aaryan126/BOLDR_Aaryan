@@ -848,6 +848,8 @@ Decision to proceed: Pending user review
 
 ## 16. Phase 12: Bonus External Sentiment Benchmarking
 
+Status: Implemented; awaiting human verification.
+
 Goal: Implement the bonus challenge as a credible external signal comparison layer.
 
 Deliverables:
@@ -869,6 +871,14 @@ Deliverables:
 - Optional fourth/fifth themes:
   - microbrand quality, resale value, collector confidence
   - gifting, engraving, personalisation, corporate orders
+
+Implementation notes:
+
+- Added `/api/external/sources`, `/api/external/mentions`, `/api/external/benchmarks`, and `/api/external/benchmarks/generate`.
+- Added a curated repeatable external sample using public watch-community, forum, editorial, review-platform, and review-source URLs.
+- Benchmarks compare internal theme counts/personas/tickets against external source summaries, sentiment, source URLs, source limitations, and BOLDR-specific vs market-wide classification.
+- Implemented five benchmark themes: materials safety, strap/outdoor safety, sustainability, collector confidence, and gifting/personalisation.
+- Frontend now shows source registry cards and benchmark cards with recommendations and source links.
 
 Default tests:
 
@@ -895,6 +905,18 @@ Human verification:
 Exit criteria:
 
 - Bonus requirement can be demonstrated clearly.
+
+Phase gate record:
+
+```text
+Phase: 12 - Bonus External Sentiment Benchmarking
+Status: Implemented; awaiting human verification
+Implemented: External source registry, curated external mention sample, benchmark generation API, source URL/limitation exposure, external benchmarking UI
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit, git diff check, Playwright desktop/mobile smoke
+Human verification completed: Pending
+Known issues: External data is a curated demo sample, not a live scraper or API connector; source volume is directional and should not be treated as statistically normalized
+Decision to proceed: Pending user review
+```
 
 ## 17. Phase 13: Demo Polish And Competition Readiness
 
@@ -1008,4 +1030,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 11 human verification, then start Phase 12 by implementing the bonus external sentiment benchmarking layer.
+Complete Phase 12 human verification, then start Phase 13 by polishing the final demo, reset flow, and competition story.

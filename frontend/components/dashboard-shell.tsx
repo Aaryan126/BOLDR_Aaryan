@@ -4,6 +4,7 @@ import type {
   ClassificationOverview,
   DatasetOverview,
   DraftOverview,
+  ExternalBenchmarkOverview,
   GapMetrics,
   InsightsOverview,
   KnowledgeGapRecord,
@@ -13,6 +14,7 @@ import type {
   TicketWorkflowSummary,
   WorkflowOverview,
 } from "@/lib/api";
+import { ExternalBenchmarkClient } from "@/components/external-benchmark-client";
 import { InsightsClient } from "@/components/insights-client";
 import { QualityPanel } from "@/components/quality-panel";
 import { WorkbenchClient } from "@/components/workbench-client";
@@ -79,15 +81,21 @@ const phaseCards = [
   {
     title: "Phase 11",
     label: "Evaluation and quality scorecard",
-    value: "Active",
+    value: "Complete",
     tone: "blue",
+  },
+  {
+    title: "Phase 12",
+    label: "External sentiment benchmarking",
+    value: "Active",
+    tone: "purple",
   },
 ];
 
 const upcomingModules = [
   {
-    title: "Phase 12",
-    body: "Implement bonus external sentiment benchmarking.",
+    title: "Phase 13",
+    body: "Polish the final demo, reset flow, and competition story.",
   },
 ];
 
@@ -101,6 +109,7 @@ type DashboardShellProps = {
   workflowOverview: WorkflowOverview;
   insightsOverview: InsightsOverview;
   qualityOverview: QualityOverview;
+  externalBenchmarkOverview: ExternalBenchmarkOverview;
   initialTickets: TicketWorkflowSummary[];
   initialGaps: KnowledgeGapRecord[];
   initialGapMetrics: GapMetrics | null;
@@ -117,6 +126,7 @@ export function DashboardShell({
   workflowOverview,
   insightsOverview,
   qualityOverview,
+  externalBenchmarkOverview,
   initialTickets,
   initialGaps,
   initialGapMetrics,
@@ -155,14 +165,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 11 Quality Dashboard</p>
+                <p className="eyebrow">Phase 12 External Benchmarking</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
                   The core pipeline now ingests local tickets, assigns the five
                   required personas, retrieves explainable evidence, and creates
-                  guarded drafts, KB improvements, marketing intelligence, and demo-ready quality metrics.
+                  guarded drafts, KB improvements, marketing intelligence, quality metrics, and external market benchmarks.
                 </p>
               </div>
               <div
@@ -217,7 +227,7 @@ export function DashboardShell({
                     <p className="module-title">{item}</p>
                     <p>
                       {item === "External Benchmarking"
-                        ? "Bonus challenge placeholder for market sentiment comparison."
+                        ? "Bonus market sentiment comparison with source URLs and limitations."
                         : item === "Quality Dashboard"
                           ? "Evaluation scorecard for accuracy, evidence, guardrails, and golden fixtures."
                         : "Core challenge workspace connected to local data and evidence metrics."}
@@ -259,6 +269,11 @@ export function DashboardShell({
           />
 
           <QualityPanel scorecard={qualityOverview.scorecard} />
+
+          <ExternalBenchmarkClient
+            initialBenchmarks={externalBenchmarkOverview.benchmarks}
+            initialSources={externalBenchmarkOverview.sources}
+          />
 
           <section className="panel">
             <div className="panel-heading">

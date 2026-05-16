@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "BOLDR Revenue Rocket"
     app_version: str = "0.1.0"
-    app_phase: str = "phase-11-quality-dashboard"
+    app_phase: str = "phase-12-external-benchmarking"
     app_env: str = "development"
     cors_origins_raw: str = Field(
         default="http://localhost:3000,http://127.0.0.1:3000",

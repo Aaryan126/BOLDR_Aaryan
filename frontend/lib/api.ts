@@ -276,6 +276,72 @@ export type QualityOverview = {
   detail?: string;
 };
 
+export type ExternalSourceType =
+  | "reddit"
+  | "watch_forum"
+  | "review_platform"
+  | "competitor_review"
+  | "industry_article";
+
+export type ExternalSentiment = "positive" | "concerned" | "mixed" | "opportunity";
+
+export type ExternalSource = {
+  source_id: string;
+  name: string;
+  source_type: ExternalSourceType;
+  url: string;
+  rationale: string;
+  buyer_signals: string[];
+  limitations: string;
+};
+
+export type ExternalBenchmarkSource = {
+  source_id: string;
+  name: string;
+  source_type: ExternalSourceType;
+  source_url: string;
+  mention_count: number;
+  sentiment: ExternalSentiment;
+  representative_claims: string[];
+};
+
+export type ExternalBenchmark = {
+  theme_key: string;
+  theme: string;
+  internal_ticket_count: number;
+  internal_ticket_ids: string[];
+  internal_personas: string[];
+  external_sources: ExternalBenchmarkSource[];
+  external_mention_count: number;
+  external_sentiment: ExternalSentiment;
+  classification:
+    | "boldr_specific_gap"
+    | "market_wide_signal"
+    | "market_wide_concern_with_boldr_gap"
+    | "covered_but_under_merchandised";
+  recommended_action: string;
+  confidence: number;
+  source_urls: string[];
+  source_limitations: string[];
+};
+
+export type ExternalSourceListResponse = {
+  status: "ok";
+  data: ExternalSource[];
+};
+
+export type ExternalBenchmarkResponse = {
+  status: "ok";
+  data: ExternalBenchmark[];
+};
+
+export type ExternalBenchmarkOverview = {
+  sources: ExternalSource[];
+  benchmarks: ExternalBenchmark[];
+  status: "ok" | "unavailable";
+  detail?: string;
+};
+
 export type ReplyType = "customer_reply" | "holding_reply" | "internal_note";
 
 export type ApprovalStatus =
@@ -877,6 +943,41 @@ export async function getQualityOverview(): Promise<QualityOverview> {
     return {
       status: "unavailable",
       scorecard: null,
+      detail: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getExternalBenchmarkOverview(): Promise<ExternalBenchmarkOverview> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const [sourcesResponse, benchmarksResponse] = await Promise.all([
+      fetch(`${baseUrl}/api/external/sources`, { cache: "no-store" }),
+      fetch(`${baseUrl}/api/external/benchmarks`, { cache: "no-store" }),
+    ]);
+
+    if (!sourcesResponse.ok || !benchmarksResponse.ok) {
+      return {
+        status: "unavailable",
+        sources: [],
+        benchmarks: [],
+        detail: "External benchmark endpoints are unavailable.",
+      };
+    }
+
+    const sources = (await sourcesResponse.json()) as ExternalSourceListResponse;
+    const benchmarks = (await benchmarksResponse.json()) as ExternalBenchmarkResponse;
+    return {
+      status: "ok",
+      sources: sources.data,
+      benchmarks: benchmarks.data,
+    };
+  } catch (error) {
+    return {
+      status: "unavailable",
+      sources: [],
+      benchmarks: [],
       detail: error instanceof Error ? error.message : "Unknown error",
     };
   }

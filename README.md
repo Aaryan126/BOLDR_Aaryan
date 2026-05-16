@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-11: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, monthly marketing intelligence, and an evaluation quality scorecard. Bonus benchmarking begins in later phases.
+The current implementation includes Phases 1-12: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, monthly marketing intelligence, an evaluation quality scorecard, and bonus external sentiment benchmarking. Demo polish begins in later phases.
 
 ## References
 
@@ -270,4 +270,12 @@ docker compose down
 - Scorecard reports answerability accuracy, escalation routing accuracy, persona mapping coverage, evidence coverage, unsupported-claim guardrail results, source conflict handling, golden fixture pass rate, and actionable issues.
 - Minimum targets are marked as pass or documented exception; the current CSV escalation-label disagreement is visible for human review.
 - Frontend shows quality metric cards, golden fixture checks, and issue details suitable for demo defence.
+- Backend and frontend checks pass.
+
+## Phase 12 Exit Criteria
+
+- Backend serves `/api/external/sources`, `/api/external/mentions`, `/api/external/benchmarks`, and `/api/external/benchmarks/generate`.
+- External benchmark output covers at least three themes and currently covers five: materials safety, strap/outdoor safety, sustainability, collector confidence, and gifting/personalisation.
+- Each benchmark includes internal ticket count, personas, source summaries, sentiment, BOLDR-specific vs market-wide classification, recommended action, source URLs, and source limitations.
+- Frontend shows source registry cards and benchmark cards with source links and limitations.
 - Backend and frontend checks pass.
