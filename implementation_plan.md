@@ -879,6 +879,7 @@ Implementation notes:
 - Benchmarks compare internal theme counts/personas/tickets against external source summaries, sentiment, source URLs, source limitations, and BOLDR-specific vs market-wide classification.
 - Implemented five benchmark themes: materials safety, strap/outdoor safety, sustainability, collector confidence, and gifting/personalisation.
 - Frontend now shows source registry cards and benchmark cards with recommendations and source links.
+- Marketing Intel now includes a visible bonus shortcut plus an embedded external benchmark section with three highlighted themes, source counts, market-wide signal count, source links, and recommendations so judges can see the bonus without opening System Details.
 
 Default tests:
 

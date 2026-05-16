@@ -4683,6 +4683,77 @@ button {
   gap: 18px;
 }
 
+.marketing-bonus-shortcut {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr) auto;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, var(--accent-soft), transparent 48%),
+    var(--panel-elevated);
+  padding: 16px 18px;
+}
+
+.marketing-bonus-shortcut h2 {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.marketing-bonus-shortcut p {
+  max-width: 720px;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.bonus-shortcut-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bonus-shortcut-stats > div {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  padding: 10px;
+  text-align: center;
+}
+
+.bonus-shortcut-stats strong {
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bonus-shortcut-stats span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 820;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.bonus-jump-link {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0 14px;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .marketing-deliverable-panel h2 {
   display: block;
   margin-top: 4px;
@@ -4858,6 +4929,116 @@ button {
 .theme-cluster-actions > div {
   display: grid;
   gap: 5px;
+}
+
+.external-benchmark-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.external-benchmark-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--signal-accent, var(--accent));
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--signal-soft, transparent), transparent 46%), var(--panel-elevated);
+  padding: 16px;
+}
+
+.external-benchmark-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.external-benchmark-heading span {
+  color: var(--signal-text, var(--accent-strong));
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.external-benchmark-heading strong {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  padding: 4px 8px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.external-benchmark-card h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.external-benchmark-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.benchmark-persona-row,
+.benchmark-source-list,
+.source-registry-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.benchmark-source-list {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.benchmark-source-list a,
+.source-registry-strip a {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.benchmark-source-list a {
+  padding: 5px 8px;
+}
+
+.source-registry-strip {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.source-registry-strip a {
+  gap: 7px;
+  padding: 6px 10px;
+}
+
+.source-registry-strip strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.source-registry-strip span {
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
 }
 
 .marketing-view .signal-card.market-signal-card {
@@ -5138,6 +5319,19 @@ button {
   .deliverable-header,
   .opportunity-topline {
     flex-direction: column;
+  }
+
+  .marketing-bonus-shortcut,
+  .external-benchmark-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bonus-shortcut-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .bonus-jump-link {
+    width: 100%;
   }
 
   .deliverable-meta-grid,

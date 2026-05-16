@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AdhocEnquiryRecord,
   DatasetOverview,
+  ExternalBenchmark,
+  ExternalBenchmarkOverview,
   GapMetrics,
   InsightsOverview,
   KnowledgeGapRecord,
@@ -30,6 +32,7 @@ type ChatWorkspaceClientProps = {
   initialGaps: KnowledgeGapRecord[];
   initialGapMetrics: GapMetrics | null;
   insightsOverview: InsightsOverview;
+  externalBenchmarkOverview: ExternalBenchmarkOverview;
   workflowOverview: WorkflowOverview;
   systemDetails: ReactNode;
   isHealthy: boolean;
@@ -138,6 +141,40 @@ function dominantPersonaFromBreakdown(breakdown: ThemeRadarItem["persona_breakdo
   return persona ?? "Marketing signal";
 }
 
+const priorityBenchmarkKeys = [
+  "materials_safety",
+  "strap_outdoor_safety",
+  "sustainability",
+];
+
+function benchmarkPriority(benchmark: ExternalBenchmark) {
+  const index = priorityBenchmarkKeys.indexOf(benchmark.theme_key);
+  return index === -1 ? priorityBenchmarkKeys.length : index;
+}
+
+function formatBenchmarkClassification(value: ExternalBenchmark["classification"]) {
+  const labels: Record<ExternalBenchmark["classification"], string> = {
+    boldr_specific_gap: "BOLDR-specific gap",
+    market_wide_signal: "Market-wide signal",
+    market_wide_concern_with_boldr_gap: "Market-wide concern + BOLDR gap",
+    covered_but_under_merchandised: "Covered, under-merchandised",
+  };
+  return labels[value];
+}
+
+function benchmarkToneClass(benchmark: ExternalBenchmark) {
+  if (benchmark.classification.includes("gap")) {
+    return "tone-warning";
+  }
+  if (benchmark.classification.includes("market_wide")) {
+    return "tone-accent";
+  }
+  if (benchmark.classification.includes("covered")) {
+    return "tone-success";
+  }
+  return "tone-neutral";
+}
+
 function samplePriority(ticket: TicketWorkflowSummary) {
   const text = `${ticket.ticket_id} ${ticket.subject} ${ticket.intent} ${ticket.persona}`.toLowerCase();
   const patterns = [
@@ -166,6 +203,7 @@ export function ChatWorkspaceClient({
   initialGaps,
   initialGapMetrics,
   insightsOverview,
+  externalBenchmarkOverview,
   workflowOverview,
   systemDetails,
   isHealthy,
@@ -262,6 +300,19 @@ export function ChatWorkspaceClient({
       ? productPageOpportunities.slice(0, 4)
       : marketingOpportunities.slice(0, 4);
   const weeklyThemeClusters = themeClusters.slice(0, 6);
+  const externalBenchmarks = externalBenchmarkOverview.benchmarks;
+  const externalSources = externalBenchmarkOverview.sources;
+  const externalSourceTypes = new Set(externalSources.map((source) => source.source_type));
+  const marketWideBenchmarkCount = externalBenchmarks.filter((benchmark) =>
+    benchmark.classification.includes("market_wide"),
+  ).length;
+  const externalSourceUrlCount = externalBenchmarks.reduce(
+    (total, benchmark) => total + benchmark.source_urls.length,
+    0,
+  );
+  const visibleExternalBenchmarks = [...externalBenchmarks]
+    .sort((left, right) => benchmarkPriority(left) - benchmarkPriority(right))
+    .slice(0, 3);
 
   const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const stream = messageStreamRef.current;
@@ -911,6 +962,34 @@ export function ChatWorkspaceClient({
             <Metric label="Product-page gaps" value={productPageSignals.length} />
           </div>
 
+          <section className="marketing-bonus-shortcut" aria-labelledby="bonus-shortcut-heading">
+            <div>
+              <span className="deliverable-eyebrow">Bonus Challenge</span>
+              <h2 id="bonus-shortcut-heading">External benchmark ready for judges</h2>
+              <p>
+                Internal support themes are compared with public watch-market sentiment to
+                separate BOLDR-specific gaps from market-wide signals.
+              </p>
+            </div>
+            <div className="bonus-shortcut-stats">
+              <div>
+                <strong>{externalBenchmarks.length}</strong>
+                <span>benchmarked themes</span>
+              </div>
+              <div>
+                <strong>{externalSources.length}</strong>
+                <span>source groups</span>
+              </div>
+              <div>
+                <strong>{marketWideBenchmarkCount}</strong>
+                <span>market-wide signals</span>
+              </div>
+            </div>
+            <a className="secondary-action bonus-jump-link" href="#external-benchmark-section">
+              View External Benchmark
+            </a>
+          </section>
+
           <section className="marketing-panel marketing-deliverable-panel monthly-brief-panel">
             <div className="deliverable-header">
               <div>
@@ -1046,6 +1125,89 @@ export function ChatWorkspaceClient({
                 })}
               </div>
             )}
+          </section>
+
+          <section
+            className="marketing-panel marketing-deliverable-panel external-benchmark-panel"
+            id="external-benchmark-section"
+          >
+            <div className="deliverable-header">
+              <div>
+                <span className="deliverable-eyebrow">Bonus External Benchmark</span>
+                <h2>Internal demand vs external watch-market sentiment</h2>
+              </div>
+              <span className="status-pill">{externalSourceTypes.size} source types</span>
+            </div>
+            <div className="deliverable-meta-grid">
+              <div>
+                <span>Benchmarked themes</span>
+                <strong>{externalBenchmarks.length}</strong>
+              </div>
+              <div>
+                <span>Source groups</span>
+                <strong>{externalSources.length}</strong>
+              </div>
+              <div>
+                <span>Market-wide signals</span>
+                <strong>{marketWideBenchmarkCount}</strong>
+              </div>
+              <div>
+                <span>Source URLs</span>
+                <strong>{externalSourceUrlCount}</strong>
+              </div>
+            </div>
+            {visibleExternalBenchmarks.length === 0 ? (
+              <p className="muted-copy">External benchmark data is unavailable.</p>
+            ) : (
+              <div className="external-benchmark-grid">
+                {visibleExternalBenchmarks.map((benchmark) => (
+                  <article
+                    className={`external-benchmark-card ${benchmarkToneClass(benchmark)}`}
+                    key={benchmark.theme_key}
+                  >
+                    <div className="external-benchmark-heading">
+                      <span>{formatLabel(benchmark.external_sentiment)}</span>
+                      <strong>{Math.round(benchmark.confidence * 100)}%</strong>
+                    </div>
+                    <h3>{benchmark.theme}</h3>
+                    <div className="signal-card-footer">
+                      <span className={`insight-chip ${benchmarkToneClass(benchmark)}`}>
+                        {formatBenchmarkClassification(benchmark.classification)}
+                      </span>
+                      <span className="insight-chip tone-accent">
+                        {benchmark.external_mention_count} external mentions
+                      </span>
+                      <span className="insight-chip tone-neutral">
+                        {benchmark.internal_ticket_count} internal tickets
+                      </span>
+                    </div>
+                    <p>{benchmark.recommended_action}</p>
+                    <div className="benchmark-persona-row">
+                      {benchmark.internal_personas.slice(0, 3).map((persona) => (
+                        <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
+                          {persona}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="benchmark-source-list">
+                      {benchmark.external_sources.slice(0, 2).map((source) => (
+                        <a href={source.source_url} key={source.source_url} rel="noreferrer" target="_blank">
+                          {source.name} - {source.mention_count} mentions
+                        </a>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+            <div className="source-registry-strip">
+              {externalSources.slice(0, 5).map((source) => (
+                <a href={source.url} key={source.source_id} rel="noreferrer" target="_blank">
+                  <strong>{source.name}</strong>
+                  <span>{source.source_type.replaceAll("_", " ")}</span>
+                </a>
+              ))}
+            </div>
           </section>
 
           <div className="marketing-grid">

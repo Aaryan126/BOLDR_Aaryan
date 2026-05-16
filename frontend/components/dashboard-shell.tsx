@@ -807,6 +807,7 @@ export function DashboardShell({
       initialGapMetrics={initialGapMetrics}
       initialGaps={initialGaps}
       initialTickets={initialTickets}
+      externalBenchmarkOverview={externalBenchmarkOverview}
       insightsOverview={insightsOverview}
       isHealthy={isHealthy}
       systemDetails={systemDetails}
