@@ -5,7 +5,10 @@ import {
   getClassificationOverview,
   getDatasetOverview,
   getDraftOverview,
+  getGapList,
   getRetrievalOverview,
+  getTicketDetail,
+  getTicketList,
   getWorkflowOverview,
 } from "@/lib/api";
 
@@ -18,6 +21,8 @@ export default async function Home() {
     aiOverview,
     draftOverview,
     workflowOverview,
+    ticketList,
+    gapList,
   ] = await Promise.all([
     getBackendHealth(),
     getDatasetOverview(),
@@ -26,7 +31,11 @@ export default async function Home() {
     getAIOverview(),
     getDraftOverview(),
     getWorkflowOverview(),
+    getTicketList(),
+    getGapList(),
   ]);
+  const initialTicketId = ticketList?.data[0]?.ticket_id ?? "TKT-1048";
+  const initialTicketDetail = await getTicketDetail(initialTicketId);
 
   return (
     <DashboardShell
@@ -37,6 +46,9 @@ export default async function Home() {
       aiOverview={aiOverview}
       draftOverview={draftOverview}
       workflowOverview={workflowOverview}
+      initialTickets={ticketList?.data ?? []}
+      initialGaps={gapList?.data ?? []}
+      initialTicketDetail={initialTicketDetail}
     />
   );
 }

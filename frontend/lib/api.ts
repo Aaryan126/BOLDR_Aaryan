@@ -146,6 +146,237 @@ export type WorkflowOverview = {
   detail?: string;
 };
 
+export type ReplyType = "customer_reply" | "holding_reply" | "internal_note";
+
+export type ApprovalStatus =
+  | "draft"
+  | "needs_review"
+  | "approved"
+  | "edited_and_approved"
+  | "rejected"
+  | "sent_or_exported";
+
+export type TicketWorkflowSummary = {
+  ticket_id: string;
+  date_received: string;
+  subject: string;
+  channel: string;
+  status: string;
+  persona: string;
+  intent: string;
+  answerability: string;
+  reply_type: ReplyType;
+  approval_status: ApprovalStatus;
+  requires_escalation: boolean;
+  evidence_count: number;
+  guardrail_failures: number;
+  gap_id: string | null;
+};
+
+export type TicketRecord = {
+  ticket_id: string;
+  date_received: string;
+  customer_name: string;
+  customer_email: string;
+  order_id: string | null;
+  channel: string;
+  question_type: string;
+  subject: string;
+  message_body: string;
+  status: string;
+  answered_by_kb: boolean;
+  requires_escalation: boolean;
+  buyer_persona: string;
+  agent_notes: string | null;
+};
+
+export type TicketClassificationDetail = {
+  ticket_id: string;
+  question_text: string;
+  channel: string;
+  intent: string;
+  question_type_hints: string[];
+  persona: string;
+  persona_confidence: number;
+  persona_trigger_terms: string[];
+  persona_reasoning: string;
+  operational_tags: string[];
+  answerability: string;
+  requires_escalation: boolean;
+  routing_reason: string;
+  extracted_order_ids: string[];
+  extracted_tracking_ids: string[];
+};
+
+export type EvidenceCard = {
+  evidence_id: string;
+  source_file: string;
+  source_type: string;
+  source_priority: number;
+  section_title: string;
+  match_type: string;
+  score: number;
+  confidence: number;
+  matched_terms: string[];
+  excerpt: string;
+  supports_answer: boolean;
+};
+
+export type RetrievalDetail = {
+  query: string;
+  ticket_id: string | null;
+  answerability_hint: string | null;
+  sufficient_evidence: boolean;
+  insufficiency_reason: string | null;
+  unsupported_terms: string[];
+  evidence: EvidenceCard[];
+  conflict_warnings: Array<{
+    topic: string;
+    message: string;
+    authoritative_source: string;
+    lower_priority_sources: string[];
+  }>;
+};
+
+export type TicketDraftDetail = {
+  ticket_id: string;
+  persona: string;
+  intent: string;
+  decision: {
+    ticket_id: string;
+    answerability: string;
+    reply_type: ReplyType;
+    customer_facing: boolean;
+    can_send_to_customer: boolean;
+    evidence_sufficient: boolean;
+    judge_method: string;
+    reasons: string[];
+    required_human_inputs: string[];
+    unsupported_terms: string[];
+  };
+  evidence_sufficiency: {
+    sufficient_evidence: boolean;
+    confidence: number;
+    supported_claims: string[];
+    unsupported_claims: string[];
+    required_human_inputs: string[];
+    rationale: string;
+  };
+  draft: {
+    reply_type: ReplyType;
+    draft_reply: string;
+    evidence_ids: string[];
+    claims: string[];
+    approval_status: "draft" | "needs_review";
+  };
+  gap_record: {
+    ticket_id: string;
+    gap_theme: string;
+    gap_question: string;
+    owner: string;
+    priority: "low" | "medium" | "high";
+    evidence_summary: string;
+    suggested_next_action: string;
+  } | null;
+  evidence_trace: Array<{
+    evidence_id: string;
+    source_file: string;
+    source_type: string;
+    section_title: string;
+    excerpt: string;
+    supports_answer: boolean;
+  }>;
+  guardrails: Array<{
+    name: string;
+    passed: boolean;
+    message: string;
+  }>;
+  approval: {
+    status: ApprovalStatus;
+    reviewer_note: string | null;
+    edited_reply: string | null;
+  };
+};
+
+export type TicketWorkflowDetail = {
+  workflow: TicketWorkflowSummary;
+  ticket: TicketRecord;
+  classification: TicketClassificationDetail;
+  retrieval: RetrievalDetail;
+  draft: TicketDraftDetail;
+};
+
+export type TicketListResponse = {
+  status: "ok";
+  data: TicketWorkflowSummary[];
+  meta: {
+    total: number;
+    returned: number;
+    filters: Record<string, string>;
+    answerability_counts: Record<string, number>;
+    reply_type_counts: Record<string, number>;
+    approval_status_counts: Record<string, number>;
+  };
+};
+
+export type TicketDetailResponse = {
+  status: "ok";
+  data: TicketWorkflowDetail;
+};
+
+export type GapStatus =
+  | "new"
+  | "needs_human_answer"
+  | "awaiting_supplier"
+  | "resolved_needs_kb_draft"
+  | "kb_draft_ready"
+  | "approved"
+  | "rejected";
+
+export type KnowledgeGapRecord = {
+  gap_id: string;
+  gap_theme: string;
+  status: GapStatus;
+  source_ticket_ids: string[];
+  frequency: number;
+  persona_counts: Record<string, number>;
+  owner: string;
+  priority: "low" | "medium" | "high";
+  gap_questions: string[];
+  evidence_summary: string;
+  suggested_next_action: string;
+  marketing_signal: boolean;
+  human_resolution: string | null;
+  reviewer_note: string | null;
+  kb_draft: {
+    gap_theme: string;
+    faq_section: string;
+    question: string;
+    answer: string;
+    source_ticket_ids: string[];
+    confidence: number;
+    reviewer_notes: string;
+  } | null;
+  updated_at: string | null;
+};
+
+export type GapListResponse = {
+  status: "ok";
+  data: KnowledgeGapRecord[];
+  meta: {
+    total: number;
+    returned: number;
+    filters: Record<string, string>;
+    status_counts: Record<string, number>;
+    priority_counts: Record<string, number>;
+  };
+};
+
+export type GapDetailResponse = {
+  status: "ok";
+  data: KnowledgeGapRecord;
+};
+
 export async function getBackendHealth(): Promise<BackendHealth> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
@@ -167,6 +398,63 @@ export async function getBackendHealth(): Promise<BackendHealth> {
       status: "unavailable",
       detail: error instanceof Error ? error.message : "Unknown error",
     };
+  }
+}
+
+export async function getTicketList(): Promise<TicketListResponse | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/tickets`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as TicketListResponse;
+  } catch {
+    return null;
+  }
+}
+
+export async function getTicketDetail(
+  ticketId: string,
+): Promise<TicketWorkflowDetail | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/tickets/${ticketId}/intelligence`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const body = (await response.json()) as TicketDetailResponse;
+    return body.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function getGapList(): Promise<GapListResponse | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/gaps`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as GapListResponse;
+  } catch {
+    return null;
   }
 }
 

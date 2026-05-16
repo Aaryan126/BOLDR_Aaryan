@@ -782,7 +782,7 @@ GET  /api/external/benchmarks
 POST /api/external/benchmarks/generate
 ```
 
-Implemented through Phase 7:
+Implemented through Phase 8:
 
 ```text
 GET  /health
@@ -814,6 +814,12 @@ GET  /api/gaps/{gap_id}
 POST /api/gaps/{gap_id}/resolve
 POST /api/gaps/{gap_id}/draft-kb-entry
 ```
+
+The Phase 8 frontend consumes these APIs in a single interactive workbench:
+
+- inbox list with search, filters, and batch processing
+- ticket review with customer message, routing tags, editable draft, evidence, guardrails, and review actions
+- knowledge gap queue with verified resolution, FAQ draft generation, and generated FAQ preview
 
 ## 15. AI Output Contracts
 

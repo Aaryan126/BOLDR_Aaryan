@@ -4,9 +4,13 @@ import type {
   ClassificationOverview,
   DatasetOverview,
   DraftOverview,
+  KnowledgeGapRecord,
   RetrievalOverview,
+  TicketWorkflowDetail,
+  TicketWorkflowSummary,
   WorkflowOverview,
 } from "@/lib/api";
+import { WorkbenchClient } from "@/components/workbench-client";
 
 const navigationItems = [
   "Inbox Intelligence",
@@ -45,6 +49,12 @@ const phaseCards = [
   {
     title: "Phase 7",
     label: "Stable ticket, batch, and gap workflow APIs",
+    value: "Complete",
+    tone: "gold",
+  },
+  {
+    title: "Phase 8",
+    label: "Interactive ticket review and gap workbench",
     value: "Active",
     tone: "gold",
   },
@@ -52,12 +62,12 @@ const phaseCards = [
 
 const upcomingModules = [
   {
-    title: "Phase 8",
-    body: "Turn the dashboard into a full ticket review and gap-management workbench.",
-  },
-  {
     title: "Phase 9",
     body: "Complete the knowledge gap resolution and FAQ drafting loop.",
+  },
+  {
+    title: "Phase 10",
+    body: "Generate theme radar and monthly marketing intelligence outputs.",
   },
 ];
 
@@ -69,6 +79,9 @@ type DashboardShellProps = {
   aiOverview: AIOverview;
   draftOverview: DraftOverview;
   workflowOverview: WorkflowOverview;
+  initialTickets: TicketWorkflowSummary[];
+  initialGaps: KnowledgeGapRecord[];
+  initialTicketDetail: TicketWorkflowDetail | null;
 };
 
 export function DashboardShell({
@@ -79,6 +92,9 @@ export function DashboardShell({
   aiOverview,
   draftOverview,
   workflowOverview,
+  initialTickets,
+  initialGaps,
+  initialTicketDetail,
 }: DashboardShellProps) {
   const isHealthy = health.status === "ok";
   const diagnostics = datasetOverview.diagnostics;
@@ -113,14 +129,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 7 Workflow API</p>
+                <p className="eyebrow">Phase 8 Workbench UI</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
                   The core pipeline now ingests local tickets, assigns the five
                   required personas, retrieves explainable evidence, and creates
-                  guarded drafts behind stable ticket, batch, and gap workflow APIs.
+                  guarded drafts inside an interactive review and gap-management workbench.
                 </p>
               </div>
               <div
@@ -185,7 +201,7 @@ export function DashboardShell({
 
             <article className="panel">
               <p className="eyebrow">Next Build Steps</p>
-              <h3>Workflow before full UI</h3>
+              <h3>Review before intelligence reports</h3>
               <div className="timeline">
                 {upcomingModules.map((module) => (
                   <div
@@ -201,6 +217,12 @@ export function DashboardShell({
               </div>
             </article>
           </section>
+
+          <WorkbenchClient
+            initialGaps={initialGaps}
+            initialTicketDetail={initialTicketDetail}
+            initialTickets={initialTickets}
+          />
 
           <section className="panel">
             <div className="panel-heading">

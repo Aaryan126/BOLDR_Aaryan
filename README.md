@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-7: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, and stable ticket/batch/gap workflow APIs. Full workbench UI, deeper KB loops, theme radar, marketing briefs, and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-8: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, and an interactive ticket review/gap-management workbench. Deeper KB loops, theme radar, marketing briefs, and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -237,4 +237,13 @@ docker compose down
 - New workflow responses use consistent `{ status, data, meta }` envelopes where list/process metadata matters.
 - Contract tests cover filters, full ticket traces, single/batch process runs, gap resolution, KB draft generation, and readable 404/409 errors.
 - Frontend shows workflow API readiness, stable endpoint count, routable ticket count, gap count, review queue count, and unresolved gap count.
+- Backend and frontend checks pass.
+
+## Phase 8 Exit Criteria
+
+- The first screen includes an interactive workbench, not only summary metrics.
+- Inbox Intelligence supports ticket search, status filters, and batch processing.
+- Ticket Review shows customer message, persona/routing tags, editable draft, approval/edit/reject controls, evidence cards, and guardrails.
+- Knowledge Gaps shows a selectable gap queue, verified-resolution field, resolve action, FAQ draft action, and generated FAQ preview.
+- Desktop and mobile browser smoke checks pass with no horizontal overflow.
 - Backend and frontend checks pass.

@@ -574,7 +574,7 @@ Decision to proceed: Pending user review
 
 ## 12. Phase 8: Frontend Workbench UI
 
-Status: Planned.
+Status: Implemented; awaiting human verification.
 
 Goal: Build the main user-facing workbench for the core challenge.
 
@@ -619,7 +619,44 @@ Exit criteria:
 
 - Core workflow can be demonstrated from the UI without manual API calls.
 
+Implementation notes:
+
+- Added an interactive client workbench as the first operational surface on the dashboard.
+- Added Inbox Intelligence UI with ticket search, filters, selected-ticket state, and batch process action.
+- Added Ticket Review UI with:
+  - customer message
+  - persona/answerability/reply-type chips
+  - routing tags
+  - editable draft reply
+  - reviewer note
+  - approve, save edit, and reject actions
+  - evidence cards
+  - guardrail checks
+- Added Knowledge Gaps UI with:
+  - gap queue
+  - selected gap detail
+  - verified resolution field
+  - resolve gap action
+  - FAQ draft action
+  - generated FAQ preview
+- Added frontend API types for ticket workflow details, draft review state, evidence cards, and gap records.
+- Updated dashboard phase status and browser layout constraints for the larger workbench surface.
+
+Phase gate record:
+
+```text
+Phase: 8 - Frontend Workbench UI
+Status: Implemented; awaiting human verification
+Implemented: Interactive inbox, ticket review, draft approval/edit/reject controls, evidence cards, guardrail display, gap queue, gap resolution, FAQ draft preview, responsive workbench layout
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit, Playwright desktop/mobile smoke
+Human verification completed: Pending
+Known issues: UI state still depends on in-memory backend workflow state until durable persistence is added
+Decision to proceed: Pending user review
+```
+
 ## 13. Phase 9: Knowledge Gap And KB Draft Loop
+
+Status: Planned.
 
 Goal: Complete the self-improving knowledge base loop.
 
@@ -908,4 +945,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 7 human verification, then start Phase 8 by turning the summary dashboard into the full workbench UI for ticket review, evidence inspection, draft approval, and gap management.
+Complete Phase 8 human verification, then start Phase 9 by making the knowledge gap and FAQ draft loop more durable, reviewable, and complete.
