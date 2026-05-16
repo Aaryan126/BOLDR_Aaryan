@@ -1,7 +1,12 @@
 from fastapi.testclient import TestClient
 
+from app.intelligence.ai_provider import FakeAIProvider
+from app.intelligence.drafting import generate_ticket_draft
 from app.main import create_app
+from app.models.ai import DraftReplyOutput
+from app.services.classifications import get_ticket_classification
 from app.services.drafts import get_draft_evaluation, get_ticket_draft, list_ticket_drafts
+from app.services.retrieval import search_ticket_evidence
 
 BANNED_PHRASES = ["Dear Sir/Madam", "Great question!"]
 RAW_REPLY_PREFIX = "Based on the current BOLDR knowledge base"
@@ -77,6 +82,73 @@ def test_titanium_stainless_reply_is_customer_readable() -> None:
     assert "STR-" not in reply_text
     assert "customer_safe_wording" in {guardrail.name for guardrail in draft.guardrails}
     assert all(guardrail.passed for guardrail in draft.guardrails)
+
+
+def test_product_price_question_lists_matching_variants() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/enquiries",
+        json={"message": "How much does Expedition Titanium cost?"},
+    )
+
+    assert response.status_code == 200
+    reply_text = response.json()["draft"]["draft"]["draft_reply"]
+    assert "Expedition Titanium" in reply_text
+    assert "SGD 485" in reply_text
+    assert "Expedition Titanium - Ember Limited Edition" in reply_text
+    assert "SGD 595" in reply_text
+    assert "Grade 5" not in reply_text
+
+
+def test_live_ai_draft_path_accepts_grounded_structured_reply() -> None:
+    classification = get_ticket_classification("TKT-1048")
+    retrieval = search_ticket_evidence("TKT-1048")
+    assert classification is not None
+    assert retrieval is not None
+    evidence_id = retrieval.evidence[0].evidence_id
+    provider = FakeAIProvider(
+        DraftReplyOutput(
+            ticket_id="TKT-1048",
+            reply_type="customer_reply",
+            draft_reply="Current FKM rubber and nylon NATO straps are BPA-free.",
+            evidence_ids=[evidence_id],
+            claims=["Current FKM rubber and nylon NATO straps are BPA-free."],
+            approval_status="draft",
+        ).model_dump()
+    )
+
+    draft = generate_ticket_draft(
+        classification,
+        retrieval,
+        use_live_ai=True,
+        ai_provider=provider,
+    )
+
+    assert draft.decision.reply_type == "customer_reply"
+    assert draft.draft.draft_reply == "Current FKM rubber and nylon NATO straps are BPA-free."
+    assert draft.draft.evidence_ids == [evidence_id]
+    assert all(guardrail.passed for guardrail in draft.guardrails)
+
+
+def test_required_live_ai_failure_blocks_template_fallback() -> None:
+    classification = get_ticket_classification("TKT-1048")
+    retrieval = search_ticket_evidence("TKT-1048")
+    assert classification is not None
+    assert retrieval is not None
+    provider = FakeAIProvider("not valid json")
+
+    draft = generate_ticket_draft(
+        classification,
+        retrieval,
+        use_live_ai=True,
+        ai_provider=provider,
+    )
+
+    assert draft.decision.reply_type == "internal_note"
+    assert draft.decision.can_send_to_customer is False
+    assert "Live AI drafting was required" in draft.decision.reasons[-1]
+    assert "BPA-free" not in draft.draft.draft_reply
 
 
 def test_all_customer_facing_claims_are_evidence_backed_and_clean() -> None:

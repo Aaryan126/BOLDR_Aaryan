@@ -21,6 +21,7 @@ from app.models.ai import (
     ThemeClusterOutput,
 )
 from app.models.classification import TicketClassification
+from app.models.drafting import AnswerabilityDecision
 from app.models.retrieval import RetrievalResult
 
 PROMPT_VERSION = "phase5_glm_structured_v1"
@@ -151,6 +152,93 @@ def build_evidence_sufficiency_prompt(
     return StructuredPromptPreview(
         prompt_version=PROMPT_VERSION,
         schema_name="evidence_sufficiency",
+        ticket_id=classification.ticket_id,
+        redacted=True,
+        messages=messages,
+    )
+
+
+def build_draft_reply_prompt(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+    decision: AnswerabilityDecision,
+    sufficiency: EvidenceSufficiencyOutput,
+) -> StructuredPromptPreview:
+    schema = DraftReplyOutput.model_json_schema()
+    safe_payload = redact_value(
+        {
+            "ticket": {
+                "ticket_id": classification.ticket_id,
+                "question_text": classification.question_text,
+                "intent": classification.intent,
+                "persona": classification.persona,
+                "answerability": classification.answerability,
+                "operational_tags": classification.operational_tags,
+                "routing_reason": classification.routing_reason,
+            },
+            "decision": decision.model_dump(),
+            "evidence_sufficiency": sufficiency.model_dump(),
+            "retrieval": {
+                "sufficient_evidence": retrieval.sufficient_evidence,
+                "unsupported_terms": retrieval.unsupported_terms,
+                "insufficiency_reason": retrieval.insufficiency_reason,
+                "evidence": [
+                    {
+                        "evidence_id": evidence.evidence_id,
+                        "source_file": evidence.source_file,
+                        "source_type": evidence.source_type,
+                        "section_title": evidence.section_title,
+                        "confidence": evidence.confidence,
+                        "supports_answer": evidence.supports_answer,
+                        "excerpt": evidence.excerpt,
+                        "structured_data": evidence.structured_data,
+                    }
+                    for evidence in retrieval.evidence[:6]
+                    if evidence.supports_answer
+                ],
+                "conflict_warnings": [
+                    warning.model_dump() for warning in retrieval.conflict_warnings
+                ],
+            },
+        }
+    )
+
+    messages = [
+        ChatMessage(
+            role="system",
+            content=(
+                "You are a BOLDR customer support drafter. Return only valid JSON matching "
+                "the provided schema. Draft only from the supplied evidence. Do not invent "
+                "availability, policy, order status, certification, discounts, or technical "
+                "claims. If the customer asks a price question about a named watch and "
+                "multiple matching variants are in evidence, list each matching variant and "
+                "its SGD price. Use concise, customer-ready wording."
+            ),
+        ),
+        ChatMessage(
+            role="user",
+            content=json.dumps(
+                {
+                    "prompt_version": PROMPT_VERSION,
+                    "schema_name": "draft_reply",
+                    "schema": schema,
+                    "input": safe_payload,
+                    "rules": [
+                        "reply_type must be customer_reply for supported customer answers.",
+                        "evidence_ids must come from the supplied evidence list.",
+                        "claims must be short factual claims supported by those evidence_ids.",
+                        "Do not include raw table rows, pipe-delimited evidence, markdown tables, or citations.",
+                    ],
+                },
+                ensure_ascii=True,
+                indent=2,
+            ),
+        ),
+    ]
+
+    return StructuredPromptPreview(
+        prompt_version=PROMPT_VERSION,
+        schema_name="draft_reply",
         ticket_id=classification.ticket_id,
         redacted=True,
         messages=messages,

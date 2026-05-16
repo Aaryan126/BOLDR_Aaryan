@@ -920,7 +920,7 @@ Decision to proceed: Pending user review
 
 ## 17. Phase 13: Demo Polish And Competition Readiness
 
-Status: Partially implemented; chat-first workspace and ad-hoc enquiry loop complete.
+Status: Partially implemented; chat-first workspace, ad-hoc enquiry loop, and evidence-grounded draft intelligence complete.
 
 Goal: Turn the working system into a polished, stable demo.
 
@@ -928,6 +928,8 @@ Deliverables:
 
 - Chat-first judge workflow with free-text enquiries and sample ticket dropdown. Complete.
 - In-memory ad-hoc enquiry API with approval, CS resolution, KB draft, and KB review state. Complete.
+- Mandatory GLM/FPT draft composer for answerable ad-hoc chat when `AI_LIVE_ENABLED=true`, with schema validation and human-review blocking on invalid model output. Complete.
+- Structured product-price answer handling for named watch models and variants. Complete.
 - Dark BOLDR-styled tabbed workspace with Customer Chat, Approvals, CS Queue, Knowledge Base, Marketing Intel, and System Details. Complete.
 - Existing implementation dashboard preserved under System Details. Complete.
 - Browser smoke path for answerable approval, knowledge gap resolution, KB drafting/review, and desktop/mobile overflow. Complete.
@@ -976,10 +978,10 @@ Phase record:
 ```text
 Phase: 13A Chat-first demo workflow
 Status: Implemented; awaiting human demo-owner verification
-Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval queue, CS queue, KB draft/review surface, live demo marketing signals, dev-port CORS fallback
+Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval queue, CS queue, KB draft/review surface, live demo marketing signals, mandatory evidence-grounded GLM draft composer when live AI is enabled, structured product-price answers, dev-port CORS fallback
 Default tests run: backend pytest, frontend lint/typecheck/build, git diff check, Playwright desktop/mobile smoke on answerable and gap flows
 Human verification completed: Pending
-Known issues: Demo enquiry state is in-memory and resets with backend restart; live GLM inference remains optional and is not required for this deterministic demo path
+Known issues: Demo enquiry state is in-memory and resets with backend restart; offline/test mode uses deterministic drafting, while live GLM mode blocks invalid model output for human review instead of using a template fallback
 Decision to proceed: Pending user review
 ```
 

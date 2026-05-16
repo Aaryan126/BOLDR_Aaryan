@@ -669,6 +669,7 @@ Model provider:
 - GLM-5.1 via FPT AI Factory.
 - Use a provider adapter around the FPT chat completions endpoint so the provider can be swapped.
 - The current GLM endpoint is `https://mkp-api.fptcloud.com/v1/chat/completions` and returns a wrapped response with `code`, `message`, and `data`.
+- Ad-hoc customer chat uses GLM for the final evidence-grounded draft whenever `AI_LIVE_ENABLED=true` and credentials are configured. Model output must match the `DraftReplyOutput` schema and cite supplied evidence IDs. If live drafting fails validation, the workflow blocks the customer reply for human review instead of silently using a template. Offline/test mode keeps deterministic drafting available.
 
 Embeddings:
 
@@ -945,7 +946,15 @@ Expected:
 - UI shows source conflict warning.
 - Draft uses structured rate-card pricing.
 
-### 18.5 Bonus Case: Nickel Allergy
+### 18.5 Product Price Case: Named Watch Model
+
+Expected:
+
+- Question such as "How much does Expedition Titanium cost?" retrieves structured product model evidence.
+- Draft lists each matching named variant and SGD price, for example Expedition Titanium and Expedition Titanium - Ember Limited Edition.
+- Draft does not answer a price question with unrelated material or grade information.
+
+### 18.6 Bonus Case: Nickel Allergy
 
 Expected:
 

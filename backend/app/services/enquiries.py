@@ -59,7 +59,7 @@ def create_enquiry(request: AdhocEnquiryRequest) -> AdhocEnquiryRecord:
     ticket = _build_synthetic_ticket(enquiry_id, request, raw_message, sample_ticket)
     classification = classify_ticket(ticket)
     retrieval = get_evidence_retriever().search_ticket(classification)
-    draft = generate_ticket_draft(classification, retrieval)
+    draft = generate_ticket_draft(classification, retrieval, use_live_ai=None)
 
     source_refs = _source_refs(retrieval.evidence[:5])
     answerable = (
@@ -546,4 +546,3 @@ def _today_iso() -> str:
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-

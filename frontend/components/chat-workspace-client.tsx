@@ -174,6 +174,7 @@ export function ChatWorkspaceClient({
   const [theme, setTheme] = useState<WorkspaceTheme>("dark");
   const [enquiries, setEnquiries] = useState<AdhocEnquiryRecord[]>([]);
   const [composer, setComposer] = useState("");
+  const [pendingMessage, setPendingMessage] = useState("");
   const [selectedSampleId, setSelectedSampleId] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -267,6 +268,7 @@ export function ChatWorkspaceClient({
   function startNewConversation() {
     setEnquiries([]);
     setComposer("");
+    setPendingMessage("");
     setSelectedSampleId("");
     setSelectedApprovalId("");
     setSelectedGapId("");
@@ -370,6 +372,7 @@ export function ChatWorkspaceClient({
     }
 
     setLoadingAction("submit");
+    setPendingMessage(message);
     setStatusMessage("");
     try {
       const record = await fetchJson<AdhocEnquiryRecord>("/api/enquiries", {
@@ -394,6 +397,7 @@ export function ChatWorkspaceClient({
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Enquiry failed.");
     } finally {
+      setPendingMessage("");
       setLoadingAction(null);
     }
   }
@@ -417,7 +421,6 @@ export function ChatWorkspaceClient({
         },
       );
       setEnquiries((current) => upsertRecord(current, record));
-      setStatusMessage(`Updated ${record.enquiry_id}: ${formatLabel(record.state)}.`);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Review failed.");
     } finally {
@@ -443,7 +446,6 @@ export function ChatWorkspaceClient({
         },
       );
       setEnquiries((current) => upsertRecord(current, record));
-      setStatusMessage(`Resolved gap for ${record.enquiry_id}.`);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Gap resolution failed.");
     } finally {
@@ -464,7 +466,6 @@ export function ChatWorkspaceClient({
       );
       setEnquiries((current) => upsertRecord(current, record));
       setActiveTab("kb");
-      setStatusMessage(`KB draft ready for ${record.enquiry_id}.`);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "KB draft failed.");
     } finally {
@@ -494,7 +495,6 @@ export function ChatWorkspaceClient({
         },
       );
       setEnquiries((current) => upsertRecord(current, record));
-      setStatusMessage(`KB draft ${status} for ${record.enquiry_id}.`);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "KB review failed.");
     } finally {
@@ -571,7 +571,7 @@ export function ChatWorkspaceClient({
             </div>
 
             <div className="message-stream" aria-live="polite" ref={messageStreamRef}>
-              {enquiries.length === 0 ? (
+              {enquiries.length === 0 && !pendingMessage ? (
                 <div className="empty-chat-state">
                   <p className="eyebrow">Ready</p>
                   <h2>Type a question or run a real sample enquiry.</h2>
@@ -581,11 +581,11 @@ export function ChatWorkspaceClient({
                     customer answer is shown.
                   </p>
                 </div>
-              ) : (
-                enquiries.map((record) => (
-                  <ConversationRecord key={record.enquiry_id} record={record} />
-                ))
-              )}
+              ) : null}
+              {enquiries.map((record) => (
+                <ConversationRecord key={record.enquiry_id} record={record} />
+              ))}
+              {pendingMessage ? <PendingConversation message={pendingMessage} /> : null}
             </div>
 
             <div className="chat-composer">
@@ -1044,6 +1044,29 @@ function ConversationRecord({ record }: { record: AdhocEnquiryRecord }) {
   );
 }
 
+function PendingConversation({ message }: { message: string }) {
+  return (
+    <article className="conversation-record pending-conversation">
+      <div className="chat-message user">
+        <span>Demo Customer</span>
+        <p>{message}</p>
+      </div>
+      <div
+        aria-label="BOLDR Intelligence is processing"
+        className="chat-message assistant typing-message"
+        role="status"
+      >
+        <span>BOLDR Intelligence</span>
+        <div aria-hidden="true" className="typing-loader">
+          <i />
+          <i />
+          <i />
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function MarkdownResponse({ text }: { text: string }) {
   const trimmed = text.trim();
   if (!trimmed) {
@@ -1211,10 +1234,12 @@ function customerStateMessage(record: AdhocEnquiryRecord) {
 
 function TraceRow({ event }: { event: TraceEvent }) {
   return (
-    <details className={`trace-row ${event.status}`} open={event.status === "blocked"}>
+    <details className={`trace-row ${event.status}`} open>
       <summary>
         <span>{event.title}</span>
-        <strong className={badgeToneClass(event.status)}>{formatLabel(event.status)}</strong>
+        <strong aria-label={formatLabel(event.status)} className={badgeToneClass(event.status)}>
+          {traceStatusIcon(event.status)}
+        </strong>
       </summary>
       <p>{event.detail}</p>
       {event.source_refs.length > 0 ? (
@@ -1226,6 +1251,16 @@ function TraceRow({ event }: { event: TraceEvent }) {
       ) : null}
     </details>
   );
+}
+
+function traceStatusIcon(status: TraceEvent["status"]) {
+  if (status === "completed") {
+    return "✓";
+  }
+  if (status === "blocked") {
+    return "×";
+  }
+  return "•";
 }
 
 function QueueList({

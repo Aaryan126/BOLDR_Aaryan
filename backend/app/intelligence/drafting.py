@@ -3,6 +3,13 @@ from __future__ import annotations
 import re
 from collections import Counter
 
+from app.core.config import get_settings
+from app.intelligence.ai_provider import AIProvider, AIProviderError, FPTGLMProvider
+from app.intelligence.structured_outputs import (
+    StructuredOutputError,
+    build_draft_reply_prompt,
+    parse_structured_output,
+)
 from app.models.ai import DraftReplyOutput, EvidenceSufficiencyOutput, GapRecordOutput, ReplyType
 from app.models.classification import TicketClassification
 from app.models.drafting import (
@@ -24,11 +31,40 @@ BANNED_REPLY_PATTERNS = [
 
 RAW_EVIDENCE_REPLY_PREFIX = "Based on the current BOLDR knowledge base"
 RAW_TABLE_ROW_PATTERN = re.compile(r"\b[A-Z]{2,}-[A-Z0-9-]+\b.*\|")
+PRICE_QUERY_TERMS = ("price", "pricing", "cost", "how much", "sgd")
+PRODUCT_QUERY_STOPWORDS = {
+    "a",
+    "about",
+    "and",
+    "boldr",
+    "cost",
+    "current",
+    "does",
+    "for",
+    "how",
+    "is",
+    "me",
+    "model",
+    "models",
+    "much",
+    "price",
+    "pricing",
+    "sgd",
+    "the",
+    "version",
+    "versions",
+    "watch",
+    "watches",
+    "what",
+}
 
 
 def generate_ticket_draft(
     classification: TicketClassification,
     retrieval: RetrievalResult,
+    *,
+    use_live_ai: bool | None = False,
+    ai_provider: AIProvider | None = None,
 ) -> TicketDraft:
     evidence_trace = [
         EvidenceTrace(
@@ -43,10 +79,35 @@ def generate_ticket_draft(
     ]
     evidence_sufficiency = judge_evidence_sufficiency(classification, retrieval)
     decision = decide_reply_type(classification, retrieval, evidence_sufficiency)
-    prepared_customer_reply = None
+    prepared_customer_draft = None
     if decision.reply_type == "customer_reply":
-        prepared_customer_reply = compose_customer_reply(classification, retrieval)
-        if not prepared_customer_reply or has_raw_evidence_artifacts(prepared_customer_reply):
+        live_ai_required = should_require_live_ai(use_live_ai, ai_provider)
+        prepared_customer_draft = compose_ai_customer_draft(
+            classification,
+            retrieval,
+            decision,
+            evidence_sufficiency,
+            use_live_ai=use_live_ai,
+            ai_provider=ai_provider,
+        )
+        if live_ai_required and prepared_customer_draft is None:
+            decision = block_failed_live_ai_draft(decision)
+        prepared_customer_reply = (
+            prepared_customer_draft.draft_reply
+            if prepared_customer_draft is not None
+            else None
+            if live_ai_required
+            else compose_customer_reply(classification, retrieval)
+        )
+        if prepared_customer_draft is None and prepared_customer_reply:
+            prepared_customer_draft = build_prepared_customer_draft(
+                classification,
+                retrieval,
+                prepared_customer_reply,
+            )
+        if not live_ai_required and (
+            not prepared_customer_reply or has_raw_evidence_artifacts(prepared_customer_reply)
+        ):
             decision = decision.model_copy(
                 update={
                     "reply_type": "internal_note",
@@ -62,8 +123,8 @@ def generate_ticket_draft(
                     ],
                 }
             )
-            prepared_customer_reply = None
-    draft = build_draft_output(classification, retrieval, decision, prepared_customer_reply)
+            prepared_customer_draft = None
+    draft = build_draft_output(classification, retrieval, decision, prepared_customer_draft)
     gap_record = build_gap_record(classification, retrieval, decision)
     guardrails = run_guardrails(classification, retrieval, decision, draft)
 
@@ -236,7 +297,7 @@ def build_draft_output(
     classification: TicketClassification,
     retrieval: RetrievalResult,
     decision: AnswerabilityDecision,
-    prepared_customer_reply: str | None = None,
+    prepared_customer_draft: DraftReplyOutput | None = None,
 ) -> DraftReplyOutput:
     evidence_ids = [
         evidence.evidence_id for evidence in retrieval.evidence if evidence.supports_answer
@@ -244,7 +305,9 @@ def build_draft_output(
     claims = infer_supported_claims(classification, retrieval) if decision.can_send_to_customer else []
 
     if decision.reply_type == "customer_reply":
-        reply = prepared_customer_reply or compose_customer_reply(classification, retrieval)
+        if prepared_customer_draft is not None:
+            return prepared_customer_draft
+        reply = compose_customer_reply(classification, retrieval)
         if reply is None:
             reply = "Internal action: rewrite the retrieved evidence into a customer-safe answer before approval."
         return DraftReplyOutput(
@@ -288,6 +351,9 @@ def compose_customer_reply(
     retrieval: RetrievalResult,
 ) -> str | None:
     text = classification.normalized_question
+    product_price_reply = compose_product_price_reply(classification, retrieval)
+    if product_price_reply:
+        return product_price_reply
     if "bpa" in text:
         return (
             "Yes. For the current range, BOLDR's FKM rubber and nylon NATO straps are "
@@ -455,6 +521,227 @@ def compose_customer_reply(
         return compose_clean_evidence_answer(retrieval)
 
     return compose_clean_evidence_answer(retrieval)
+
+
+def should_require_live_ai(use_live_ai: bool | None, ai_provider: AIProvider | None) -> bool:
+    if ai_provider is not None:
+        return use_live_ai is not False
+    if use_live_ai is not None:
+        return use_live_ai
+    settings = get_settings()
+    return settings.ai_live_enabled and bool(settings.fpt_ai_api_key)
+
+
+def block_failed_live_ai_draft(decision: AnswerabilityDecision) -> AnswerabilityDecision:
+    return decision.model_copy(
+        update={
+            "reply_type": "internal_note",
+            "customer_facing": False,
+            "can_send_to_customer": False,
+            "evidence_sufficient": False,
+            "reasons": [
+                *decision.reasons,
+                "Live AI drafting was required but did not return a valid evidence-grounded reply.",
+            ],
+            "required_human_inputs": [
+                *decision.required_human_inputs,
+                "Review the retrieved evidence and draft the customer reply manually.",
+            ],
+        }
+    )
+
+
+def compose_ai_customer_draft(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+    decision: AnswerabilityDecision,
+    sufficiency: EvidenceSufficiencyOutput,
+    *,
+    use_live_ai: bool | None,
+    ai_provider: AIProvider | None,
+) -> DraftReplyOutput | None:
+    enabled = get_settings().ai_live_enabled if use_live_ai is None else use_live_ai
+    if not enabled and ai_provider is None:
+        return None
+
+    provider = ai_provider
+    owns_provider = provider is None
+    if provider is None:
+        settings = get_settings()
+        if not settings.fpt_ai_api_key:
+            return None
+        provider = FPTGLMProvider(
+            api_key=settings.fpt_ai_api_key,
+            base_url=settings.fpt_ai_base_url,
+            model=settings.glm_model,
+            timeout_seconds=settings.ai_timeout_seconds,
+            max_retries=settings.ai_max_retries,
+        )
+
+    try:
+        prompt_retrieval = retrieval_for_ai_prompt(classification, retrieval)
+        prompt = build_draft_reply_prompt(classification, prompt_retrieval, decision, sufficiency)
+        response = provider.chat(prompt.messages, temperature=0.1, max_tokens=900)
+        draft = parse_structured_output(response.content, DraftReplyOutput)
+        return validate_ai_customer_draft(classification, retrieval, draft)
+    except (AIProviderError, StructuredOutputError, ValueError):
+        return None
+    finally:
+        if owns_provider and provider is not None and hasattr(provider, "close"):
+            provider.close()
+
+
+def validate_ai_customer_draft(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+    draft: DraftReplyOutput,
+) -> DraftReplyOutput | None:
+    supporting_ids = {evidence.evidence_id for evidence in retrieval.evidence if evidence.supports_answer}
+    if draft.ticket_id != classification.ticket_id:
+        return None
+    if draft.reply_type != "customer_reply":
+        return None
+    if not draft.draft_reply.strip() or has_raw_evidence_artifacts(draft.draft_reply):
+        return None
+    if not draft.evidence_ids or not set(draft.evidence_ids).issubset(supporting_ids):
+        return None
+    if not draft.claims:
+        return None
+    unsupported_claim_terms = [
+        term for term in retrieval.unsupported_terms if term.lower() in draft.draft_reply.lower()
+    ]
+    if unsupported_claim_terms:
+        return None
+    return draft.model_copy(update={"approval_status": "draft"})
+
+
+def retrieval_for_ai_prompt(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+) -> RetrievalResult:
+    if not is_price_query(classification.normalized_question):
+        return retrieval
+
+    product_evidence = matching_product_evidence(classification.normalized_question, retrieval)
+    if not product_evidence:
+        return retrieval
+    return retrieval.model_copy(update={"evidence": product_evidence[:6]})
+
+
+def build_prepared_customer_draft(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+    reply: str,
+) -> DraftReplyOutput:
+    return DraftReplyOutput(
+        ticket_id=classification.ticket_id,
+        reply_type="customer_reply",
+        draft_reply=reply,
+        evidence_ids=[
+            evidence.evidence_id for evidence in retrieval.evidence if evidence.supports_answer
+        ][:6],
+        claims=infer_supported_claims(classification, retrieval),
+        approval_status="draft",
+    )
+
+
+def compose_product_price_reply(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+) -> str | None:
+    text = classification.normalized_question
+    if not is_price_query(text):
+        return None
+
+    products = matching_product_models(text, retrieval)
+    if not products:
+        return None
+
+    if len(products) == 1:
+        product = products[0]
+        return (
+            f"The current product reference lists {product['name']} at "
+            f"SGD {format_money(product['price_sgd'])}"
+            f"{sku_suffix(product)}."
+        )
+
+    product_list = "; ".join(
+        f"{product['name']} - SGD {format_money(product['price_sgd'])}{sku_suffix(product)}"
+        for product in products
+    )
+    return f"The current product reference lists these matching variants: {product_list}."
+
+
+def matching_product_models(text: str, retrieval: RetrievalResult) -> list[dict]:
+    return [evidence.structured_data for evidence in matching_product_evidence(text, retrieval)]
+
+
+def matching_product_evidence(text: str, retrieval: RetrievalResult) -> list[EvidenceCard]:
+    query_terms = product_query_terms(text)
+    product_evidence: list[EvidenceCard] = []
+    seen_skus: set[str] = set()
+
+    for evidence in retrieval.evidence:
+        item = evidence.structured_data
+        if evidence.source_type != "product_reference" or not item:
+            continue
+        if not item.get("name") or item.get("price_sgd") is None:
+            continue
+        sku = str(item.get("sku") or item.get("name"))
+        if sku in seen_skus:
+            continue
+        name_terms = set(tokenize_product_name(str(item["name"])))
+        if query_terms and not set(query_terms).issubset(name_terms):
+            continue
+        seen_skus.add(sku)
+        product_evidence.append(evidence)
+
+    if product_evidence or not query_terms:
+        return product_evidence
+
+    # If the query names a broader model family, return product rows whose names contain
+    # the most specific model token, e.g. "Expedition" should include limited editions.
+    model_terms = [term for term in query_terms if term not in {"titanium"}]
+    if not model_terms:
+        return []
+    seen_skus.clear()
+    for evidence in retrieval.evidence:
+        item = evidence.structured_data
+        if evidence.source_type != "product_reference" or not item:
+            continue
+        if not item.get("name") or item.get("price_sgd") is None:
+            continue
+        name_terms = set(tokenize_product_name(str(item["name"])))
+        if not set(model_terms).issubset(name_terms):
+            continue
+        sku = str(item.get("sku") or item.get("name"))
+        if sku in seen_skus:
+            continue
+        seen_skus.add(sku)
+        product_evidence.append(evidence)
+    return product_evidence
+
+
+def product_query_terms(text: str) -> list[str]:
+    terms = []
+    for token in tokenize_product_name(text):
+        if token in PRODUCT_QUERY_STOPWORDS:
+            continue
+        terms.append(token)
+    return terms
+
+
+def tokenize_product_name(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def is_price_query(text: str) -> bool:
+    return any(term in text for term in PRICE_QUERY_TERMS)
+
+
+def sku_suffix(product: dict) -> str:
+    sku = product.get("sku")
+    return f" (SKU: {sku})" if sku else ""
 
 
 def compose_rate_card_reply(
