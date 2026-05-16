@@ -247,8 +247,7 @@ export function ChatWorkspaceClient({
     (record) =>
       record.gap_state?.status === "kb_draft_ready" ||
       record.gap_state?.status === "resolved_needs_kb_draft" ||
-      record.gap_state?.status === "needs_resolution" ||
-      record.gap_state?.status === "rejected",
+      record.gap_state?.status === "needs_resolution",
   );
   const productPageSignals = gapQueue.filter(
     (record) => record.gap_state?.product_page_update_needed,
@@ -495,6 +494,12 @@ export function ChatWorkspaceClient({
         },
       );
       setEnquiries((current) => upsertRecord(current, record));
+      if (status === "rejected" && selectedGapId === record.enquiry_id) {
+        const nextDraft = pendingKbDrafts.find(
+          (draftRecord) => draftRecord.enquiry_id !== record.enquiry_id,
+        );
+        setSelectedGapId(nextDraft?.enquiry_id ?? "");
+      }
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "KB review failed.");
     } finally {
