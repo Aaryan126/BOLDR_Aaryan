@@ -551,11 +551,6 @@ export function ChatWorkspaceClient({
                 <h1 id="chat-heading">Ask BOLDR support intelligence anything.</h1>
               </div>
               <div className="chat-heading-actions">
-                <div className="chat-counts">
-                  <span>{enquiries.length} demo enquiries</span>
-                  <span>{approvalQueue.filter((record) => record.state === "awaiting_approval").length} approvals</span>
-                  <span>{gapQueue.filter((record) => record.gap_state?.status === "needs_resolution").length} CS gaps</span>
-                </div>
                 <button
                   className="secondary-action new-conversation-action"
                   onClick={startNewConversation}
