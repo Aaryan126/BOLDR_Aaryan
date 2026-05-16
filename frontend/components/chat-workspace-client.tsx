@@ -252,6 +252,16 @@ export function ChatWorkspaceClient({
   const productPageSignals = gapQueue.filter(
     (record) => record.gap_state?.product_page_update_needed,
   );
+  const themeClusters = themeRadar?.data ?? [];
+  const marketingOpportunities = marketingBrief?.opportunities ?? [];
+  const productPageOpportunities = marketingOpportunities.filter(
+    (opportunity) => opportunity.product_page_update_needed,
+  );
+  const monthlyBriefOpportunities =
+    productPageOpportunities.length > 0
+      ? productPageOpportunities.slice(0, 4)
+      : marketingOpportunities.slice(0, 4);
+  const weeklyThemeClusters = themeClusters.slice(0, 6);
 
   const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const stream = messageStreamRef.current;
@@ -901,6 +911,143 @@ export function ChatWorkspaceClient({
             <Metric label="Product-page gaps" value={productPageSignals.length} />
           </div>
 
+          <section className="marketing-panel marketing-deliverable-panel monthly-brief-panel">
+            <div className="deliverable-header">
+              <div>
+                <span className="deliverable-eyebrow">Monthly Brief</span>
+                <h2>What customers are asking that is not on your product pages</h2>
+              </div>
+              <span className="status-pill">{marketingBrief?.period_label ?? "Monthly output"}</span>
+            </div>
+            <div className="deliverable-meta-grid">
+              <div>
+                <span>Source tickets</span>
+                <strong>{marketingBrief?.source_ticket_count ?? 0}</strong>
+              </div>
+              <div>
+                <span>Persona-tagged themes</span>
+                <strong>{marketingOpportunities.length}</strong>
+              </div>
+              <div>
+                <span>Product page updates</span>
+                <strong>{productPageOpportunities.length}</strong>
+              </div>
+              <div>
+                <span>Live demo gaps</span>
+                <strong>{productPageSignals.length}</strong>
+              </div>
+            </div>
+            {monthlyBriefOpportunities.length === 0 ? (
+              <p className="muted-copy">No product-page opportunities are available yet.</p>
+            ) : (
+              <div className="brief-opportunity-grid">
+                {monthlyBriefOpportunities.map((opportunity) => (
+                  <article
+                    className={`brief-opportunity-card ${badgeToneClass(opportunity.persona_focus[0] ?? "")}`}
+                    key={opportunity.theme_name}
+                  >
+                    <div className="opportunity-topline">
+                      <span>{opportunity.theme_name}</span>
+                      {opportunity.product_page_update_needed ? (
+                        <em className="insight-chip tone-warning">Page gap</em>
+                      ) : (
+                        <em className="insight-chip tone-success">Campaign ready</em>
+                      )}
+                    </div>
+                    <h3>{opportunity.campaign_angle}</h3>
+                    <p>{opportunity.insight}</p>
+                    <div className="persona-chip-row">
+                      {opportunity.persona_focus.map((persona) => (
+                        <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
+                          {persona}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="opportunity-action">
+                      <span>Recommended action</span>
+                      <strong>{opportunity.recommended_action}</strong>
+                    </div>
+                    <div className="ticket-ref-row">
+                      {opportunity.evidence_ticket_ids.map((ticketId) => (
+                        <span key={ticketId}>{ticketId}</span>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="marketing-panel marketing-deliverable-panel weekly-cluster-panel">
+            <div className="deliverable-header">
+              <div>
+                <span className="deliverable-eyebrow">Weekly Theme Clustering</span>
+                <h2>Novel and recurring questions grouped by buyer theme</h2>
+              </div>
+              <span className="status-pill">
+                {themeRadar?.meta.clustered_ticket_count ?? 0} clustered tickets
+              </span>
+            </div>
+            {weeklyThemeClusters.length === 0 ? (
+              <p className="muted-copy">No theme clusters are available yet.</p>
+            ) : (
+              <div className="theme-cluster-list">
+                {weeklyThemeClusters.map((theme) => {
+                  const dominantPersona = dominantPersonaFromBreakdown(theme.persona_breakdown);
+                  const sampleQuestion =
+                    theme.common_customer_wording[0] ?? theme.evidence[0]?.customer_wording ?? "";
+                  return (
+                    <article
+                      className={`theme-cluster-row ${badgeToneClass(dominantPersona)}`}
+                      key={theme.theme_name}
+                    >
+                      <div className="theme-cluster-main">
+                        <div className="signal-card-header">
+                          <strong>{theme.theme_name}</strong>
+                          <span className="signal-metric">{theme.frequency} tickets</span>
+                        </div>
+                        {sampleQuestion ? <p>{sampleQuestion}</p> : null}
+                        <div className="signal-card-footer">
+                          <span className={`insight-chip ${badgeToneClass(dominantPersona)}`}>
+                            {dominantPersona}
+                          </span>
+                          <span className="insight-chip tone-accent">
+                            {formatLabel(theme.trend_direction)}
+                          </span>
+                          {theme.product_page_gap ? (
+                            <span className="insight-chip tone-warning">Product page gap</span>
+                          ) : (
+                            <span className="insight-chip tone-success">Covered</span>
+                          )}
+                          {theme.gap_count > 0 ? (
+                            <span className="insight-chip tone-warning">
+                              {theme.gap_count} unresolved
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="theme-cluster-actions">
+                        <div>
+                          <span>KB action</span>
+                          <p>{theme.recommended_kb_action}</p>
+                        </div>
+                        <div>
+                          <span>Marketing action</span>
+                          <p>{theme.recommended_marketing_action}</p>
+                        </div>
+                        <div className="ticket-ref-row">
+                          {theme.representative_ticket_ids.map((ticketId) => (
+                            <span key={ticketId}>{ticketId}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
           <div className="marketing-grid">
             <section className="marketing-panel">
               <h2>Five-persona breakdown</h2>
@@ -938,40 +1085,8 @@ export function ChatWorkspaceClient({
             </section>
 
             <section className="marketing-panel">
-              <h2>Existing theme radar</h2>
-              {(themeRadar?.data ?? []).slice(0, 4).map((theme) => {
-                const dominantPersona = dominantPersonaFromBreakdown(theme.persona_breakdown);
-                return (
-                  <article
-                    className={`signal-card market-signal-card ${badgeToneClass(dominantPersona)}`}
-                    key={theme.theme_name}
-                  >
-                    <div className="signal-card-header">
-                      <strong>{theme.theme_name}</strong>
-                      <span className="signal-metric">{theme.frequency} tickets</span>
-                    </div>
-                    <p>{theme.recommended_marketing_action}</p>
-                    <div className="signal-card-footer">
-                      <span className={`insight-chip ${badgeToneClass(dominantPersona)}`}>
-                        {dominantPersona}
-                      </span>
-                      <span className="insight-chip tone-accent">
-                        {formatLabel(theme.trend_direction)}
-                      </span>
-                      {theme.product_page_gap ? (
-                        <span className="insight-chip tone-warning">Page gap</span>
-                      ) : (
-                        <span className="insight-chip tone-success">Covered</span>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
-            </section>
-
-            <section className="marketing-panel">
               <h2>Campaign and page actions</h2>
-              {(marketingBrief?.opportunities ?? []).slice(0, 4).map((opportunity) => (
+              {marketingOpportunities.slice(0, 4).map((opportunity) => (
                 <article
                   className={`signal-card market-signal-card ${badgeToneClass(opportunity.persona_focus[0] ?? "")}`}
                   key={opportunity.theme_name}

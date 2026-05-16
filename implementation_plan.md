@@ -743,7 +743,7 @@ Implementation notes:
 - Theme radar deterministically clusters all 70 tickets into the nine planned business themes.
 - Theme records include frequency, trend direction, representative ticket IDs, customer wording, answerability breakdown, persona breakdown, product-page gap flag, marketing signal flag, gap count, and recommendations.
 - Monthly marketing brief outputs Markdown plus structured opportunities with persona focus, campaign angle, recommended action, evidence ticket IDs, and product-page update flag.
-- Frontend now includes Theme Radar cards, opportunity cards, and the generated marketing brief.
+- Frontend Marketing Intel now makes the two challenge deliverables explicit: a Weekly Theme Clustering section and a monthly "What customers are asking that is not on your product pages" brief with persona tags, evidence IDs, campaign angles, and product-page update actions.
 
 Default tests:
 

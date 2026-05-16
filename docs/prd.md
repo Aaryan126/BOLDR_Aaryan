@@ -102,6 +102,7 @@ The system must create a repeatable intelligence loop:
 - Unsupported questions create CS Queue items with missing knowledge, owner, priority, evidence attempted, and next action.
 - Human CS resolution can generate a KB draft, and KB drafts require approve/reject review before they appear as approved additions.
 - Marketing Intel combines existing theme radar data with live demo enquiry signals and explicitly maps those signals to the five required personas.
+- Marketing Intel now presents the two brief deliverables as explicit first-class sections: Weekly Theme Clustering and the monthly "What customers are asking that is not on your product pages" brief.
 - The prior implementation workbench, quality dashboard, external benchmarking, diagnostics, and status panels remain available under System Details.
 
 ## 5. Non-Goals
@@ -842,8 +843,8 @@ The Phase 12 frontend consumes these APIs in a single interactive workbench:
 - inbox list with search, filters, and batch processing
 - ticket review with customer message, routing tags, editable draft, evidence, guardrails, and review actions
 - knowledge gap queue with verified resolution, FAQ draft generation, suggested FAQ section, product-page update flags, gap metrics, generated FAQ preview, and FAQ approve/reject review gates
-- theme radar cards with frequency, trend, persona mix, answerability mix, source ticket IDs, product-page gap flags, and recommended actions
-- monthly marketing intelligence brief with Markdown and structured opportunity cards
+- weekly theme clustering with frequency, trend, dominant persona, source ticket IDs, product-page gap flags, KB actions, and marketing actions
+- monthly marketing intelligence brief headed by the exact required product-page-gap question, with persona tags, evidence ticket IDs, campaign angles, and recommended page updates
 - quality scorecard with threshold metrics, documented exceptions, golden fixtures, and issue list
 - external benchmarking cards with source registry, public source URLs, source limitations, internal-vs-external signal comparison, sentiment, and recommended actions
 
