@@ -25,6 +25,7 @@ GapResolutionStatus = Literal[
     "awaiting_supplier",
     "resolved_needs_kb_draft",
 ]
+KBDraftReviewStatus = Literal["approved", "rejected"]
 
 
 class WorkflowOverview(BaseModel):
@@ -37,6 +38,8 @@ class WorkflowOverview(BaseModel):
     approval_queue_count: int
     unresolved_gap_count: int
     kb_draft_ready_count: int
+    approved_gap_count: int
+    rejected_gap_count: int
     supported_review_actions: list[str]
 
 
@@ -133,10 +136,14 @@ class KnowledgeGapRecord(BaseModel):
     gap_questions: list[str]
     evidence_summary: str
     suggested_next_action: str
+    suggested_faq_section: str
+    product_page_update_needed: bool
     marketing_signal: bool
     human_resolution: str | None = None
     reviewer_note: str | None = None
     kb_draft: KBDraftOutput | None = None
+    kb_review_note: str | None = None
+    kb_reviewed_at: str | None = None
     updated_at: str | None = None
 
 
@@ -166,6 +173,41 @@ class GapResolutionRequest(BaseModel):
     reviewer_note: str | None = None
 
 
+class KBDraftReviewRequest(BaseModel):
+    status: KBDraftReviewStatus
+    reviewer_note: str | None = None
+
+
 class GapKBDraftResponse(BaseModel):
     status: Literal["ok"] = "ok"
     data: KnowledgeGapRecord
+
+
+class GapThemeMetric(BaseModel):
+    gap_id: str
+    gap_theme: str
+    frequency: int
+    priority: Literal["low", "medium", "high"]
+    status: GapStatus
+    marketing_signal: bool
+    product_page_update_needed: bool
+
+
+class GapMetrics(BaseModel):
+    total_gaps: int
+    unresolved_gap_count: int
+    kb_draft_ready_count: int
+    approved_count: int
+    rejected_count: int
+    product_page_update_needed_count: int
+    marketing_signal_count: int
+    by_status: dict[str, int]
+    by_priority: dict[str, int]
+    by_owner: dict[str, int]
+    by_persona: dict[str, int]
+    top_themes: list[GapThemeMetric]
+
+
+class GapMetricsResponse(BaseModel):
+    status: Literal["ok"] = "ok"
+    data: GapMetrics

@@ -656,7 +656,7 @@ Decision to proceed: Pending user review
 
 ## 13. Phase 9: Knowledge Gap And KB Draft Loop
 
-Status: Planned.
+Status: Implemented; awaiting human verification.
 
 Goal: Complete the self-improving knowledge base loop.
 
@@ -681,6 +681,13 @@ Deliverables:
   - by owner
   - by status
 
+Implementation notes:
+
+- Added `/api/gaps/metrics` for status, owner, persona, marketing-signal, product-page-update, and top-theme counts.
+- Added `/api/gaps/{gap_id}/review-kb-entry` for approve/reject review of generated FAQ drafts.
+- Gap records now expose suggested FAQ section, product page update flag, KB review note, and review timestamp.
+- Workbench UI now shows gap signal metrics, suggested FAQ sections, product-page update flags, and approve/reject FAQ actions.
+
 Default tests:
 
 - Resolve a gap and generate KB draft.
@@ -700,6 +707,18 @@ Human verification:
 Exit criteria:
 
 - The self-improving loop is visible and functional end to end.
+
+Phase gate record:
+
+```text
+Phase: 9 - Knowledge Gap And KB Draft Loop
+Status: Implemented; awaiting human verification
+Implemented: Gap metrics endpoint, product-page update flags, suggested FAQ sections, KB draft approval/rejection endpoint, review notes/timestamps, workbench gap signal metrics, FAQ approve/reject controls
+Default tests run: backend pytest, frontend lint/type/build, docker compose config, npm audit, git diff check, Playwright desktop/mobile smoke
+Human verification completed: Pending
+Known issues: Gap review state is still in-memory until durable persistence is added
+Decision to proceed: Pending user review
+```
 
 ## 14. Phase 10: Theme Radar And Marketing Brief
 
@@ -945,4 +964,4 @@ These apply across all phases:
 
 ## 20. Immediate Next Step
 
-Complete Phase 8 human verification, then start Phase 9 by making the knowledge gap and FAQ draft loop more durable, reviewable, and complete.
+Complete Phase 9 human verification, then start Phase 10 by generating the weekly theme radar and monthly marketing intelligence outputs.

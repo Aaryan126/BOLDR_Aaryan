@@ -4,6 +4,7 @@ import type {
   ClassificationOverview,
   DatasetOverview,
   DraftOverview,
+  GapMetrics,
   KnowledgeGapRecord,
   RetrievalOverview,
   TicketWorkflowDetail,
@@ -55,16 +56,18 @@ const phaseCards = [
   {
     title: "Phase 8",
     label: "Interactive ticket review and gap workbench",
-    value: "Active",
+    value: "Complete",
     tone: "gold",
+  },
+  {
+    title: "Phase 9",
+    label: "Knowledge gap metrics and FAQ review loop",
+    value: "Active",
+    tone: "green",
   },
 ];
 
 const upcomingModules = [
-  {
-    title: "Phase 9",
-    body: "Complete the knowledge gap resolution and FAQ drafting loop.",
-  },
   {
     title: "Phase 10",
     body: "Generate theme radar and monthly marketing intelligence outputs.",
@@ -81,6 +84,7 @@ type DashboardShellProps = {
   workflowOverview: WorkflowOverview;
   initialTickets: TicketWorkflowSummary[];
   initialGaps: KnowledgeGapRecord[];
+  initialGapMetrics: GapMetrics | null;
   initialTicketDetail: TicketWorkflowDetail | null;
 };
 
@@ -94,6 +98,7 @@ export function DashboardShell({
   workflowOverview,
   initialTickets,
   initialGaps,
+  initialGapMetrics,
   initialTicketDetail,
 }: DashboardShellProps) {
   const isHealthy = health.status === "ok";
@@ -129,14 +134,14 @@ export function DashboardShell({
           <header className="hero-panel">
             <div className="hero-content">
               <div>
-                <p className="eyebrow">Phase 8 Workbench UI</p>
+                <p className="eyebrow">Phase 9 KB Loop</p>
                 <h2>
                   Customer Intelligence Workbench
                 </h2>
                 <p className="hero-copy">
                   The core pipeline now ingests local tickets, assigns the five
                   required personas, retrieves explainable evidence, and creates
-                  guarded drafts inside an interactive review and gap-management workbench.
+                  guarded drafts inside an interactive review and KB approval workbench.
                 </p>
               </div>
               <div
@@ -220,6 +225,7 @@ export function DashboardShell({
 
           <WorkbenchClient
             initialGaps={initialGaps}
+            initialGapMetrics={initialGapMetrics}
             initialTicketDetail={initialTicketDetail}
             initialTickets={initialTickets}
           />

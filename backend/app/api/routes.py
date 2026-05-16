@@ -18,8 +18,10 @@ from app.models.workflow import (
     GapDetailResponse,
     GapKBDraftResponse,
     GapListResponse,
+    GapMetricsResponse,
     GapResolutionRequest,
     GapStatus,
+    KBDraftReviewRequest,
     TicketDetailResponse,
     TicketListResponse,
     TicketProcessRequest,
@@ -46,7 +48,9 @@ from app.services.retrieval import (
 )
 from app.services.workflow import (
     draft_kb_entry_for_gap,
+    gap_has_kb_draft,
     gap_has_resolution,
+    get_gap_metrics,
     get_gap_list_meta,
     get_knowledge_gap,
     get_ticket_workflow_detail,
@@ -55,6 +59,7 @@ from app.services.workflow import (
     list_ticket_workflows,
     process_ticket_batch,
     process_ticket_workflow,
+    review_kb_entry_for_gap,
     resolve_knowledge_gap,
 )
 
@@ -92,8 +97,8 @@ def meta() -> dict[str, object]:
             },
             {
                 "name": "Knowledge Gaps",
-                "status": "workflow_api_ready",
-                "description": "Gap queue and future FAQ drafting workflow.",
+                "status": "kb_loop_ready",
+                "description": "Gap queue, resolution workflow, FAQ drafting, and KB review gates.",
             },
             {
                 "name": "Theme Radar",
@@ -285,6 +290,11 @@ def gaps(
     return GapListResponse(data=records, meta=get_gap_list_meta(records, filters=filters))
 
 
+@router.get("/api/gaps/metrics", tags=["workflow"])
+def gap_metrics() -> GapMetricsResponse:
+    return GapMetricsResponse(data=get_gap_metrics())
+
+
 @router.get("/api/gaps/{gap_id}", tags=["workflow"])
 def gap_detail(gap_id: str) -> GapDetailResponse:
     gap = get_knowledge_gap(gap_id)
@@ -313,3 +323,20 @@ def gap_draft_kb_entry(gap_id: str) -> GapKBDraftResponse:
             detail="Gap needs a human resolution before a KB entry can be drafted.",
         )
     return GapKBDraftResponse(data=gap)
+
+
+@router.post("/api/gaps/{gap_id}/review-kb-entry", tags=["workflow"])
+def gap_review_kb_entry(
+    gap_id: str,
+    request: KBDraftReviewRequest,
+) -> GapDetailResponse:
+    normalized_gap_id = gap_id.lower()
+    gap = review_kb_entry_for_gap(normalized_gap_id, request)
+    if gap is None:
+        raise HTTPException(status_code=404, detail=f"Gap not found: {gap_id}")
+    if not gap_has_kb_draft(normalized_gap_id):
+        raise HTTPException(
+            status_code=409,
+            detail="Gap needs a drafted KB entry before it can be reviewed.",
+        )
+    return GapDetailResponse(data=gap)

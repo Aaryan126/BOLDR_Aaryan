@@ -137,6 +137,8 @@ export type WorkflowStatusReport = {
   approval_queue_count: number;
   unresolved_gap_count: number;
   kb_draft_ready_count: number;
+  approved_gap_count: number;
+  rejected_gap_count: number;
   supported_review_actions: string[];
 };
 
@@ -345,6 +347,8 @@ export type KnowledgeGapRecord = {
   gap_questions: string[];
   evidence_summary: string;
   suggested_next_action: string;
+  suggested_faq_section: string;
+  product_page_update_needed: boolean;
   marketing_signal: boolean;
   human_resolution: string | null;
   reviewer_note: string | null;
@@ -357,6 +361,8 @@ export type KnowledgeGapRecord = {
     confidence: number;
     reviewer_notes: string;
   } | null;
+  kb_review_note: string | null;
+  kb_reviewed_at: string | null;
   updated_at: string | null;
 };
 
@@ -375,6 +381,36 @@ export type GapListResponse = {
 export type GapDetailResponse = {
   status: "ok";
   data: KnowledgeGapRecord;
+};
+
+export type GapThemeMetric = {
+  gap_id: string;
+  gap_theme: string;
+  frequency: number;
+  priority: "low" | "medium" | "high";
+  status: GapStatus;
+  marketing_signal: boolean;
+  product_page_update_needed: boolean;
+};
+
+export type GapMetrics = {
+  total_gaps: number;
+  unresolved_gap_count: number;
+  kb_draft_ready_count: number;
+  approved_count: number;
+  rejected_count: number;
+  product_page_update_needed_count: number;
+  marketing_signal_count: number;
+  by_status: Record<string, number>;
+  by_priority: Record<string, number>;
+  by_owner: Record<string, number>;
+  by_persona: Record<string, number>;
+  top_themes: GapThemeMetric[];
+};
+
+export type GapMetricsResponse = {
+  status: "ok";
+  data: GapMetrics;
 };
 
 export async function getBackendHealth(): Promise<BackendHealth> {
@@ -453,6 +489,24 @@ export async function getGapList(): Promise<GapListResponse | null> {
     }
 
     return (await response.json()) as GapListResponse;
+  } catch {
+    return null;
+  }
+}
+
+export async function getGapMetrics(): Promise<GapMetricsResponse | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+
+  try {
+    const response = await fetch(`${baseUrl}/api/gaps/metrics`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()) as GapMetricsResponse;
   } catch {
     return null;
   }

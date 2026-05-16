@@ -2,7 +2,7 @@
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
-The current implementation includes Phases 1-8: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, and an interactive ticket review/gap-management workbench. Deeper KB loops, theme radar, marketing briefs, and bonus benchmarking begin in later phases.
+The current implementation includes Phases 1-9: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, and a reviewable knowledge-gap/FAQ loop. Theme radar, marketing briefs, and bonus benchmarking begin in later phases.
 
 ## References
 
@@ -246,4 +246,12 @@ docker compose down
 - Ticket Review shows customer message, persona/routing tags, editable draft, approval/edit/reject controls, evidence cards, and guardrails.
 - Knowledge Gaps shows a selectable gap queue, verified-resolution field, resolve action, FAQ draft action, and generated FAQ preview.
 - Desktop and mobile browser smoke checks pass with no horizontal overflow.
+- Backend and frontend checks pass.
+
+## Phase 9 Exit Criteria
+
+- Backend serves `/api/gaps/metrics` and `/api/gaps/{gap_id}/review-kb-entry`.
+- Gap records include suggested FAQ section, product-page update flag, marketing signal, KB review note, and review timestamp.
+- The workbench shows gap metrics and supports approve/reject actions for drafted FAQ entries.
+- Human resolution remains required before FAQ generation, and human review remains required before publication.
 - Backend and frontend checks pass.

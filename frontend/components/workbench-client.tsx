@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   GapDetailResponse,
   GapListResponse,
+  GapMetrics,
+  GapMetricsResponse,
   KnowledgeGapRecord,
   TicketDetailResponse,
   TicketListResponse,
@@ -17,6 +19,7 @@ type TicketFilter = "all" | "customer_reply" | "needs_review" | "gaps" | "order"
 type WorkbenchClientProps = {
   initialTickets: TicketWorkflowSummary[];
   initialGaps: KnowledgeGapRecord[];
+  initialGapMetrics: GapMetrics | null;
   initialTicketDetail: TicketWorkflowDetail | null;
 };
 
@@ -51,10 +54,12 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
 export function WorkbenchClient({
   initialTickets,
   initialGaps,
+  initialGapMetrics,
   initialTicketDetail,
 }: WorkbenchClientProps) {
   const [tickets, setTickets] = useState(initialTickets);
   const [gaps, setGaps] = useState(initialGaps);
+  const [gapMetrics, setGapMetrics] = useState(initialGapMetrics);
   const [selectedTicketId, setSelectedTicketId] = useState(
     initialTicketDetail?.workflow.ticket_id ?? initialTickets[0]?.ticket_id ?? "",
   );
@@ -67,6 +72,7 @@ export function WorkbenchClient({
   );
   const [reviewerNote, setReviewerNote] = useState("");
   const [gapResolution, setGapResolution] = useState("");
+  const [gapReviewNote, setGapReviewNote] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
@@ -130,7 +136,8 @@ export function WorkbenchClient({
 
   useEffect(() => {
     setGapResolution(selectedGap?.human_resolution ?? "");
-  }, [selectedGap?.gap_id, selectedGap?.human_resolution]);
+    setGapReviewNote(selectedGap?.kb_review_note ?? "");
+  }, [selectedGap?.gap_id, selectedGap?.human_resolution, selectedGap?.kb_review_note]);
 
   async function refreshTickets(nextSelectedTicketId = selectedTicketId) {
     const body = await fetchJson<TicketListResponse>("/api/tickets");
@@ -146,8 +153,12 @@ export function WorkbenchClient({
   }
 
   async function refreshGaps(nextSelectedGapId = selectedGapId) {
-    const body = await fetchJson<GapListResponse>("/api/gaps");
+    const [body, metricsBody] = await Promise.all([
+      fetchJson<GapListResponse>("/api/gaps"),
+      fetchJson<GapMetricsResponse>("/api/gaps/metrics"),
+    ]);
     setGaps(body.data);
+    setGapMetrics(metricsBody.data);
     const nextGap = body.data.find((gap) => gap.gap_id === nextSelectedGapId) ?? body.data[0];
     if (nextGap) {
       setSelectedGapId(nextGap.gap_id);
@@ -250,18 +261,60 @@ export function WorkbenchClient({
     }
   }
 
+  async function reviewGapKbDraft(status: "approved" | "rejected") {
+    if (!selectedGap) {
+      return;
+    }
+    setLoadingAction(`kb-${status}`);
+    setStatusMessage("");
+    try {
+      const body = await fetchJson<GapDetailResponse>(
+        `/api/gaps/${selectedGap.gap_id}/review-kb-entry`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            status,
+            reviewer_note:
+              gapReviewNote ||
+              (status === "approved"
+                ? "Approved in workbench review."
+                : "Rejected in workbench review."),
+          }),
+        },
+      );
+      await refreshGaps(body.data.gap_id);
+      setStatusMessage(`FAQ ${status} for ${body.data.gap_theme}.`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "FAQ review failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
   const customerReplyCount = tickets.filter((ticket) => ticket.reply_type === "customer_reply").length;
   const needsReviewCount = tickets.filter((ticket) => ticket.approval_status === "needs_review").length;
   const gapTicketCount = tickets.filter((ticket) => Boolean(ticket.gap_id)).length;
   const orderLookupCount = tickets.filter(
     (ticket) => ticket.answerability === "order_lookup_required",
   ).length;
+  const unresolvedGapCount =
+    gapMetrics?.unresolved_gap_count ??
+    gaps.filter((gap) => ["new", "needs_human_answer", "awaiting_supplier"].includes(gap.status))
+      .length;
+  const kbDraftReadyCount =
+    gapMetrics?.kb_draft_ready_count ??
+    gaps.filter((gap) => gap.status === "kb_draft_ready").length;
+  const approvedGapCount =
+    gapMetrics?.approved_count ?? gaps.filter((gap) => gap.status === "approved").length;
+  const productPageUpdateCount =
+    gapMetrics?.product_page_update_needed_count ??
+    gaps.filter((gap) => gap.product_page_update_needed).length;
 
   return (
-    <section className="workbench-console" data-testid="phase8-workbench">
+    <section className="workbench-console" data-testid="phase9-workbench">
       <div className="console-header">
         <div>
-          <p className="eyebrow">Phase 8 Workbench UI</p>
+          <p className="eyebrow">Phase 9 KB Loop</p>
           <h3>Inbox Intelligence</h3>
         </div>
         <button
@@ -294,6 +347,22 @@ export function WorkbenchClient({
         <div>
           <strong>{orderLookupCount}</strong>
           <span>Order lookups</span>
+        </div>
+        <div>
+          <strong>{unresolvedGapCount}</strong>
+          <span>Open gaps</span>
+        </div>
+        <div>
+          <strong>{kbDraftReadyCount}</strong>
+          <span>FAQ drafts</span>
+        </div>
+        <div>
+          <strong>{approvedGapCount}</strong>
+          <span>Approved FAQs</span>
+        </div>
+        <div>
+          <strong>{productPageUpdateCount}</strong>
+          <span>Page updates</span>
         </div>
       </div>
 
@@ -486,6 +555,25 @@ export function WorkbenchClient({
           <span className="count-pill">{gaps.length} gaps</span>
         </div>
 
+        <div className="gap-signal-grid">
+          <div>
+            <strong>{gapMetrics?.marketing_signal_count ?? 0}</strong>
+            <span>Marketing signals</span>
+          </div>
+          <div>
+            <strong>{productPageUpdateCount}</strong>
+            <span>Product page updates</span>
+          </div>
+          <div>
+            <strong>{kbDraftReadyCount}</strong>
+            <span>FAQ drafts ready</span>
+          </div>
+          <div>
+            <strong>{gapMetrics?.top_themes[0]?.gap_theme ?? "None"}</strong>
+            <span>Top theme</span>
+          </div>
+        </div>
+
         <div className="gap-layout">
           <div className="gap-list">
             {gaps.map((gap) => (
@@ -512,11 +600,29 @@ export function WorkbenchClient({
                     <p className="eyebrow">{selectedGap.priority} priority</p>
                     <h3>{selectedGap.gap_theme}</h3>
                   </div>
-                  <span className="status-pill">{selectedGap.status.replaceAll("_", " ")}</span>
+                  <span className={`status-pill status-${selectedGap.status}`}>
+                    {selectedGap.status.replaceAll("_", " ")}
+                  </span>
+                </div>
+                <div className="chip-row">
+                  <span>{selectedGap.frequency} tickets</span>
+                  <span>{selectedGap.suggested_faq_section}</span>
+                  {selectedGap.marketing_signal ? <span>Marketing signal</span> : null}
+                  {selectedGap.product_page_update_needed ? <span>Product page update</span> : null}
                 </div>
                 <div className="review-block">
                   <p className="block-label">Customer Wording</p>
                   <p>{selectedGap.gap_questions[0]}</p>
+                </div>
+                <div className="review-grid">
+                  <div className="review-block">
+                    <p className="block-label">Evidence Summary</p>
+                    <p>{selectedGap.evidence_summary}</p>
+                  </div>
+                  <div className="review-block">
+                    <p className="block-label">Next Action</p>
+                    <p>{selectedGap.suggested_next_action}</p>
+                  </div>
                 </div>
                 <div className="draft-editor">
                   <label htmlFor="gap-resolution">Verified Resolution</label>
@@ -549,6 +655,38 @@ export function WorkbenchClient({
                     <p className="block-label">{selectedGap.kb_draft.faq_section}</p>
                     <strong>Q: {selectedGap.kb_draft.question}</strong>
                     <p>A: {selectedGap.kb_draft.answer}</p>
+                    <div className="draft-editor draft-note">
+                      <label htmlFor="gap-review-note">KB Review Note</label>
+                      <input
+                        id="gap-review-note"
+                        onChange={(event) => setGapReviewNote(event.target.value)}
+                        placeholder="KB review note"
+                        value={gapReviewNote}
+                      />
+                    </div>
+                    <div className="action-row">
+                      <button
+                        className="secondary-action"
+                        disabled={loadingAction !== null}
+                        onClick={() => void reviewGapKbDraft("approved")}
+                        type="button"
+                      >
+                        Approve FAQ
+                      </button>
+                      <button
+                        className="danger-action"
+                        disabled={loadingAction !== null}
+                        onClick={() => void reviewGapKbDraft("rejected")}
+                        type="button"
+                      >
+                        Reject FAQ
+                      </button>
+                    </div>
+                    {selectedGap.kb_review_note ? (
+                      <div className="note-box">
+                        {selectedGap.kb_review_note}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </>

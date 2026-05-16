@@ -11,10 +11,13 @@ from app.models.dataset import TicketRecord
 from app.models.drafting import ApprovalStatus, TicketDraft
 from app.models.workflow import (
     BatchProcessRequest,
+    GapMetrics,
+    GapThemeMetric,
     GapListMeta,
     GapResolutionRequest,
     GapStatus,
     KnowledgeGapRecord,
+    KBDraftReviewRequest,
     TicketListMeta,
     TicketWorkflowDetail,
     TicketWorkflowSummary,
@@ -35,9 +38,11 @@ STABLE_WORKFLOW_ENDPOINTS = [
     "POST /api/tickets/{ticket_id}/process",
     "POST /api/tickets/process-batch",
     "GET /api/gaps",
+    "GET /api/gaps/metrics",
     "GET /api/gaps/{gap_id}",
     "POST /api/gaps/{gap_id}/resolve",
     "POST /api/gaps/{gap_id}/draft-kb-entry",
+    "POST /api/gaps/{gap_id}/review-kb-entry",
 ]
 
 UNRESOLVED_GAP_STATUSES = {"new", "needs_human_answer", "awaiting_supplier"}
@@ -50,6 +55,8 @@ class GapState:
     owner: str | None = None
     reviewer_note: str | None = None
     kb_draft: KBDraftOutput | None = None
+    kb_review_note: str | None = None
+    kb_reviewed_at: str | None = None
     updated_at: str | None = None
 
 
@@ -71,12 +78,15 @@ def get_workflow_overview(phase: str) -> WorkflowOverview:
         approval_queue_count=sum(1 for draft in drafts if draft.approval.status == "needs_review"),
         unresolved_gap_count=sum(status_counts[status] for status in UNRESOLVED_GAP_STATUSES),
         kb_draft_ready_count=status_counts["kb_draft_ready"],
+        approved_gap_count=status_counts["approved"],
+        rejected_gap_count=status_counts["rejected"],
         supported_review_actions=[
             "process_one_ticket",
             "process_batch",
             "approve_edit_reject_draft",
             "resolve_gap",
             "draft_kb_entry",
+            "review_kb_entry",
         ],
     )
 
@@ -224,6 +234,44 @@ def get_gap_list_meta(
     )
 
 
+def get_gap_metrics() -> GapMetrics:
+    gaps = list_knowledge_gaps()
+    status_counts = Counter(gap.status for gap in gaps)
+    persona_counts: Counter[str] = Counter()
+    for gap in gaps:
+        persona_counts.update(gap.persona_counts)
+
+    top_themes = [
+        GapThemeMetric(
+            gap_id=gap.gap_id,
+            gap_theme=gap.gap_theme,
+            frequency=gap.frequency,
+            priority=gap.priority,
+            status=gap.status,
+            marketing_signal=gap.marketing_signal,
+            product_page_update_needed=gap.product_page_update_needed,
+        )
+        for gap in sorted(gaps, key=lambda item: (-item.frequency, item.gap_theme))[:5]
+    ]
+
+    return GapMetrics(
+        total_gaps=len(gaps),
+        unresolved_gap_count=sum(status_counts[status] for status in UNRESOLVED_GAP_STATUSES),
+        kb_draft_ready_count=status_counts["kb_draft_ready"],
+        approved_count=status_counts["approved"],
+        rejected_count=status_counts["rejected"],
+        product_page_update_needed_count=sum(
+            1 for gap in gaps if gap.product_page_update_needed
+        ),
+        marketing_signal_count=sum(1 for gap in gaps if gap.marketing_signal),
+        by_status=dict(status_counts),
+        by_priority=dict(Counter(gap.priority for gap in gaps)),
+        by_owner=dict(Counter(gap.owner for gap in gaps)),
+        by_persona=dict(persona_counts),
+        top_themes=top_themes,
+    )
+
+
 def get_knowledge_gap(gap_id: str) -> KnowledgeGapRecord | None:
     normalized_gap_id = gap_id.lower()
     return next(
@@ -279,9 +327,40 @@ def draft_kb_entry_for_gap(gap_id: str) -> KnowledgeGapRecord | None:
     return get_knowledge_gap(gap.gap_id)
 
 
+def review_kb_entry_for_gap(
+    gap_id: str,
+    request: KBDraftReviewRequest,
+) -> KnowledgeGapRecord | None:
+    gap = get_knowledge_gap(gap_id)
+    if gap is None:
+        return None
+
+    state = _GAP_STATES.get(gap.gap_id)
+    if state is None or state.kb_draft is None:
+        return gap
+
+    reviewed_at = _now_iso()
+    _GAP_STATES[gap.gap_id] = GapState(
+        status=request.status,
+        human_resolution=state.human_resolution,
+        owner=state.owner,
+        reviewer_note=state.reviewer_note,
+        kb_draft=state.kb_draft,
+        kb_review_note=request.reviewer_note,
+        kb_reviewed_at=reviewed_at,
+        updated_at=reviewed_at,
+    )
+    return get_knowledge_gap(gap.gap_id)
+
+
 def gap_has_resolution(gap_id: str) -> bool:
     state = _GAP_STATES.get(gap_id.lower())
     return bool(state and state.human_resolution)
+
+
+def gap_has_kb_draft(gap_id: str) -> bool:
+    state = _GAP_STATES.get(gap_id.lower())
+    return bool(state and state.kb_draft)
 
 
 def _build_ticket_summary(ticket: TicketRecord) -> TicketWorkflowSummary:
@@ -342,6 +421,10 @@ def _build_gap_records() -> list[KnowledgeGapRecord]:
         state = _GAP_STATES.get(gap_id)
         status: GapStatus = state.status if state else "new"
         owner = state.owner if state and state.owner else first_gap.owner
+        marketing_signal = any(
+            draft.persona == "Sustainability Advocate" for draft in drafts
+        )
+        suggested_faq_section = _suggest_faq_section(first_gap.gap_theme)
         records.append(
             KnowledgeGapRecord(
                 gap_id=gap_id,
@@ -355,12 +438,18 @@ def _build_gap_records() -> list[KnowledgeGapRecord]:
                 gap_questions=[draft.gap_record.gap_question for draft in drafts if draft.gap_record],
                 evidence_summary=first_gap.evidence_summary,
                 suggested_next_action=first_gap.suggested_next_action,
-                marketing_signal=any(
-                    draft.persona == "Sustainability Advocate" for draft in drafts
+                suggested_faq_section=suggested_faq_section,
+                product_page_update_needed=_needs_product_page_update(
+                    first_gap.gap_theme,
+                    suggested_faq_section,
+                    marketing_signal,
                 ),
+                marketing_signal=marketing_signal,
                 human_resolution=state.human_resolution if state else None,
                 reviewer_note=state.reviewer_note if state else None,
                 kb_draft=state.kb_draft if state else None,
+                kb_review_note=state.kb_review_note if state else None,
+                kb_reviewed_at=state.kb_reviewed_at if state else None,
                 updated_at=state.updated_at if state else None,
             )
         )
@@ -388,6 +477,33 @@ def _suggest_faq_section(gap_theme: str) -> str:
     if any(term in theme for term in ["engraving", "gift", "personalisation"]):
         return "Engraving and Gifting"
     return "Product Information"
+
+
+def _needs_product_page_update(
+    gap_theme: str,
+    suggested_faq_section: str,
+    marketing_signal: bool,
+) -> bool:
+    theme = gap_theme.lower()
+    product_page_terms = [
+        "allergy",
+        "bpa",
+        "carbon",
+        "magnetic",
+        "material",
+        "mri",
+        "nickel",
+        "packaging",
+        "recycling",
+        "strap",
+        "sustainability",
+        "vegan",
+    ]
+    return (
+        marketing_signal
+        or suggested_faq_section in {"Materials and Safety", "Sustainability and Materials"}
+        or any(term in theme for term in product_page_terms)
+    )
 
 
 def _suggest_faq_question(gap: KnowledgeGapRecord) -> str:

@@ -3,19 +3,38 @@ from fastapi.testclient import TestClient
 from app.main import create_app
 
 
-def test_workflow_overview_reports_phase_7_endpoints() -> None:
+def test_workflow_overview_reports_phase_9_endpoints() -> None:
     client = TestClient(create_app())
 
     response = client.get("/api/workflow/overview")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["phase"] == "phase-8-workbench-ui"
-    assert body["stable_endpoint_count"] >= 10
+    assert body["phase"] == "phase-9-kb-loop"
+    assert body["stable_endpoint_count"] >= 12
     assert body["ticket_count"] == 70
     assert body["draft_count"] == 70
     assert body["gap_count"] >= 8
     assert "resolve_gap" in body["supported_review_actions"]
+    assert "review_kb_entry" in body["supported_review_actions"]
+
+
+def test_gap_metrics_endpoint_groups_gap_queue() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/api/gaps/metrics")
+
+    assert response.status_code == 200
+    body = response.json()["data"]
+    assert body["total_gaps"] >= 8
+    assert body["unresolved_gap_count"] >= 8
+    assert body["product_page_update_needed_count"] >= 1
+    assert body["marketing_signal_count"] >= 1
+    assert body["by_status"]["new"] >= 1
+    assert body["by_priority"]
+    assert body["by_owner"]
+    assert body["by_persona"]
+    assert body["top_themes"][0]["frequency"] >= 1
 
 
 def test_ticket_list_filters_and_response_envelope() -> None:
@@ -93,6 +112,12 @@ def test_gap_resolution_and_kb_draft_flow() -> None:
     unresolved_draft = client.post("/api/gaps/gap-strap-recycling/draft-kb-entry")
     assert unresolved_draft.status_code == 409
 
+    premature_review = client.post(
+        "/api/gaps/gap-strap-recycling/review-kb-entry",
+        json={"status": "approved", "reviewer_note": "No draft exists yet."},
+    )
+    assert premature_review.status_code == 409
+
     resolve = client.post(
         "/api/gaps/gap-carbon-neutral-shipping/resolve",
         json={
@@ -116,6 +141,22 @@ def test_gap_resolution_and_kb_draft_flow() -> None:
     assert drafted_gap["kb_draft"]["faq_section"] == "Sustainability and Materials"
     assert drafted_gap["kb_draft"]["question"] == "Do you offer carbon-neutral shipping?"
     assert "TKT-1013" in drafted_gap["kb_draft"]["source_ticket_ids"]
+    assert drafted_gap["suggested_faq_section"] == "Sustainability and Materials"
+    assert drafted_gap["product_page_update_needed"] is True
+
+    review = client.post(
+        "/api/gaps/gap-carbon-neutral-shipping/review-kb-entry",
+        json={
+            "status": "approved",
+            "reviewer_note": "Ready for the sustainability FAQ after legal copy review.",
+        },
+    )
+    assert review.status_code == 200
+    reviewed_gap = review.json()["data"]
+    assert reviewed_gap["status"] == "approved"
+    assert reviewed_gap["kb_review_note"].startswith("Ready for the sustainability FAQ")
+    assert reviewed_gap["kb_reviewed_at"]
+    assert reviewed_gap["kb_draft"]["question"] == "Do you offer carbon-neutral shipping?"
 
 
 def test_workflow_404s_are_readable() -> None:
@@ -141,4 +182,6 @@ def test_workflow_contracts_are_in_openapi_and_validate_query_values() -> None:
     paths = openapi.json()["paths"]
     assert "/api/workflow/overview" in paths
     assert "/api/tickets/process-batch" in paths
+    assert "/api/gaps/metrics" in paths
     assert "/api/gaps/{gap_id}/draft-kb-entry" in paths
+    assert "/api/gaps/{gap_id}/review-kb-entry" in paths
