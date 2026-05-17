@@ -30,6 +30,7 @@ coverage/
 .coverage
 screenshots/
 *.tmp
+kit.pdf
 
 # Markdown files
 AGENTS.md
