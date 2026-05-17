@@ -1,4 +1,4 @@
-# BOLDR Revenue Rocket Implementation Plan
+# BOLDR SignalDesk Implementation Plan
 
 Version: 0.1  
 Date: 2026-05-16  

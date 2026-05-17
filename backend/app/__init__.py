@@ -1,1 +1,1 @@
-"""BOLDR Revenue Rocket backend package."""
+"""BOLDR SignalDesk backend package."""

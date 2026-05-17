@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "BOLDR Revenue Rocket"
+    app_name: str = "BOLDR SignalDesk"
     app_version: str = "0.1.0"
     app_phase: str = "phase-12-external-benchmarking"
     app_env: str = "development"

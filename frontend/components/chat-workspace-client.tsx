@@ -604,7 +604,7 @@ export function ChatWorkspaceClient({
       <header className="chat-product-topbar">
         <div className="chat-product-brand">
           <span>BOLDR</span>
-          <strong>Revenue Rocket</strong>
+          <strong>SignalDesk</strong>
         </div>
         <nav className="workspace-tabs" aria-label="Workspace tabs">
           {tabs.map((tab) => (

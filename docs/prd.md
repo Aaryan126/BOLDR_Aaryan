@@ -1,4 +1,4 @@
-# BOLDR Revenue Rocket PRD
+# BOLDR SignalDesk PRD
 
 Version: 0.1  
 Date: 2026-05-16  
@@ -6,7 +6,7 @@ Primary objective: Build a self-improving customer intelligence engine for BOLDR
 
 ## 1. Executive Summary
 
-BOLDR Revenue Rocket is a full-stack AI workflow and demo product for a Singapore-based watch micro-brand. The system turns customer enquiries into three kinds of output:
+BOLDR SignalDesk is a full-stack AI workflow and demo product for a Singapore-based watch micro-brand. The system turns customer enquiries into three kinds of output:
 
 1. Human-approved support replies grounded in BOLDR's knowledge base.
 2. Knowledge gap records and draft FAQ updates when the answer is missing or uncertain.

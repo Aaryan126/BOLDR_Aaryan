@@ -263,7 +263,7 @@ export function DashboardShell({
         <aside className="sidebar">
           <div className="sidebar-brand">
             <p className="eyebrow">BOLDR</p>
-            <h1>Revenue Rocket</h1>
+            <h1>SignalDesk</h1>
           </div>
           <nav className="sidebar-nav" aria-label="Workbench navigation">
             {navigationItems.map((item, index) => (

@@ -1,4 +1,4 @@
-# BOLDR Revenue Rocket
+# BOLDR SignalDesk
 
 Customer intelligence workbench for the BOLDR watch e-commerce challenge.
 
@@ -6,8 +6,16 @@ The current implementation reaches Phase 13B: repository scaffold, local dataset
 
 Submission package:
 
-- `SUBMISSION.md`
-- `VIDEO_SCRIPT.md`
+- Judge-facing summary: [`SUBMISSION.md`](SUBMISSION.md)
+- Non-technical workflow documentation: [`WORKFLOW_DOCUMENTATION.md`](WORKFLOW_DOCUMENTATION.md)
+- Clip-by-clip recording guide: [`VIDEO_SCRIPT.md`](VIDEO_SCRIPT.md)
+
+Model and build notes:
+
+- The AI workflow is configured for GLM-5.1 through FPT AI Factory, behind a replaceable provider adapter.
+- GLM-5.1 is used for structured, evidence-grounded reasoning when live credentials are enabled.
+- The workflow was developed with OpenCode, an open-source coding agent.
+- Tests and the local demo do not require live GLM/FPT credentials; keep `AI_LIVE_ENABLED=false` unless intentionally smoke-testing live inference.
 
 ## References
 
@@ -180,7 +188,7 @@ npm run typecheck
 
 - Submit through the competition Tally form when the repo and video are final.
 - Ensure the repository is public or shared exactly as required by the challenge.
-- Keep the video under 5 minutes; `VIDEO_SCRIPT.md` is paced for about 4:00.
+- Keep the video under 5 minutes; `VIDEO_SCRIPT.md` is paced as stitched clips for about 4:00.
 - Use `SUBMISSION.md` as the judge-facing written summary.
 - Use the Customer Chat `Reset demo` button, or `POST /api/enquiries/reset`, before recording each take.
 - Keep `AI_LIVE_ENABLED=false` as the safe default. Run a live GLM/FPT smoke only if credentials are available, and state that tests do not require live credentials.

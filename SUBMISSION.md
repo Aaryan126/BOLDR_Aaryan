@@ -2,11 +2,11 @@
 
 BOLDR's support team has a real small-business problem: every customer question can be a support task, a knowledge-base gap, a product-page gap, or a marketing signal. Without a workflow, the team answers tickets one at a time, repeats research, misses FAQ updates, and loses buyer-language insights.
 
-This submission focuses on the core challenge first. It uses the six actual local data files in `Boldr Data/`, maps every enquiry to the five required personas, and preserves human approval before any reply or FAQ update becomes customer-facing.
+BOLDR SignalDesk focuses on the core challenge first. It uses the six actual local data files in `Boldr Data/`, maps every enquiry to the five required personas, and preserves human approval before any reply or FAQ update becomes customer-facing.
 
 # Workflow Logic And Demonstration
 
-The demo flow is:
+The SignalDesk demo flow is:
 
 1. Ingest a customer enquiry from the chat UI or a sample ticket.
 2. Extract intent, operational context, and one of the five required personas.
@@ -84,6 +84,7 @@ Repo proof:
 - Dataset documentation: `docs/sample-dataset.md`.
 - Product requirements: `docs/prd.md`.
 - Implementation sequence: `implementation_plan.md`.
+- Non-technical workflow documentation with diagrams: `WORKFLOW_DOCUMENTATION.md`.
 - Demo script: `VIDEO_SCRIPT.md`.
 
 Useful verification commands:

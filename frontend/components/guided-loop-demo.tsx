@@ -239,7 +239,7 @@ export function GuidedLoopDemo({
       <header className="demo-topbar">
         <div className="demo-brand">
           <span>BOLDR</span>
-          <strong>Revenue Rocket</strong>
+          <strong>SignalDesk</strong>
         </div>
         <div className="demo-topbar-actions">
           <span className={health.status === "ok" ? "demo-health ok" : "demo-health bad"}>

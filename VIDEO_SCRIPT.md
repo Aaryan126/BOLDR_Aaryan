@@ -1,4 +1,4 @@
-# BOLDR Revenue Rocket Video Script
+# BOLDR SignalDesk Video Script
 
 Target runtime: 4:00 maximum. Record this as separate clips and stitch them together. It is fine if each clip has 1-2 seconds of extra lead-in/out for editing.
 
@@ -34,7 +34,7 @@ Screen actions:
 
 Narration:
 
-"BOLDR is a small watch e-commerce brand with a support problem. Customers ask about straps, engraving, shipping, servicing, materials, sustainability, and order status. A small CS team can answer tickets, but the intelligence gets lost: repeated questions, missing FAQ updates, and product-page gaps. Revenue Rocket turns each enquiry into a support answer, a knowledge gap, or a marketing signal."
+"BOLDR is a small watch e-commerce brand with a support problem. Customers ask about straps, engraving, shipping, servicing, materials, sustainability, and order status. A small CS team can answer tickets, but the intelligence gets lost: repeated questions, missing FAQ updates, and product-page gaps. SignalDesk turns each enquiry into a support answer, a knowledge gap, or a marketing signal."
 
 Rubric point: real SME problem.
 
@@ -118,7 +118,7 @@ Screen actions:
 
 Narration:
 
-"Now a gap case. Carbon-neutral shipping, strap recycling, and similar sustainability claims are not fully supported by the current sources. The system blocks the answer instead of hallucinating, then creates a CS queue item with the missing knowledge, owner, priority, attempted evidence, and next action. After a human adds a verified resolution, Revenue Rocket drafts an FAQ entry. That KB draft still needs review before it becomes an approved knowledge-base addition."
+"Now a gap case. Carbon-neutral shipping, strap recycling, and similar sustainability claims are not fully supported by the current sources. The system blocks the answer instead of hallucinating, then creates a CS queue item with the missing knowledge, owner, priority, attempted evidence, and next action. After a human adds a verified resolution, SignalDesk drafts an FAQ entry. That KB draft still needs review before it becomes an approved knowledge-base addition."
 
 Rubric point: no hallucination, human resolution, self-improving KB loop.
 
@@ -197,7 +197,7 @@ Screen actions:
 
 Narration:
 
-"For the AI layer, this workflow is configured to use GLM-5.1 through FPT AI Factory. I chose GLM-5.1 because this product needs reasoning over structured evidence, not just generic chat. I developed the workflow with OpenCode, an open-source coding agent, and kept the system explainable: the model sits behind a replaceable adapter, tests pass without live credentials, and customer-facing answers still require retrieval evidence and human approval. In short, Revenue Rocket is not just a chatbot. It is a support intelligence workflow that answers what it can, blocks what it cannot, drafts KB updates, and turns repeated customer questions into product and marketing insight for BOLDR."
+"For the AI layer, this workflow is configured to use GLM-5.1 through FPT AI Factory. I chose GLM-5.1 because this product needs reasoning over structured evidence, not just generic chat. I developed the workflow with OpenCode, an open-source coding agent, and kept the system explainable: the model sits behind a replaceable adapter, tests pass without live credentials, and customer-facing answers still require retrieval evidence and human approval. In short, SignalDesk is not just a chatbot. It is a support intelligence workflow that answers what it can, blocks what it cannot, drafts KB updates, and turns repeated customer questions into product and marketing insight for BOLDR."
 
 Rubric point: proof of execution and demo readiness.
 

@@ -1,7 +1,7 @@
 [project]
-name = "boldr-revenue-rocket-backend"
+name = "boldr-signaldesk-backend"
 version = "0.1.0"
-description = "FastAPI backend for the BOLDR Revenue Rocket customer intelligence workbench."
+description = "FastAPI backend for the BOLDR SignalDesk customer intelligence workbench."
 readme = "../README.md"
 requires-python = ">=3.13"
 dependencies = [

@@ -11,7 +11,7 @@ def test_health_endpoint() -> None:
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
-        "app": "BOLDR Revenue Rocket",
+        "app": "BOLDR SignalDesk",
         "phase": "phase-12-external-benchmarking",
     }
 
@@ -23,7 +23,7 @@ def test_meta_endpoint_lists_planned_modules() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["app"] == "BOLDR Revenue Rocket"
+    assert body["app"] == "BOLDR SignalDesk"
     assert body["phase"] == "phase-12-external-benchmarking"
     module_names = [module["name"] for module in body["modules"]]
     assert module_names == [

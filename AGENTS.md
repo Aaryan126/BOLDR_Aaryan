@@ -1,4 +1,4 @@
-# BOLDR Revenue Rocket
+# BOLDR SignalDesk
 
 This repository is for the BOLDR watch e-commerce challenge: build a customer intelligence workflow that helps a small CS team answer support enquiries, detect knowledge gaps, update the knowledge base, and turn recurring questions into marketing/product signals.
 

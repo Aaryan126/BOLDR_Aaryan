@@ -1,9 +1,9 @@
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: boldr-revenue-rocket-postgres
+    container_name: boldr-signaldesk-postgres
     environment:
-      POSTGRES_DB: boldr_revenue_rocket
+      POSTGRES_DB: boldr_signaldesk
       POSTGRES_USER: boldr
       POSTGRES_PASSWORD: boldr_dev_password
     ports:
@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U boldr -d boldr_revenue_rocket"]
+      test: ["CMD-SHELL", "pg_isready -U boldr -d boldr_signaldesk"]
       interval: 5s
       timeout: 5s
       retries: 10
