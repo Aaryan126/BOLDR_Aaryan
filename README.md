@@ -180,7 +180,7 @@ npm run typecheck
 
 - Submit through the competition Tally form when the repo and video are final.
 - Ensure the repository is public or shared exactly as required by the challenge.
-- Keep the video under 5 minutes; `VIDEO_SCRIPT.md` is paced for about 3:30.
+- Keep the video under 5 minutes; `VIDEO_SCRIPT.md` is paced for about 4:00.
 - Use `SUBMISSION.md` as the judge-facing written summary.
 - Use the Customer Chat `Reset demo` button, or `POST /api/enquiries/reset`, before recording each take.
 - Keep `AI_LIVE_ENABLED=false` as the safe default. Run a live GLM/FPT smoke only if credentials are available, and state that tests do not require live credentials.
