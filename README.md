@@ -1,62 +1,130 @@
 # BOLDR SignalDesk
 
-Customer intelligence workbench for the BOLDR watch e-commerce challenge.
+BOLDR SignalDesk is an approval-first customer intelligence workflow for the BOLDR watch e-commerce challenge. It helps a small support team answer customer enquiries with source-backed drafts, block unsupported claims, create knowledge-gap records, draft FAQ updates, and turn repeated questions into marketing/product-page insight.
 
-The current implementation reaches Phase 13B: repository scaffold, local dataset ingestion/diagnostics, deterministic ticket classification, explainable retrieval evidence, GLM-5.1/FPT AI Factory structured-output contracts, grounded reply drafting, stable workflow APIs, an interactive ticket review/gap-management workbench, a reviewable knowledge-gap/FAQ loop, theme radar, monthly marketing intelligence, an evaluation quality scorecard, bonus external sentiment benchmarking, submission packaging, and demo reset.
+## What It Does
 
-Submission package:
+- Ingests customer enquiries from the demo chat UI or sample tickets.
+- Classifies intent and maps each enquiry to the required buyer personas.
+- Searches BOLDR's local FAQ, product reference, SOP, and rate-card sources.
+- Drafts customer replies only when evidence supports the answer.
+- Routes missing, risky, or order-specific questions to human review.
+- Creates draft FAQ entries after a human adds a verified resolution.
+- Clusters recurring themes and generates monthly marketing intelligence.
+- Benchmarks internal themes against curated external watch-market signals.
 
-- Judge-facing summary: [`SUBMISSION.md`](SUBMISSION.md)
-- Non-technical workflow documentation: [`WORKFLOW_DOCUMENTATION.md`](WORKFLOW_DOCUMENTATION.md)
-- Clip-by-clip recording guide: [`VIDEO_SCRIPT.md`](VIDEO_SCRIPT.md)
+## Judge Review Links
 
-Model and build notes:
+- [Submission summary](SUBMISSION.md)
+- [Workflow documentation with diagrams](WORKFLOW_DOCUMENTATION.md)
+- [Video recording script](VIDEO_SCRIPT.md)
+- [Product requirements](docs/prd.md)
+- [Dataset guide](docs/sample-dataset.md)
+- [Implementation plan](implementation_plan.md)
 
-- The AI workflow is configured for GLM-5.1 through FPT AI Factory, behind a replaceable provider adapter.
-- GLM-5.1 is used for structured, evidence-grounded reasoning when live credentials are enabled.
-- The workflow was developed with OpenCode, an open-source coding agent.
-- Tests and the local demo do not require live GLM/FPT credentials; keep `AI_LIVE_ENABLED=false` unless intentionally smoke-testing live inference.
+## Tech Stack
 
-## References
+- Backend: FastAPI, Python 3.13, uv
+- Frontend: Next.js 15, React 19, TypeScript
+- AI provider path: GLM-5.1 through FPT AI Factory
+- Data mode: local challenge files in `Boldr Data/`
 
-- Challenge brief: `Challenge Brief_BOLDR.pdf`
-- Implementation plan: `implementation_plan.md`
-- Product requirements: `docs/prd.md`
-- Dataset guide: `docs/sample-dataset.md`
-- Persona guide: `docs/personas.md`
+The local demo does not require a database. `docker-compose.yml` is included for the planned Postgres/pgvector path, but judges can run the current app with only the backend and frontend commands below.
 
 ## Prerequisites
+
+Install:
 
 - Python 3.13+
 - uv
 - Node.js and npm
-- Docker, for Postgres/pgvector
 
-## Environment
+## Environment Setup
 
-Create a local environment file when needed:
+Create the local environment file from the repo root:
 
 ```bash
 cp .env.example .env
 ```
 
-GLM/FPT credentials are not required for local tests. Keep `AI_LIVE_ENABLED=false` unless you are intentionally smoke-testing live inference.
+For normal judging and local testing, leave live AI disabled:
 
-Tests pass without live credentials. Live GLM/FPT should be smoke-tested only when credentials are available. If credentials are unavailable, describe the adapter honestly: the provider contract is implemented, and automated tests use fake/validated structured outputs.
+```bash
+AI_LIVE_ENABLED=false
+```
 
-## Backend
+This is the safe default. The app and tests still run because the workflow has deterministic/offline paths and validated fake-provider tests.
+
+To smoke-test live GLM-5.1 through FPT AI Factory, edit `.env`:
+
+```bash
+FPT_AI_API_KEY=your_fpt_ai_factory_key_here
+FPT_AI_BASE_URL=https://mkp-api.fptcloud.com/v1
+GLM_MODEL=GLM-5.1
+AI_LIVE_ENABLED=true
+```
+
+Do not commit `.env`.
+
+## Run Locally
+
+Use two terminal windows.
+
+Terminal 1: start the backend.
 
 ```bash
 cd backend
 uv sync
-uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+env UV_CACHE_DIR=.uv-cache uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Health check:
+Check the backend:
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
+
+Terminal 2: start the frontend.
+
+```bash
+cd frontend
+npm install
+npm run dev -- --hostname 127.0.0.1 --port 3000
+```
+
+Open:
+
+```text
+http://127.0.0.1:3000
+```
+
+The top-right app status should show that the backend is connected.
+
+## Suggested Demo Path
+
+Before each run, click `Reset demo` in Customer Chat.
+
+1. Open `Customer Chat`.
+2. Ask an answerable question:
+   ```text
+   Are BOLDR FKM straps BPA-free and safe for kids?
+   ```
+3. Open `Approvals` and review the draft plus evidence.
+4. Ask a knowledge-gap question:
+   ```text
+   Do you offer carbon-neutral shipping or a strap recycling take-back program?
+   ```
+5. Open `CS Queue`, add a verified resolution, and draft a KB entry.
+6. Open `Marketing Intel` to see theme clustering, monthly brief, and external benchmark.
+7. Open `System Details` to see source proof and evaluation metrics.
+
+Demo reset is also available through the API:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/enquiries/reset
+```
+
+## Verification Commands
 
 Backend tests:
 
@@ -64,117 +132,6 @@ Backend tests:
 cd backend
 env UV_CACHE_DIR=.uv-cache uv run pytest
 ```
-
-Dataset diagnostics:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.ingest.cli summary
-```
-
-Write a generated normalized snapshot:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.ingest.cli seed
-```
-
-Classification evaluation:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.cli evaluate
-```
-
-Classify a single ticket:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.cli classify --ticket-id TKT-1048
-```
-
-Retrieval evaluation:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.retrieval_cli evaluate
-```
-
-Search the local knowledge base:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.retrieval_cli search --query "What is your return policy?"
-```
-
-Retrieve evidence for a ticket:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.retrieval_cli ticket --ticket-id TKT-1048
-```
-
-AI provider status:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.ai_cli status
-```
-
-Structured output schema catalog:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.ai_cli schemas
-```
-
-Redacted evidence-sufficiency prompt preview:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.ai_cli prompt-preview --ticket-id TKT-1048
-```
-
-Drafting evaluation:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.draft_cli evaluate
-```
-
-Generate a draft for one ticket:
-
-```bash
-cd backend
-env UV_CACHE_DIR=.uv-cache uv run python -m app.intelligence.draft_cli ticket --ticket-id TKT-1048
-```
-
-Workflow API smoke examples:
-
-```bash
-curl http://127.0.0.1:8000/api/workflow/overview
-curl "http://127.0.0.1:8000/api/tickets?reply_type=customer_reply&limit=5"
-curl http://127.0.0.1:8000/api/tickets/TKT-1048/intelligence
-curl -X POST http://127.0.0.1:8000/api/tickets/process-batch \
-  -H "Content-Type: application/json" \
-  -d '{"ticket_ids":["TKT-1048","TKT-1013"]}'
-```
-
-Reset ad-hoc demo enquiries:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/enquiries/reset
-```
-
-## Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`.
 
 Frontend checks:
 
@@ -184,129 +141,51 @@ npm run lint
 npm run typecheck
 ```
 
-## Competition Submission
+Optional backend smoke checks:
 
-- Submit through the competition Tally form when the repo and video are final.
-- Ensure the repository is public or shared exactly as required by the challenge.
-- Keep the video under 5 minutes; `VIDEO_SCRIPT.md` is paced as stitched clips for about 4:00.
-- Use `SUBMISSION.md` as the judge-facing written summary.
-- Use the Customer Chat `Reset demo` button, or `POST /api/enquiries/reset`, before recording each take.
-- Keep `AI_LIVE_ENABLED=false` as the safe default. Run a live GLM/FPT smoke only if credentials are available, and state that tests do not require live credentials.
+```bash
+curl http://127.0.0.1:8000/api/workflow/overview
+curl http://127.0.0.1:8000/api/evaluation/scorecard
+curl http://127.0.0.1:8000/api/external/benchmarks
+```
 
-## Database
+## Current Measured Results
 
-Phase 1 includes Compose config for the planned Postgres/pgvector database.
+- 70 tickets processed
+- 44 customer drafts queued
+- 10 knowledge-gap tickets blocked from hallucination
+- 9 themes detected
+- 6 marketing opportunities generated
+- 7 external source groups benchmarked
+- 12 curated external signal mentions
+- 0 unsupported hard-claim guardrail failures
+- About 96% answerability accuracy
+- 100% evidence coverage for answerable tickets
+
+## AI Credential Notes
+
+Live GLM/FPT credentials are optional for review. If credentials are unavailable, describe the AI path honestly:
+
+- The GLM-5.1/FPT provider adapter is implemented.
+- The model is behind a replaceable provider interface.
+- Tests use fake or validated structured outputs and do not require live credentials.
+- When `AI_LIVE_ENABLED=true` and credentials are present, the workflow can use GLM-5.1 for structured, evidence-grounded drafting.
+
+## Troubleshooting
+
+If the frontend says the backend is unavailable, make sure the backend is running on port `8000`.
+
+If you use a different backend port, pass the URL when starting the frontend:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000 npm run dev
+```
+
+If demo data looks stale, use `Reset demo`. This clears only in-memory demo enquiries; it does not modify the source dataset, docs, metrics, or marketing intelligence.
+
+If you want to run the optional database container:
 
 ```bash
 docker compose up -d postgres
-docker compose ps
-```
-
-Stop it with:
-
-```bash
 docker compose down
 ```
-
-## Phase 1 Exit Criteria
-
-- Backend starts locally and serves `/health` and `/api/meta`.
-- Frontend starts locally and renders the workbench shell.
-- Frontend shows backend health state.
-- Postgres/pgvector Compose config validates and starts.
-- README setup commands are accurate.
-
-## Phase 2 Exit Criteria
-
-- All six actual files under `Boldr Data/` parse successfully.
-- Backend serves `/api/datasets/diagnostics`, `/api/datasets/sources`, and `/api/datasets/samples`.
-- Frontend shows the local dataset diagnostics panel when the backend is running.
-- Diagnostics warn that the brief mentions 11 files while 6 local files are available.
-- Parser tests verify ticket, rate card, FAQ, SOP, product model, and strap catalogue counts.
-- Backend and frontend checks pass.
-
-## Phase 3 Exit Criteria
-
-- Every ticket receives an intent, required persona, operational tags, and initial answerability state.
-- Backend serves `/api/intelligence/classifications`, `/api/intelligence/classifications/{ticket_id}`, and `/api/intelligence/evaluation`.
-- Frontend shows a deterministic classification summary when the backend is running.
-- The final persona set uses only the five required personas from `docs/personas.md`.
-- `transactional` remains an operational context, not a final buyer persona.
-- Backend and frontend checks pass.
-
-## Phase 4 Exit Criteria
-
-- Every answerable ticket has at least one retrieved evidence source.
-- Known unsupported themes such as carbon-neutral shipping, strap recycling, and MRI/magnetic resistance remain blocked.
-- Backend serves `/api/retrieval/search`, `/api/retrieval/tickets/{ticket_id}`, and `/api/retrieval/evaluation`.
-- Retrieval evaluation passes all golden questions and rate-card source-priority checks.
-- Frontend shows the evidence coverage, unsupported-blocking, golden-query, and conflict-warning metrics.
-- Backend and frontend checks pass.
-
-## Phase 5 Exit Criteria
-
-- GLM-5.1 via FPT AI Factory is configured behind a replaceable provider adapter.
-- Backend serves `/api/ai/status`, `/api/ai/schemas`, and `/api/ai/prompt-preview/{ticket_id}`.
-- `.env.example` documents `FPT_AI_API_KEY`, `FPT_AI_BASE_URL`, `GLM_MODEL`, and live-inference controls.
-- Structured JSON schemas exist for intent refinement, persona reasoning, evidence sufficiency, draft replies, gap records, KB drafts, theme clusters, and marketing briefs.
-- Tests validate fake-provider outputs, FPT response parsing, schema rejection, and prompt redaction without a live API key.
-- Frontend shows GLM/FPT provider readiness and structured-contract count.
-
-## Phase 6 Exit Criteria
-
-- Answerable tickets produce evidence-backed customer drafts.
-- Unsupported themes produce holding replies and gap records instead of unsupported claims.
-- Order lookup tickets produce internal notes and do not invent delivery, refund, or cancellation status.
-- Backend serves `/api/drafts`, `/api/drafts/evaluation`, `/api/drafts/tickets/{ticket_id}`, and `/api/drafts/tickets/{ticket_id}/review`.
-- Frontend shows draft counts, holding replies, internal notes, and guardrail failure count.
-- Backend and frontend checks pass.
-
-## Phase 7 Exit Criteria
-
-- Backend serves stable workflow endpoints for ticket lists, ticket intelligence, single-ticket processing, batch processing, gap lists/details, gap resolution, and KB draft generation.
-- New workflow responses use consistent `{ status, data, meta }` envelopes where list/process metadata matters.
-- Contract tests cover filters, full ticket traces, single/batch process runs, gap resolution, KB draft generation, and readable 404/409 errors.
-- Frontend shows workflow API readiness, stable endpoint count, routable ticket count, gap count, review queue count, and unresolved gap count.
-- Backend and frontend checks pass.
-
-## Phase 8 Exit Criteria
-
-- The first screen includes an interactive workbench, not only summary metrics.
-- Inbox Intelligence supports ticket search, status filters, and batch processing.
-- Ticket Review shows customer message, persona/routing tags, editable draft, approval/edit/reject controls, evidence cards, and guardrails.
-- Knowledge Gaps shows a selectable gap queue, verified-resolution field, resolve action, FAQ draft action, and generated FAQ preview.
-- Desktop and mobile browser smoke checks pass with no horizontal overflow.
-- Backend and frontend checks pass.
-
-## Phase 9 Exit Criteria
-
-- Backend serves `/api/gaps/metrics` and `/api/gaps/{gap_id}/review-kb-entry`.
-- Gap records include suggested FAQ section, product-page update flag, marketing signal, KB review note, and review timestamp.
-- The workbench shows gap metrics and supports approve/reject actions for drafted FAQ entries.
-- Human resolution remains required before FAQ generation, and human review remains required before publication.
-- Backend and frontend checks pass.
-
-## Phase 10 Exit Criteria
-
-- Backend serves `/api/themes/radar`, `/api/marketing-briefs/current`, and `/api/marketing-briefs/generate`.
-- Theme radar clusters all 70 tickets into the nine planned business themes with persona, answerability, evidence, trend, product-page gap, and marketing action fields.
-- Monthly marketing brief answers what customers are asking that product pages should answer better, which themes need decisions, and which campaign angles are useful.
-- Frontend shows Theme Radar cards, opportunity cards, and the generated Markdown brief.
-- Backend and frontend checks pass.
-
-## Phase 11 Exit Criteria
-
-- Backend serves `/api/evaluation/scorecard`.
-- Scorecard reports answerability accuracy, escalation routing accuracy, persona mapping coverage, evidence coverage, unsupported-claim guardrail results, source conflict handling, golden fixture pass rate, and actionable issues.
-- Minimum targets are marked as pass or documented exception; the current CSV escalation-label disagreement is visible for human review.
-- Frontend shows quality metric cards, golden fixture checks, and issue details suitable for demo defence.
-- Backend and frontend checks pass.
-
-## Phase 12 Exit Criteria
-
-- Backend serves `/api/external/sources`, `/api/external/mentions`, `/api/external/benchmarks`, and `/api/external/benchmarks/generate`.
-- External benchmark output covers five themes: materials safety, strap/outdoor safety, sustainability, collector confidence, and gifting/personalisation.
-- The benchmark uses 7 source groups and 12 curated external mentions; the three core bonus themes are each cross-checked against at least two external source groups.
-- Each benchmark includes internal ticket count, personas, source summaries, sentiment, source diversity, signal strength, BOLDR-specific vs market-wide classification, rationale, recommended action, validation steps, source URLs, and source limitations.
-- Frontend shows source registry cards and benchmark cards with source links, limitations, rationale, signal strength, and validation steps.
-- Backend and frontend checks pass.
