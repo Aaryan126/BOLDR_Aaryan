@@ -178,16 +178,17 @@ Rubric point: measurable impact, operating cost, quality proof.
 
 Edit note: this clip can be shorter if you are over time.
 
-## Clip 7: Repo And Reset Close
+## Clip 7: Model, Repo, And Reset Close
 
-Target length: 3:45-4:00.
+Target length: 3:42-4:00.
 
 Screen actions:
 
 1. Return to `Customer Chat`.
-2. Click `Reset demo`.
-3. Show the empty chat state again.
-4. Optionally show the repo file list with:
+2. Show the `Backend connected` state and the workflow tabs.
+3. Click `Reset demo`.
+4. Show the empty chat state again.
+5. Optionally show the repo file list with:
    - `SUBMISSION.md`
    - `VIDEO_SCRIPT.md`
    - `README.md`
@@ -196,11 +197,11 @@ Screen actions:
 
 Narration:
 
-"The repo includes the backend, frontend, dataset guide, PRD, submission notes, and this script. Tests pass without live GLM or FPT credentials; live GLM is a conditional smoke test when credentials are available. The Reset demo button returns the chat, approvals, CS queue, and KB drafts to a clean judging state. That is the end-to-end submission package."
+"For the AI layer, this workflow is configured to use GLM-5.1 through FPT AI Factory. I chose GLM-5.1 because this product needs reasoning over structured evidence, not just generic chat. I developed the workflow with OpenCode, an open-source coding agent, and kept the system explainable: the model sits behind a replaceable adapter, tests pass without live credentials, and customer-facing answers still require retrieval evidence and human approval. In short, Revenue Rocket is not just a chatbot. It is a support intelligence workflow that answers what it can, blocks what it cannot, drafts KB updates, and turns repeated customer questions into product and marketing insight for BOLDR."
 
 Rubric point: proof of execution and demo readiness.
 
-Edit note: end on the empty Customer Chat screen or the repo file list.
+Edit note: end on the empty Customer Chat screen. If you are over time, remove the repo file-list shot and keep the narration through "product and marketing insight for BOLDR."
 
 ## Stitching Checklist
 
@@ -212,7 +213,7 @@ Use this clip order:
 4. Knowledge gap and FAQ loop.
 5. Marketing Intel and external benchmark.
 6. Metrics, cost, and proof.
-7. Repo and reset close.
+7. Model, repo, and reset close.
 
 Final runtime target: 3:50-4:00.
 
