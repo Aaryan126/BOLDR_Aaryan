@@ -70,6 +70,9 @@ export function ExternalBenchmarkClient({
     (total, benchmark) => total + benchmark.source_urls.length,
     0,
   );
+  const strongSignalCount = benchmarks.filter(
+    (benchmark) => benchmark.signal_strength === "strong",
+  ).length;
 
   return (
     <section className="external-console" data-testid="phase12-external">
@@ -109,6 +112,10 @@ export function ExternalBenchmarkClient({
           <strong>{sourceUrlCount}</strong>
           <span>Source URLs</span>
         </div>
+        <div>
+          <strong>{strongSignalCount}</strong>
+          <span>Strong signals</span>
+        </div>
       </div>
 
       {statusMessage ? (
@@ -119,31 +126,50 @@ export function ExternalBenchmarkClient({
 
       <div className="external-layout">
         <section className="benchmark-list">
-          {benchmarks.map((benchmark) => (
-            <article className="benchmark-card" key={benchmark.theme_key}>
-              <div className="review-heading">
-                <div>
-                  <p className="eyebrow">{benchmark.external_sentiment}</p>
-                  <h4>{benchmark.theme}</h4>
+          {benchmarks.map((benchmark) => {
+            const externalSourceCount =
+              benchmark.external_source_count ?? benchmark.external_sources.length;
+            const signalStrength = benchmark.signal_strength ?? "directional";
+            const rationale =
+              benchmark.benchmark_rationale ??
+              "Internal support themes are being compared against curated external market signals.";
+            const validationSteps = benchmark.validation_steps ?? [];
+            return (
+              <article className="benchmark-card" key={benchmark.theme_key}>
+                <div className="review-heading">
+                  <div>
+                    <p className="eyebrow">{benchmark.external_sentiment}</p>
+                    <h4>{benchmark.theme}</h4>
+                  </div>
+                  <span className="count-pill">{Math.round(benchmark.confidence * 100)}%</span>
                 </div>
-                <span className="count-pill">{Math.round(benchmark.confidence * 100)}%</span>
-              </div>
-              <div className="chip-row">
-                <span>{benchmark.internal_ticket_count} internal tickets</span>
-                <span>{benchmark.external_mention_count} external mentions</span>
-                <span>{benchmark.classification.replaceAll("_", " ")}</span>
-              </div>
-              <p>{benchmark.recommended_action}</p>
-              <small>Internal evidence: {benchmark.internal_ticket_ids.slice(0, 5).join(", ")}</small>
-              <div className="source-link-list">
-                {benchmark.source_urls.map((url) => (
-                  <a href={url} key={url} rel="noreferrer" target="_blank">
-                    {url.replace("https://", "")}
-                  </a>
-                ))}
-              </div>
-            </article>
-          ))}
+                <div className="chip-row">
+                  <span>{benchmark.internal_ticket_count} internal tickets</span>
+                  <span>{benchmark.external_mention_count} external mentions</span>
+                  <span>{externalSourceCount} source groups</span>
+                  <span>{signalStrength} signal</span>
+                  <span>{benchmark.classification.replaceAll("_", " ")}</span>
+                </div>
+                <p>{rationale}</p>
+                <p>{benchmark.recommended_action}</p>
+                <small>Internal evidence: {benchmark.internal_ticket_ids.slice(0, 5).join(", ")}</small>
+                {validationSteps.length > 0 ? (
+                  <div className="benchmark-validation-list">
+                    {validationSteps.map((step) => (
+                      <span key={step}>{step}</span>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="source-link-list">
+                  {benchmark.source_urls.map((url) => (
+                    <a href={url} key={url} rel="noreferrer" target="_blank">
+                      {url.replace("https://", "")}
+                    </a>
+                  ))}
+                </div>
+              </article>
+            );
+          })}
         </section>
 
         <section className="source-registry">

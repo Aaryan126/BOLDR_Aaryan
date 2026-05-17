@@ -2951,6 +2951,23 @@ a {
   line-height: 1.45;
 }
 
+.benchmark-validation-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.benchmark-validation-list span {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(67, 134, 184, 0.06);
+  padding: 7px 9px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.4;
+}
+
 .source-link-list {
   display: grid;
   gap: 6px;
@@ -5004,6 +5021,17 @@ button {
 .benchmark-source-list {
   border-top: 1px solid var(--border);
   padding-top: 12px;
+}
+
+.external-benchmark-card .benchmark-validation-list {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.external-benchmark-card .benchmark-validation-list span {
+  border-color: var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-muted);
 }
 
 .benchmark-source-list a,

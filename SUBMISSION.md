@@ -25,6 +25,8 @@ Verified system metrics:
 | Knowledge-gap tickets blocked from hallucination | 10 |
 | Themes detected | 9 |
 | Marketing opportunities generated | 6 |
+| External source groups benchmarked | 7 |
+| External signal mentions curated | 12 |
 | Unsupported hard-claim guardrail failures | 0 |
 | Answerability accuracy | 95.71% |
 | Evidence coverage for answerable tickets | 100% |
@@ -38,6 +40,7 @@ The workflow gives a three-person CS team a repeatable operating loop:
 - Better knowledge management because verified human resolutions become draft FAQ entries.
 - Better product pages because recurring customer wording is clustered into missing information themes.
 - Better marketing decisions because the monthly brief ties buyer personas to product-page gaps and campaign angles.
+- Stronger market context because the bonus benchmark cross-checks internal themes against Reddit, watch forums, review/community platforms, editorial sources, and independent review coverage.
 
 # Cost Analysis
 
@@ -69,6 +72,7 @@ The system is approval-first:
 - FAQ additions require a verified human resolution before drafting.
 - Draft FAQ entries require human approval before being treated as approved additions.
 - Rate cards override lower-priority FAQ/SOP text for pricing, limits, and turnaround.
+- External sentiment is labeled as curated directional evidence, with source limitations and validation steps shown before production use.
 - Tests pass without live GLM/FPT credentials; live inference is an optional smoke path.
 
 # Proof Of Execution

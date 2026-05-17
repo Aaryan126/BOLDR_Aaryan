@@ -103,7 +103,7 @@ The system must create a repeatable intelligence loop:
 - Human CS resolution can generate a KB draft, and KB drafts require approve/reject review before they appear as approved additions.
 - Marketing Intel combines existing theme radar data with live demo enquiry signals and explicitly maps those signals to the five required personas.
 - Marketing Intel now presents the two brief deliverables as explicit first-class sections: Weekly Theme Clustering and the monthly "What customers are asking that is not on your product pages" brief.
-- Marketing Intel also surfaces the bonus External Sentiment Benchmarking output with a visible shortcut, source-group counts, market-wide signal count, benchmark cards, and source links so judges do not need to open System Details.
+- Marketing Intel also surfaces the bonus External Sentiment Benchmarking output with a visible shortcut, source-group counts, market-wide signal count, benchmark cards, signal strength, source diversity, rationale, validation steps, and source links so judges do not need to open System Details.
 - The prior implementation workbench, quality dashboard, external benchmarking, diagnostics, and status panels remain available under System Details.
 - Customer Chat includes a Reset demo action that clears only in-memory ad-hoc enquiries, approval selections, CS queue selections, and draft demo state. It does not modify the source dataset, generated theme radar, marketing intelligence, or project documentation.
 
@@ -1092,6 +1092,7 @@ Core challenge is complete when:
 - Monthly marketing brief can be generated with evidence-backed opportunities.
 - Quality scorecard can be generated with pass/fail/documented-exception metrics and golden fixtures.
 - External benchmark cards can compare internal themes against curated public watch-community and review-source signals.
+- External benchmark cards show source diversity, signal strength, rationale, validation steps, public source links, and source limitations.
 - Five required personas are used exactly.
 - No customer-facing answer is auto-sent.
 

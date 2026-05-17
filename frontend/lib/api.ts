@@ -284,6 +284,7 @@ export type ExternalSourceType =
   | "industry_article";
 
 export type ExternalSentiment = "positive" | "concerned" | "mixed" | "opportunity";
+export type ExternalSignalStrength = "directional" | "moderate" | "strong";
 
 export type ExternalSource = {
   source_id: string;
@@ -308,18 +309,24 @@ export type ExternalBenchmarkSource = {
 export type ExternalBenchmark = {
   theme_key: string;
   theme: string;
+  internal_theme_names?: string[];
   internal_ticket_count: number;
   internal_ticket_ids: string[];
   internal_personas: string[];
   external_sources: ExternalBenchmarkSource[];
+  external_source_count?: number;
+  external_source_type_count?: number;
   external_mention_count: number;
   external_sentiment: ExternalSentiment;
+  signal_strength?: ExternalSignalStrength;
   classification:
     | "boldr_specific_gap"
     | "market_wide_signal"
     | "market_wide_concern_with_boldr_gap"
     | "covered_but_under_merchandised";
+  benchmark_rationale?: string;
   recommended_action: string;
+  validation_steps?: string[];
   confidence: number;
   source_urls: string[];
   source_limitations: string[];

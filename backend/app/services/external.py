@@ -8,6 +8,7 @@ from app.models.external import (
     ExternalBenchmark,
     ExternalMention,
     ExternalSource,
+    ExternalSignalStrength,
 )
 from app.services.insights import get_theme_radar
 
@@ -22,6 +23,24 @@ EXTERNAL_SOURCES = [
         rationale="Broad watch-buyer and enthusiast discussion with fast-moving concerns, recommendations, and objections.",
         buyer_signals=["mainstream buyer concerns", "strap safety", "product recommendations"],
         limitations="Curated sample only; not a live Reddit API pull.",
+    ),
+    ExternalSource(
+        source_id="source-reddit-microbrandwatches",
+        name="Reddit r/MicrobrandWatches",
+        source_type="reddit",
+        url="https://www.reddit.com/r/MicrobrandWatches/",
+        rationale="Dedicated microbrand-owner and buyer community for trust, quality, specs, and after-sales concerns.",
+        buyer_signals=["microbrand confidence", "collector objections", "ownership proof"],
+        limitations="Subreddit-level curated signal; not a statistically normalized Reddit API sample.",
+    ),
+    ExternalSource(
+        source_id="source-reddit-watchexchange",
+        name="Reddit r/Watchexchange",
+        source_type="reddit",
+        url="https://www.reddit.com/r/Watchexchange/",
+        rationale="Secondary-market community that reveals resale confidence, brand trust, and model desirability signals.",
+        buyer_signals=["resale confidence", "collector demand", "price/value perception"],
+        limitations="Marketplace signal is directional; resale prices and listing volume require a live collector-data pass before production decisions.",
     ),
     ExternalSource(
         source_id="source-watchuseek",
@@ -91,6 +110,20 @@ EXTERNAL_MENTIONS = [
         captured_at=CAPTURED_AT,
     ),
     ExternalMention(
+        mention_id="mention-reddit-material-transparency",
+        source_id="source-reddit-watches",
+        theme_key="materials_safety",
+        source_url="https://www.reddit.com/r/Watches/search/?q=titanium%20nickel%20allergy&restrict_sr=1",
+        source_title="Material transparency and allergy discussion",
+        sentiment="concerned",
+        mention_count=8,
+        representative_claims=[
+            "General watch buyers search for material and allergy reassurance before purchase.",
+            "Titanium, nickel, coating, and strap-material language can reduce uncertainty for sensitive-skin buyers.",
+        ],
+        captured_at=CAPTURED_AT,
+    ),
+    ExternalMention(
         mention_id="mention-reddit-fkm-hazard",
         source_id="source-reddit-watches",
         theme_key="strap_outdoor_safety",
@@ -119,6 +152,20 @@ EXTERNAL_MENTIONS = [
         captured_at=CAPTURED_AT,
     ),
     ExternalMention(
+        mention_id="mention-watchcrunch-strap-comparison",
+        source_id="source-watchcrunch",
+        theme_key="strap_outdoor_safety",
+        source_url="https://www.watchcrunch.com/search?q=fkm%20strap",
+        source_title="FKM and strap-comparison discussions",
+        sentiment="opportunity",
+        mention_count=8,
+        representative_claims=[
+            "Community buyers compare strap comfort, material, and use-case fit as part of watch selection.",
+            "A buyer-facing strap finder would turn scattered support answers into a conversion aid.",
+        ],
+        captured_at=CAPTURED_AT,
+    ),
+    ExternalMention(
         mention_id="mention-monochrome-vegan-straps",
         source_id="source-monochrome",
         theme_key="sustainability",
@@ -133,8 +180,22 @@ EXTERNAL_MENTIONS = [
         captured_at=CAPTURED_AT,
     ),
     ExternalMention(
-        mention_id="mention-reddit-microbrand-signal",
+        mention_id="mention-reddit-sustainability-search",
         source_id="source-reddit-watches",
+        theme_key="sustainability",
+        source_url="https://www.reddit.com/r/Watches/search/?q=vegan%20strap%20recycled%20materials&restrict_sr=1",
+        source_title="Vegan straps and recycled-material discussion",
+        sentiment="opportunity",
+        mention_count=9,
+        representative_claims=[
+            "Sustainability language is visible in buyer research, but claims are trusted only when specific.",
+            "Customers distinguish between recycled packaging, recycled straps, vegan straps, and carbon-offset shipping.",
+        ],
+        captured_at=CAPTURED_AT,
+    ),
+    ExternalMention(
+        mention_id="mention-reddit-microbrand-signal",
+        source_id="source-reddit-microbrandwatches",
         theme_key="collector_confidence",
         source_url="https://www.reddit.com/r/MicrobrandWatches/",
         source_title="Microbrand watch community",
@@ -143,6 +204,20 @@ EXTERNAL_MENTIONS = [
         representative_claims=[
             "Microbrand buyers look for movement, case material, warranty, and brand credibility signals.",
             "Collector confidence is tied to transparent specs and owner experience.",
+        ],
+        captured_at=CAPTURED_AT,
+    ),
+    ExternalMention(
+        mention_id="mention-reddit-watchexchange-resale",
+        source_id="source-reddit-watchexchange",
+        theme_key="collector_confidence",
+        source_url="https://www.reddit.com/r/Watchexchange/",
+        source_title="Secondary-market microbrand listings",
+        sentiment="mixed",
+        mention_count=10,
+        representative_claims=[
+            "Secondary-market buyers use listing activity and completed-sale context as trust signals.",
+            "Collector-facing product pages should make warranty, serviceability, movement, and limited-run details easy to verify.",
         ],
         captured_at=CAPTURED_AT,
     ),
@@ -185,6 +260,15 @@ BENCHMARK_THEMES = {
             "Add a product-page materials table covering titanium grade, nickel/allergy caveats, "
             "BPA-free straps, hypoallergenic positioning, and child-safe strap recommendations."
         ),
+        "benchmark_rationale": (
+            "Internal materials questions line up with forum concerns about nickel, titanium, and hypoallergenic claims. "
+            "BOLDR has useful safety facts, but the product page should make those facts easier to compare."
+        ),
+        "validation_steps": [
+            "Add a materials table to one high-traffic product page and track support-ticket deflection.",
+            "Ask suppliers to verify nickel, BPA, and hypoallergenic wording for each strap family.",
+            "Review search-console queries for allergy, nickel, titanium, and BPA terms.",
+        ],
         "confidence": 0.82,
     },
     "strap_outdoor_safety": {
@@ -195,6 +279,15 @@ BENCHMARK_THEMES = {
             "Build a strap finder that makes FKM, nylon NATO, leather, water use, skin sensitivity, "
             "and BPA-free positioning easy to compare."
         ),
+        "benchmark_rationale": (
+            "Internal strap questions and public FKM/PFAS discussions both show buyers want practical material guidance. "
+            "This is a market-wide education opportunity, not only a BOLDR support gap."
+        ),
+        "validation_steps": [
+            "Create a strap comparison module covering FKM, nylon NATO, leather, mesh, water use, and skin sensitivity.",
+            "Track clicks from safety and outdoor-use FAQ answers into strap product pages.",
+            "Add a customer-support macro that points to the strap comparison module after approval.",
+        ],
         "confidence": 0.78,
     },
     "sustainability": {
@@ -205,6 +298,15 @@ BENCHMARK_THEMES = {
             "Publish a sustainability roadmap with vegan strap stance, strap recycling decision, "
             "packaging details, and carbon-neutral shipping status."
         ),
+        "benchmark_rationale": (
+            "Internal sustainability questions match external watch-industry discussion, but BOLDR cannot safely claim "
+            "vegan straps, recycling, or carbon-neutral shipping until operations confirms the facts."
+        ),
+        "validation_steps": [
+            "Get an operations decision on carbon-neutral shipping and recycling before using campaign language.",
+            "Confirm vegan-material status by strap SKU and publish caveats where the answer is no or unknown.",
+            "Add a sustainability FAQ update only after human approval of the verified policy wording.",
+        ],
         "confidence": 0.86,
     },
     "collector_confidence": {
@@ -215,6 +317,15 @@ BENCHMARK_THEMES = {
             "Create collector spec cards with movement, titanium grade, warranty, limited-edition, "
             "serviceability, and independent-review proof points."
         ),
+        "benchmark_rationale": (
+            "Internal collector questions overlap with external microbrand trust and resale-confidence signals. "
+            "BOLDR has many of the proof points already, but they are under-merchandised."
+        ),
+        "validation_steps": [
+            "Add collector proof cards to product pages and measure clicks on movement, warranty, and service details.",
+            "Track resale and review-source mentions monthly as a directional confidence signal.",
+            "Link independent review proof points from collector-oriented product pages where rights allow.",
+        ],
         "confidence": 0.72,
     },
     "gifting_personalisation": {
@@ -225,6 +336,15 @@ BENCHMARK_THEMES = {
             "Create seasonal gifting pages that combine engraving options, gift wrap, turnaround, "
             "script limits, and corporate order routing."
         ),
+        "benchmark_rationale": (
+            "Internal engraving and gifting tickets are already answerable, while external community signals suggest "
+            "personalisation and ownership stories can still improve buyer confidence."
+        ),
+        "validation_steps": [
+            "Build a seasonal gift page with engraving limits, gift wrap, rush timing, and corporate routing.",
+            "Track conversion and ticket volume around gifting periods.",
+            "Add approved examples of engraving copy and packaging expectations to the FAQ.",
+        ],
         "confidence": 0.68,
     },
 }
@@ -271,6 +391,7 @@ def generate_external_benchmarks() -> list[ExternalBenchmark]:
             ExternalBenchmark(
                 theme_key=theme_key,
                 theme=config["theme"],
+                internal_theme_names=internal_theme_names,
                 internal_ticket_count=sum(theme.frequency for theme in internal_themes),
                 internal_ticket_ids=_unique(ticket_ids),
                 internal_personas=[
@@ -280,10 +401,17 @@ def generate_external_benchmarks() -> list[ExternalBenchmark]:
                     )
                 ],
                 external_sources=source_summaries,
+                external_source_count=len({mention.source_id for mention in mention_rows}),
+                external_source_type_count=len(
+                    {source_lookup[mention.source_id].source_type for mention in mention_rows}
+                ),
                 external_mention_count=sum(mention.mention_count for mention in mention_rows),
                 external_sentiment=_dominant_sentiment(mention_rows),
+                signal_strength=_signal_strength(mention_rows),
                 classification=config["classification"],
+                benchmark_rationale=config["benchmark_rationale"],
                 recommended_action=config["recommended_action"],
+                validation_steps=config["validation_steps"],
                 confidence=config["confidence"],
                 source_urls=[mention.source_url for mention in mention_rows],
                 source_limitations=_unique(
@@ -301,6 +429,16 @@ def _dominant_sentiment(mentions: list[ExternalMention]) -> str:
     for mention in mentions:
         counts[mention.sentiment] += mention.mention_count
     return counts.most_common(1)[0][0]
+
+
+def _signal_strength(mentions: list[ExternalMention]) -> ExternalSignalStrength:
+    source_count = len({mention.source_id for mention in mentions})
+    total_mentions = sum(mention.mention_count for mention in mentions)
+    if source_count >= 2 and total_mentions >= 25:
+        return "strong"
+    if source_count >= 2 or total_mentions >= 12:
+        return "moderate"
+    return "directional"
 
 
 def _unique(values) -> list:

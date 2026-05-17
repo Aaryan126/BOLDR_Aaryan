@@ -86,8 +86,8 @@ function getApiBaseUrl() {
   return "http://localhost:8000";
 }
 
-function formatLabel(value: string) {
-  return value.replaceAll("_", " ");
+function formatLabel(value: string | null | undefined) {
+  return (value ?? "unknown").replaceAll("_", " ");
 }
 
 function badgeToneClass(value: string) {
@@ -1191,44 +1191,67 @@ export function ChatWorkspaceClient({
               <p className="muted-copy">External benchmark data is unavailable.</p>
             ) : (
               <div className="external-benchmark-grid">
-                {visibleExternalBenchmarks.map((benchmark) => (
-                  <article
-                    className={`external-benchmark-card ${benchmarkToneClass(benchmark)}`}
-                    key={benchmark.theme_key}
-                  >
-                    <div className="external-benchmark-heading">
-                      <span>{formatLabel(benchmark.external_sentiment)}</span>
-                      <strong>{Math.round(benchmark.confidence * 100)}%</strong>
-                    </div>
-                    <h3>{benchmark.theme}</h3>
-                    <div className="signal-card-footer">
-                      <span className={`insight-chip ${benchmarkToneClass(benchmark)}`}>
-                        {formatBenchmarkClassification(benchmark.classification)}
-                      </span>
-                      <span className="insight-chip tone-accent">
-                        {benchmark.external_mention_count} external mentions
-                      </span>
-                      <span className="insight-chip tone-neutral">
-                        {benchmark.internal_ticket_count} internal tickets
-                      </span>
-                    </div>
-                    <p>{benchmark.recommended_action}</p>
-                    <div className="benchmark-persona-row">
-                      {benchmark.internal_personas.slice(0, 3).map((persona) => (
-                        <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
-                          {persona}
+                {visibleExternalBenchmarks.map((benchmark) => {
+                  const externalSourceCount =
+                    benchmark.external_source_count ?? benchmark.external_sources.length;
+                  const signalStrength = benchmark.signal_strength ?? "directional";
+                  const rationale =
+                    benchmark.benchmark_rationale ??
+                    "Internal support themes are being compared against curated external market signals.";
+                  const validationSteps = benchmark.validation_steps ?? [];
+                  return (
+                    <article
+                      className={`external-benchmark-card ${benchmarkToneClass(benchmark)}`}
+                      key={benchmark.theme_key}
+                    >
+                      <div className="external-benchmark-heading">
+                        <span>{formatLabel(benchmark.external_sentiment)}</span>
+                        <strong>{Math.round(benchmark.confidence * 100)}%</strong>
+                      </div>
+                      <h3>{benchmark.theme}</h3>
+                      <div className="signal-card-footer">
+                        <span className={`insight-chip ${benchmarkToneClass(benchmark)}`}>
+                          {formatBenchmarkClassification(benchmark.classification)}
                         </span>
-                      ))}
-                    </div>
-                    <div className="benchmark-source-list">
-                      {benchmark.external_sources.slice(0, 2).map((source) => (
-                        <a href={source.source_url} key={source.source_url} rel="noreferrer" target="_blank">
-                          {source.name} - {source.mention_count} mentions
-                        </a>
-                      ))}
-                    </div>
-                  </article>
-                ))}
+                        <span className="insight-chip tone-accent">
+                          {benchmark.external_mention_count} external mentions
+                        </span>
+                        <span className="insight-chip tone-neutral">
+                          {benchmark.internal_ticket_count} internal tickets
+                        </span>
+                        <span className="insight-chip tone-neutral">
+                          {formatLabel(signalStrength)} signal
+                        </span>
+                        <span className="insight-chip tone-accent">
+                          {externalSourceCount} sources
+                        </span>
+                      </div>
+                      <p>{rationale}</p>
+                      <p>{benchmark.recommended_action}</p>
+                      <div className="benchmark-persona-row">
+                        {benchmark.internal_personas.slice(0, 3).map((persona) => (
+                          <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
+                            {persona}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="benchmark-source-list">
+                        {benchmark.external_sources.slice(0, 2).map((source) => (
+                          <a href={source.source_url} key={source.source_url} rel="noreferrer" target="_blank">
+                            {source.name} - {source.mention_count} mentions
+                          </a>
+                        ))}
+                      </div>
+                      {validationSteps.length > 0 ? (
+                        <div className="benchmark-validation-list">
+                          {validationSteps.slice(0, 2).map((step) => (
+                            <span key={step}>{step}</span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })}
               </div>
             )}
             <div className="source-registry-strip">

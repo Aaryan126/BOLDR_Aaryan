@@ -297,7 +297,8 @@ docker compose down
 ## Phase 12 Exit Criteria
 
 - Backend serves `/api/external/sources`, `/api/external/mentions`, `/api/external/benchmarks`, and `/api/external/benchmarks/generate`.
-- External benchmark output covers at least three themes and currently covers five: materials safety, strap/outdoor safety, sustainability, collector confidence, and gifting/personalisation.
-- Each benchmark includes internal ticket count, personas, source summaries, sentiment, BOLDR-specific vs market-wide classification, recommended action, source URLs, and source limitations.
-- Frontend shows source registry cards and benchmark cards with source links and limitations.
+- External benchmark output covers five themes: materials safety, strap/outdoor safety, sustainability, collector confidence, and gifting/personalisation.
+- The benchmark uses 7 source groups and 12 curated external mentions; the three core bonus themes are each cross-checked against at least two external source groups.
+- Each benchmark includes internal ticket count, personas, source summaries, sentiment, source diversity, signal strength, BOLDR-specific vs market-wide classification, rationale, recommended action, validation steps, source URLs, and source limitations.
+- Frontend shows source registry cards and benchmark cards with source links, limitations, rationale, signal strength, and validation steps.
 - Backend and frontend checks pass.

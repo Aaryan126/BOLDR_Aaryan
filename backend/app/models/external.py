@@ -18,6 +18,11 @@ ExternalSentiment = Literal[
     "mixed",
     "opportunity",
 ]
+ExternalSignalStrength = Literal[
+    "directional",
+    "moderate",
+    "strong",
+]
 BenchmarkClassification = Literal[
     "boldr_specific_gap",
     "market_wide_signal",
@@ -61,14 +66,20 @@ class BenchmarkExternalSourceSummary(BaseModel):
 class ExternalBenchmark(BaseModel):
     theme_key: str
     theme: str
+    internal_theme_names: list[str]
     internal_ticket_count: int
     internal_ticket_ids: list[str]
     internal_personas: list[str]
     external_sources: list[BenchmarkExternalSourceSummary]
+    external_source_count: int
+    external_source_type_count: int
     external_mention_count: int
     external_sentiment: ExternalSentiment
+    signal_strength: ExternalSignalStrength
     classification: BenchmarkClassification
+    benchmark_rationale: str
     recommended_action: str
+    validation_steps: list[str]
     confidence: float
     source_urls: list[str]
     source_limitations: list[str]

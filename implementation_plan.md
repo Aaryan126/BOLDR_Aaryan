@@ -876,10 +876,11 @@ Implementation notes:
 
 - Added `/api/external/sources`, `/api/external/mentions`, `/api/external/benchmarks`, and `/api/external/benchmarks/generate`.
 - Added a curated repeatable external sample using public watch-community, forum, editorial, review-platform, and review-source URLs.
-- Benchmarks compare internal theme counts/personas/tickets against external source summaries, sentiment, source URLs, source limitations, and BOLDR-specific vs market-wide classification.
+- Benchmarks compare internal theme counts/personas/tickets against external source summaries, sentiment, source diversity, signal strength, rationale, source URLs, source limitations, validation steps, and BOLDR-specific vs market-wide classification.
 - Implemented five benchmark themes: materials safety, strap/outdoor safety, sustainability, collector confidence, and gifting/personalisation.
-- Frontend now shows source registry cards and benchmark cards with recommendations and source links.
-- Marketing Intel now includes a visible bonus shortcut plus an embedded external benchmark section with three highlighted themes, source counts, market-wide signal count, source links, and recommendations so judges can see the bonus without opening System Details.
+- Expanded the curated source registry to 7 source groups and 12 external mentions; the three core bonus themes are each cross-checked against at least two external source groups.
+- Frontend now shows source registry cards and benchmark cards with recommendations, signal strength, rationale, validation steps, source links, and limitations.
+- Marketing Intel now includes a visible bonus shortcut plus an embedded external benchmark section with three highlighted themes, source counts, market-wide signal count, signal strength, source links, rationale, validation steps, and recommendations so judges can see the bonus without opening System Details.
 
 Default tests:
 
@@ -890,8 +891,10 @@ Default tests:
   - internal ticket count
   - external source summary
   - sentiment classification
+  - source diversity and signal strength
   - BOLDR-specific vs market-wide classification
   - recommended action
+  - rationale and validation steps
   - source URLs
 - Snapshot tests for benchmark card/report structure.
 

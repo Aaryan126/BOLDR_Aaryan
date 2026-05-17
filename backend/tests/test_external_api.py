@@ -11,10 +11,11 @@ def test_external_sources_include_multiple_source_types_and_limitations() -> Non
     assert response.status_code == 200
     sources = response.json()["data"]
     source_types = {source["source_type"] for source in sources}
-    assert len(sources) >= 4
+    assert len(sources) >= 7
     assert {"reddit", "watch_forum", "industry_article"}.issubset(source_types)
     assert all(source["url"].startswith("https://") for source in sources)
     assert all(source["limitations"] for source in sources)
+    assert any(source["source_id"] == "source-reddit-watchexchange" for source in sources)
 
 
 def test_external_mentions_are_imported_with_source_urls() -> None:
@@ -24,7 +25,7 @@ def test_external_mentions_are_imported_with_source_urls() -> None:
 
     assert response.status_code == 200
     mentions = response.json()["data"]
-    assert len(mentions) >= 6
+    assert len(mentions) >= 12
     assert {mention["theme_key"] for mention in mentions} >= {
         "materials_safety",
         "strap_outdoor_safety",
@@ -50,19 +51,35 @@ def test_external_benchmarks_compare_internal_and_external_signals() -> None:
     assert required.issubset({benchmark["theme_key"] for benchmark in benchmarks})
     for benchmark in benchmarks:
         assert benchmark["internal_ticket_count"] >= 1
+        assert benchmark["internal_theme_names"]
         assert benchmark["internal_ticket_ids"]
         assert benchmark["internal_personas"]
         assert benchmark["external_sources"]
+        assert benchmark["external_source_count"] >= 1
+        assert benchmark["external_source_type_count"] >= 1
         assert benchmark["external_mention_count"] >= 1
+        assert benchmark["signal_strength"] in {"directional", "moderate", "strong"}
         assert benchmark["classification"] in {
             "boldr_specific_gap",
             "market_wide_signal",
             "market_wide_concern_with_boldr_gap",
             "covered_but_under_merchandised",
         }
+        assert benchmark["benchmark_rationale"]
         assert benchmark["recommended_action"]
+        assert len(benchmark["validation_steps"]) >= 2
         assert benchmark["source_urls"]
         assert benchmark["source_limitations"]
+
+    collector = next(
+        benchmark for benchmark in benchmarks if benchmark["theme_key"] == "collector_confidence"
+    )
+    assert collector["external_source_count"] >= 3
+    for theme_key in required:
+        benchmark = next(
+            item for item in benchmarks if item["theme_key"] == theme_key
+        )
+        assert benchmark["external_source_count"] >= 2
 
 
 def test_external_benchmarks_generate_matches_read_endpoint() -> None:
