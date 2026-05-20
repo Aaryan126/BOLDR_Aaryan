@@ -83,6 +83,7 @@ class FPTGLMProvider:
         model: str = "GLM-5.1",
         timeout_seconds: float = 30.0,
         max_retries: int = 2,
+        thinking_enabled: bool = False,
         client: httpx.Client | None = None,
     ) -> None:
         if not api_key:
@@ -92,6 +93,7 @@ class FPTGLMProvider:
         self.model = model
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
+        self.thinking_enabled = thinking_enabled
         self.client = client or httpx.Client(timeout=timeout_seconds)
         self._owns_client = client is None
 
@@ -117,6 +119,7 @@ class FPTGLMProvider:
             "presence_penalty": presence_penalty,
             "frequency_penalty": frequency_penalty,
             "stream": stream,
+            "thinking": {"type": "enabled" if self.thinking_enabled else "disabled"},
         }
         headers = {
             "Content-Type": "application/json",
@@ -165,7 +168,7 @@ def parse_fpt_chat_response(
     choice = choices[0]
     message = choice["message"]
     content = message["content"]
-    reasoning = message.get("reasoning")
+    reasoning = message.get("reasoning") or message.get("reasoning_content")
     if content is None:
         raise AIProviderError(
             "FPT response did not include final message content. "

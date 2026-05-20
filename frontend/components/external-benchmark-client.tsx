@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { getConfiguredApiBaseUrl } from "@/lib/api";
 import type {
   ExternalBenchmark,
   ExternalBenchmarkResponse,
@@ -14,9 +15,12 @@ type ExternalBenchmarkClientProps = {
   initialBenchmarks: ExternalBenchmark[];
 };
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const apiBaseUrl = getConfiguredApiBaseUrl();
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!apiBaseUrl) {
+    throw new Error("Backend API URL is not configured.");
+  }
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     headers: {

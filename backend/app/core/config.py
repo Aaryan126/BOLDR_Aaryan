@@ -24,9 +24,22 @@ class Settings(BaseSettings):
         validation_alias="FPT_AI_BASE_URL",
     )
     glm_model: str = Field(default="GLM-5.1", validation_alias="GLM_MODEL")
+    glm_thinking_enabled: bool = Field(default=False, validation_alias="GLM_THINKING_ENABLED")
     ai_timeout_seconds: float = Field(default=30.0, validation_alias="AI_TIMEOUT_SECONDS")
     ai_max_retries: int = Field(default=2, validation_alias="AI_MAX_RETRIES")
     ai_live_enabled: bool = Field(default=False, validation_alias="AI_LIVE_ENABLED")
+    ai_deterministic_fallback_enabled: bool = Field(
+        default=False,
+        validation_alias="AI_DETERMINISTIC_FALLBACK_ENABLED",
+    )
+    public_enquiry_rate_limit: int = Field(
+        default=30,
+        validation_alias="PUBLIC_ENQUIRY_RATE_LIMIT",
+    )
+    public_enquiry_rate_window_seconds: int = Field(
+        default=60,
+        validation_alias="PUBLIC_ENQUIRY_RATE_WINDOW_SECONDS",
+    )
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

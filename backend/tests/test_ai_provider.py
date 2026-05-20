@@ -144,6 +144,7 @@ def test_fpt_glm_provider_builds_payload_and_parses_wrapped_response() -> None:
     assert captured["authorization"] == "Bearer test-key"
     assert captured["payload"]["model"] == "GLM-5.1"  # type: ignore[index]
     assert captured["payload"]["stream"] is False  # type: ignore[index]
+    assert captured["payload"]["thinking"] == {"type": "disabled"}  # type: ignore[index]
     assert result.raw_response_id == "chatcmpl-test"
     assert result.usage is not None
     assert result.usage.total_tokens == 23
@@ -166,6 +167,28 @@ def test_fpt_response_parser_accepts_plain_openai_shape() -> None:
 
     assert result.content == "hello"
     assert result.raw_response_id == "plain"
+
+
+def test_fpt_response_parser_accepts_reasoning_content_field() -> None:
+    result = parse_fpt_chat_response(
+        {
+            "id": "reasoning-content",
+            "model": "GLM-5.1",
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "hello",
+                        "reasoning_content": "Private reasoning payload.",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+    )
+
+    assert result.content == "hello"
+    assert result.reasoning == "Private reasoning payload."
 
 
 def test_fpt_response_parser_rejects_reasoning_without_content() -> None:

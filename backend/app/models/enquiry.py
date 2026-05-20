@@ -41,7 +41,7 @@ class TraceEvent(BaseModel):
 
 
 class AdhocEnquiryRequest(BaseModel):
-    message: str = ""
+    message: str = Field(default="", max_length=3000)
     customer_name: str = "Demo Customer"
     customer_email: str = "demo.customer@example.com"
     source: str = "judge_demo"

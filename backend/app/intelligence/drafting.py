@@ -82,6 +82,7 @@ def generate_ticket_draft(
     prepared_customer_draft = None
     if decision.reply_type == "customer_reply":
         live_ai_required = should_require_live_ai(use_live_ai, ai_provider)
+        allow_deterministic_fallback = should_use_deterministic_fallback_after_live_ai_failure()
         prepared_customer_draft = compose_ai_customer_draft(
             classification,
             retrieval,
@@ -90,22 +91,21 @@ def generate_ticket_draft(
             use_live_ai=use_live_ai,
             ai_provider=ai_provider,
         )
-        if live_ai_required and prepared_customer_draft is None:
+        live_ai_failed = live_ai_required and prepared_customer_draft is None
+        if live_ai_failed and not allow_deterministic_fallback:
             decision = block_failed_live_ai_draft(decision)
-        prepared_customer_reply = (
-            prepared_customer_draft.draft_reply
-            if prepared_customer_draft is not None
-            else None
-            if live_ai_required
-            else compose_customer_reply(classification, retrieval)
-        )
+        prepared_customer_reply = None
+        if prepared_customer_draft is not None:
+            prepared_customer_reply = prepared_customer_draft.draft_reply
+        elif not live_ai_required or allow_deterministic_fallback:
+            prepared_customer_reply = compose_customer_reply(classification, retrieval)
         if prepared_customer_draft is None and prepared_customer_reply:
             prepared_customer_draft = build_prepared_customer_draft(
                 classification,
                 retrieval,
                 prepared_customer_reply,
             )
-        if not live_ai_required and (
+        if (not live_ai_required or allow_deterministic_fallback) and (
             not prepared_customer_reply or has_raw_evidence_artifacts(prepared_customer_reply)
         ):
             decision = decision.model_copy(
@@ -551,6 +551,10 @@ def block_failed_live_ai_draft(decision: AnswerabilityDecision) -> Answerability
     )
 
 
+def should_use_deterministic_fallback_after_live_ai_failure() -> bool:
+    return get_settings().ai_deterministic_fallback_enabled
+
+
 def compose_ai_customer_draft(
     classification: TicketClassification,
     retrieval: RetrievalResult,
@@ -576,6 +580,7 @@ def compose_ai_customer_draft(
             model=settings.glm_model,
             timeout_seconds=settings.ai_timeout_seconds,
             max_retries=settings.ai_max_retries,
+            thinking_enabled=settings.glm_thinking_enabled,
         )
 
     try:

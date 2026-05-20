@@ -694,8 +694,24 @@ export type GapMetricsResponse = {
   data: GapMetrics;
 };
 
+export function getConfiguredApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+
+  if (typeof window !== "undefined") {
+    const localHosts = new Set(["localhost", "127.0.0.1"]);
+    if (localHosts.has(window.location.hostname)) {
+      return `${window.location.protocol}//${window.location.hostname}:8000`;
+    }
+    return "";
+  }
+
+  return process.env.NODE_ENV === "production" ? "" : "http://localhost:8000";
+}
+
 export async function getBackendHealth(): Promise<BackendHealth> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/health`, {
@@ -719,7 +735,7 @@ export async function getBackendHealth(): Promise<BackendHealth> {
 }
 
 export async function getTicketList(): Promise<TicketListResponse | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/tickets`, {
@@ -739,7 +755,7 @@ export async function getTicketList(): Promise<TicketListResponse | null> {
 export async function getTicketDetail(
   ticketId: string,
 ): Promise<TicketWorkflowDetail | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/tickets/${ticketId}/intelligence`, {
@@ -758,7 +774,7 @@ export async function getTicketDetail(
 }
 
 export async function getGapList(): Promise<GapListResponse | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/gaps`, {
@@ -776,7 +792,7 @@ export async function getGapList(): Promise<GapListResponse | null> {
 }
 
 export async function getGapMetrics(): Promise<GapMetricsResponse | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/gaps/metrics`, {
@@ -794,7 +810,7 @@ export async function getGapMetrics(): Promise<GapMetricsResponse | null> {
 }
 
 export async function getDatasetOverview(): Promise<DatasetOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const [diagnosticsResponse, sourcesResponse] = await Promise.all([
@@ -827,7 +843,7 @@ export async function getDatasetOverview(): Promise<DatasetOverview> {
 }
 
 export async function getClassificationOverview(): Promise<ClassificationOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/intelligence/evaluation`, {
@@ -856,7 +872,7 @@ export async function getClassificationOverview(): Promise<ClassificationOvervie
 }
 
 export async function getRetrievalOverview(): Promise<RetrievalOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/retrieval/evaluation`, {
@@ -885,7 +901,7 @@ export async function getRetrievalOverview(): Promise<RetrievalOverview> {
 }
 
 export async function getAIOverview(): Promise<AIOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/ai/status`, {
@@ -914,7 +930,7 @@ export async function getAIOverview(): Promise<AIOverview> {
 }
 
 export async function getDraftOverview(): Promise<DraftOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/drafts/evaluation`, {
@@ -943,7 +959,7 @@ export async function getDraftOverview(): Promise<DraftOverview> {
 }
 
 export async function getWorkflowOverview(): Promise<WorkflowOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/workflow/overview`, {
@@ -972,7 +988,7 @@ export async function getWorkflowOverview(): Promise<WorkflowOverview> {
 }
 
 export async function getInsightsOverview(): Promise<InsightsOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const [themeResponse, briefResponse] = await Promise.all([
@@ -1006,7 +1022,7 @@ export async function getInsightsOverview(): Promise<InsightsOverview> {
 }
 
 export async function getQualityOverview(): Promise<QualityOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const response = await fetch(`${baseUrl}/api/evaluation/scorecard`, {
@@ -1036,7 +1052,7 @@ export async function getQualityOverview(): Promise<QualityOverview> {
 }
 
 export async function getExternalBenchmarkOverview(): Promise<ExternalBenchmarkOverview> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  const baseUrl = getConfiguredApiBaseUrl();
 
   try {
     const [sourcesResponse, benchmarksResponse] = await Promise.all([
@@ -1071,11 +1087,10 @@ export async function getExternalBenchmarkOverview(): Promise<ExternalBenchmarkO
 }
 
 export async function resetDemoEnquiries(): Promise<EnquiryResetResponse> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    (typeof window !== "undefined"
-      ? `${window.location.protocol}//${window.location.hostname}:8000`
-      : "http://localhost:8000");
+  const baseUrl = getConfiguredApiBaseUrl();
+  if (!baseUrl) {
+    throw new Error("Backend API URL is not configured.");
+  }
   const response = await fetch(`${baseUrl}/api/enquiries/reset`, {
     method: "POST",
     headers: {

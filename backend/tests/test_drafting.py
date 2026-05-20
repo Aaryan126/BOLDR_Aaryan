@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.core.config import get_settings
 from app.intelligence.ai_provider import FakeAIProvider
 from app.intelligence.drafting import generate_ticket_draft
 from app.main import create_app
@@ -149,6 +150,28 @@ def test_required_live_ai_failure_blocks_template_fallback() -> None:
     assert draft.decision.can_send_to_customer is False
     assert "Live AI drafting was required" in draft.decision.reasons[-1]
     assert "BPA-free" not in draft.draft.draft_reply
+
+
+def test_configured_live_ai_failure_can_fall_back_to_deterministic_draft(monkeypatch) -> None:
+    monkeypatch.setenv("AI_DETERMINISTIC_FALLBACK_ENABLED", "true")
+    get_settings.cache_clear()
+    classification = get_ticket_classification("TKT-1048")
+    retrieval = search_ticket_evidence("TKT-1048")
+    assert classification is not None
+    assert retrieval is not None
+    provider = FakeAIProvider("not valid json")
+
+    draft = generate_ticket_draft(
+        classification,
+        retrieval,
+        use_live_ai=True,
+        ai_provider=provider,
+    )
+
+    assert draft.decision.reply_type == "customer_reply"
+    assert draft.decision.can_send_to_customer is True
+    assert "BPA-free" in draft.draft.draft_reply
+    assert draft.draft.evidence_ids
 
 
 def test_all_customer_facing_claims_are_evidence_backed_and_clean() -> None:

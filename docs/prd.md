@@ -672,7 +672,8 @@ Model provider:
 - GLM-5.1 via FPT AI Factory.
 - Use a provider adapter around the FPT chat completions endpoint so the provider can be swapped.
 - The current GLM endpoint is `https://mkp-api.fptcloud.com/v1/chat/completions` and returns a wrapped response with `code`, `message`, and `data`.
-- Ad-hoc customer chat uses GLM for the final evidence-grounded draft whenever `AI_LIVE_ENABLED=true` and credentials are configured. Model output must match the `DraftReplyOutput` schema and cite supplied evidence IDs. If live drafting fails validation, the workflow blocks the customer reply for human review instead of silently using a template. Offline/test mode keeps deterministic drafting available.
+- The provider adapter sends `thinking={"type":"disabled"}` by default for low-latency support drafting; enable thinking only for heavier reasoning workflows.
+- Ad-hoc customer chat uses GLM for the final evidence-grounded draft whenever `AI_LIVE_ENABLED=true` and credentials are configured. Model output must match the `DraftReplyOutput` schema and cite supplied evidence IDs. By default, invalid live output blocks the customer reply for human review instead of silently using a template. For public demo deployments, `AI_DETERMINISTIC_FALLBACK_ENABLED=true` may allow the existing deterministic evidence-grounded draft to be used after a live provider timeout or validation failure, with the same human approval gate preserved.
 
 Embeddings:
 

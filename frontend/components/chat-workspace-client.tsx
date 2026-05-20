@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { resetDemoEnquiries } from "@/lib/api";
+import { getConfiguredApiBaseUrl } from "@/lib/api";
 import type {
   AdhocEnquiryRecord,
   DatasetOverview,
@@ -77,13 +78,11 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 function getApiBaseUrl() {
-  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  const baseUrl = getConfiguredApiBaseUrl();
+  if (!baseUrl) {
+    throw new Error("Backend API URL is not configured.");
   }
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:8000`;
-  }
-  return "http://localhost:8000";
+  return baseUrl;
 }
 
 function formatLabel(value: string | null | undefined) {

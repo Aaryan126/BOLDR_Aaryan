@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.config import get_settings
+from app.core.rate_limit import enforce_public_enquiry_rate_limit
 from app.models.ai import AIProviderStatus, AISchemaSummary, StructuredPromptPreview
 from app.models.ai import ReplyType
 from app.models.classification import (
@@ -239,7 +240,11 @@ def ticket_drafts() -> list[TicketDraft]:
     return list_ticket_drafts()
 
 
-@router.post("/api/enquiries", tags=["enquiries"])
+@router.post(
+    "/api/enquiries",
+    tags=["enquiries"],
+    dependencies=[Depends(enforce_public_enquiry_rate_limit)],
+)
 def adhoc_enquiry_create(request: AdhocEnquiryRequest) -> AdhocEnquiryRecord:
     try:
         return create_enquiry(request)

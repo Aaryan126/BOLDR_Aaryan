@@ -47,4 +47,5 @@ def get_fpt_glm_provider() -> FPTGLMProvider:
         model=settings.glm_model,
         timeout_seconds=settings.ai_timeout_seconds,
         max_retries=settings.ai_max_retries,
+        thinking_enabled=settings.glm_thinking_enabled,
     )

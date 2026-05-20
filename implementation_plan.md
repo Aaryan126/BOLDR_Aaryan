@@ -932,7 +932,7 @@ Deliverables:
 
 - Chat-first judge workflow with free-text enquiries and sample ticket dropdown. Complete.
 - In-memory ad-hoc enquiry API with approval, CS resolution, KB draft, and KB review state. Complete.
-- Mandatory GLM/FPT draft composer for answerable ad-hoc chat when `AI_LIVE_ENABLED=true`, with schema validation and human-review blocking on invalid model output. Complete.
+- GLM/FPT draft composer for answerable ad-hoc chat when `AI_LIVE_ENABLED=true`, with schema validation, default human-review blocking on invalid model output, and an explicit public-demo deterministic fallback setting. Complete.
 - Structured product-price answer handling for named watch models and variants. Complete.
 - Dark BOLDR-styled tabbed workspace with Customer Chat, Approvals, CS Queue, Knowledge Base, Marketing Intel, and System Details. Complete.
 - Existing implementation dashboard preserved under System Details. Complete.
@@ -982,10 +982,10 @@ Phase record:
 ```text
 Phase: 13A Chat-first demo workflow
 Status: Implemented; awaiting human demo-owner verification
-Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval queue, CS queue, KB draft/review surface, live demo marketing signals, mandatory evidence-grounded GLM draft composer when live AI is enabled, structured product-price answers, dev-port CORS fallback
+Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval queue, CS queue, KB draft/review surface, live demo marketing signals, evidence-grounded GLM draft composer when live AI is enabled, public-demo deterministic fallback after live provider failure, structured product-price answers, dev-port CORS fallback
 Default tests run: backend pytest, frontend lint/typecheck/build, git diff check, Playwright desktop/mobile smoke on answerable and gap flows
 Human verification completed: Pending
-Known issues: Demo enquiry state is in-memory and resets with backend restart; offline/test mode uses deterministic drafting, while live GLM mode blocks invalid model output for human review instead of using a template fallback
+Known issues: Demo enquiry state is in-memory and resets with backend restart; strict live GLM mode blocks invalid model output for human review, while public demo deployments can enable deterministic fallback after a live provider timeout or validation failure
 Decision to proceed: Pending user review
 ```
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { getConfiguredApiBaseUrl } from "@/lib/api";
 import type {
   GapDetailResponse,
   GapListResponse,
@@ -23,7 +24,7 @@ type WorkbenchClientProps = {
   initialTicketDetail: TicketWorkflowDetail | null;
 };
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const apiBaseUrl = getConfiguredApiBaseUrl();
 
 const filterLabels: Array<{ label: string; value: TicketFilter }> = [
   { label: "All", value: "all" },
@@ -34,6 +35,9 @@ const filterLabels: Array<{ label: string; value: TicketFilter }> = [
 ];
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!apiBaseUrl) {
+    throw new Error("Backend API URL is not configured.");
+  }
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     headers: {
