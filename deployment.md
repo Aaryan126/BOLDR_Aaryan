@@ -14,14 +14,14 @@ The GLM/FPT key must only live on the backend as a private environment variable.
 As of 2026-05-20, both services are deployed and publicly reachable:
 
 ```text
-Frontend latest deployment URL: https://frontend-jidepyk7z-aaryans-projects-4b4bf5a5.vercel.app
+Frontend latest deployment URL: https://frontend-maxnme6gr-aaryans-projects-4b4bf5a5.vercel.app
 Frontend stable alias URL: https://frontend-ashy-mu-csvn2wfbmk.vercel.app
 Vercel scope/project: aaryans-projects-4b4bf5a5/frontend
 Vercel project id: prj_3NbOBbM9aCGpWDR28npmmc0w9Ay8
 
 Backend Cloud Run URL: https://boldr-signaldesk-backend-734024547221.us-central1.run.app
 Backend Cloud Run service: boldr-signaldesk-backend
-Backend Cloud Run revision: boldr-signaldesk-backend-00003-d67
+Backend Cloud Run revision: boldr-signaldesk-backend-00007-24q
 ```
 
 The Vercel production environment variable is set:
@@ -133,7 +133,7 @@ AI_LIVE_ENABLED=true
 AI_DETERMINISTIC_FALLBACK_ENABLED=true
 PUBLIC_ENQUIRY_RATE_LIMIT=30
 PUBLIC_ENQUIRY_RATE_WINDOW_SECONDS=60
-CORS_ORIGINS=https://frontend-jidepyk7z-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ashy-mu-csvn2wfbmk.vercel.app,https://frontend-acdaa9zi1-aaryans-projects-4b4bf5a5.vercel.app
+CORS_ORIGINS=https://frontend-maxnme6gr-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ashy-mu-csvn2wfbmk.vercel.app,https://frontend-3ayl1gnv0-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ksu5tl0io-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-d4x93694s-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-jidepyk7z-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-acdaa9zi1-aaryans-projects-4b4bf5a5.vercel.app
 ```
 
 The short timeout and fallback setting are deliberate for public judging: the backend still calls private GLM/FPT first, but if GLM is slow or returns invalid structured JSON, the app uses the existing deterministic evidence-grounded draft and keeps the human approval gate.

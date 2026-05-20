@@ -4517,6 +4517,12 @@ button {
   padding: 8px 10px;
 }
 
+.sample-select-wrap {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+
 .chat-composer select,
 .chat-composer textarea,
 .chat-composer .primary-action {
@@ -4526,7 +4532,27 @@ button {
 }
 
 .chat-composer select {
-  padding: 0 16px;
+  display: block;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  overflow: hidden;
+  padding: 0 44px 0 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sample-select-icon {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--text);
+  border-bottom: 2px solid var(--text);
+  opacity: 0.88;
+  pointer-events: none;
+  transform: translateY(-65%) rotate(45deg);
 }
 
 .chat-composer textarea {
@@ -5399,8 +5425,12 @@ button {
     justify-content: flex-start;
   }
 
-  .chat-composer select {
+  .chat-composer .sample-select-wrap {
     grid-column: 1 / -1;
+  }
+
+  .chat-composer select {
+    min-width: 0;
   }
 
   .chat-composer textarea {

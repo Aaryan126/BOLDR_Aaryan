@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "BOLDR SignalDesk",
   description: "Customer intelligence workbench for BOLDR watch support.",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({

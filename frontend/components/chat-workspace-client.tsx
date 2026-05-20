@@ -189,6 +189,10 @@ function samplePriority(ticket: TicketWorkflowSummary) {
   return index === -1 ? patterns.length : index;
 }
 
+function sampleComposerText(ticket: TicketWorkflowSummary) {
+  return ticket.subject.trim();
+}
+
 function upsertRecord(records: AdhocEnquiryRecord[], next: AdhocEnquiryRecord) {
   const existing = records.some((record) => record.enquiry_id === next.enquiry_id);
   if (!existing) {
@@ -345,6 +349,13 @@ export function ChatWorkspaceClient({
     setKbReviewNote("");
   }
 
+  function handleSampleChange(ticketId: string) {
+    setSelectedSampleId(ticketId);
+    const selectedSample = sampleOptions.find((sample) => sample.ticket_id === ticketId);
+    setComposer(selectedSample ? sampleComposerText(selectedSample) : "");
+    requestAnimationFrame(() => scrollMessagesToBottom());
+  }
+
   async function resetDemo() {
     setLoadingAction("reset-demo");
     setStatusMessage("");
@@ -444,10 +455,13 @@ export function ChatWorkspaceClient({
   }, [selectedGap?.enquiry_id, selectedGap]);
 
   async function submitEnquiry() {
+    if (loadingAction === "submit") {
+      return;
+    }
     const selectedSample = sampleOptions.find(
       (sample) => sample.ticket_id === selectedSampleId,
     );
-    const message = composer.trim() || selectedSample?.subject || "";
+    const message = composer.trim() || (selectedSample ? sampleComposerText(selectedSample) : "");
     if (!message.trim()) {
       setStatusMessage("Enter a customer question or choose a sample enquiry.");
       return;
@@ -685,26 +699,40 @@ export function ChatWorkspaceClient({
             </div>
 
             <div className="chat-composer">
-              <select
-                aria-label="Try a sample enquiry"
-                onChange={(event) => setSelectedSampleId(event.target.value)}
-                value={selectedSampleId}
-              >
-                <option value="">Try a sample enquiry</option>
-                {sampleOptions.map((ticket) => (
-                  <option key={ticket.ticket_id} value={ticket.ticket_id}>
-                    {ticket.ticket_id} - {ticket.subject}
-                  </option>
-                ))}
-              </select>
+              <div className="sample-select-wrap">
+                <select
+                  aria-label="Try a sample enquiry"
+                  onChange={(event) => handleSampleChange(event.target.value)}
+                  value={selectedSampleId}
+                >
+                  <option value="">Try a sample enquiry</option>
+                  {sampleOptions.map((ticket) => (
+                    <option key={ticket.ticket_id} value={ticket.ticket_id}>
+                      {ticket.ticket_id} - {ticket.subject}
+                    </option>
+                  ))}
+                </select>
+                <span aria-hidden="true" className="sample-select-icon" />
+              </div>
               <textarea
                 aria-label="Customer question"
                 onChange={(event) => {
-                  setComposer(event.target.value);
+                  const nextValue = event.target.value;
+                  const selectedSample = sampleOptions.find(
+                    (sample) => sample.ticket_id === selectedSampleId,
+                  );
+                  setComposer(nextValue);
+                  if (selectedSample && nextValue !== sampleComposerText(selectedSample)) {
+                    setSelectedSampleId("");
+                  }
                   requestAnimationFrame(() => scrollMessagesToBottom());
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+                  if (
+                    event.key === "Enter" &&
+                    !event.shiftKey &&
+                    !event.nativeEvent.isComposing
+                  ) {
                     event.preventDefault();
                     void submitEnquiry();
                   }
