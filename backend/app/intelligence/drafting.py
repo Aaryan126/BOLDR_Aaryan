@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from collections import Counter
 
@@ -57,6 +58,8 @@ PRODUCT_QUERY_STOPWORDS = {
     "watches",
     "what",
 }
+
+logger = logging.getLogger(__name__)
 
 
 def generate_ticket_draft(
@@ -589,7 +592,13 @@ def compose_ai_customer_draft(
         response = provider.chat(prompt.messages, temperature=0.1, max_tokens=900)
         draft = parse_structured_output(response.content, DraftReplyOutput)
         return validate_ai_customer_draft(classification, retrieval, draft)
-    except (AIProviderError, StructuredOutputError, ValueError):
+    except (AIProviderError, StructuredOutputError, ValueError) as error:
+        logger.warning(
+            "Live AI draft failed for ticket %s: %s: %s",
+            classification.ticket_id,
+            type(error).__name__,
+            str(error)[:500],
+        )
         return None
     finally:
         if owns_provider and provider is not None and hasattr(provider, "close"):
