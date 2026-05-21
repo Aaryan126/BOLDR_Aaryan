@@ -17,7 +17,8 @@ BOLDR SignalDesk is an approval-first customer intelligence workflow for the BOL
 
 - [Submission summary](SUBMISSION.md)
 - [Workflow documentation with diagrams](WORKFLOW_DOCUMENTATION.md)
-- [Video recording script](VIDEO_SCRIPT.md)
+- [Required 1-2 minute demo script](VIDEO_SCRIPT_1_2_MIN.md)
+- [Long-form video recording script](VIDEO_SCRIPT.md)
 - [Product requirements](docs/prd.md)
 - [Dataset guide](docs/sample-dataset.md)
 - [Implementation plan](implementation_plan.md)
