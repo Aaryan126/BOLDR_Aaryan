@@ -46,7 +46,6 @@ const tabs: Array<{ id: WorkspaceTab; label: string }> = [
   { id: "cs", label: "CS Queue" },
   { id: "kb", label: "Knowledge Base" },
   { id: "marketing", label: "Marketing Intel" },
-  { id: "system", label: "System Details" },
 ];
 
 const themeStorageKey = "boldr-ui-theme-v1";
@@ -639,11 +638,51 @@ export function ChatWorkspaceClient({
             onClick={toggleTheme}
             type="button"
           >
-            {theme === "dark" ? "Dark" : "Light"}
+            {theme === "dark" ? (
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M20.4 14.6A8.2 8.2 0 0 1 9.4 3.6a7.7 7.7 0 1 0 11 11Z" />
+              </svg>
+            ) : (
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            )}
           </button>
-          <div className={isHealthy ? "backend-pill ok" : "backend-pill bad"}>
-            Backend {isHealthy ? "connected" : "offline"}
+          <div
+            aria-label={`Backend ${isHealthy ? "connected" : "offline"}`}
+            className={isHealthy ? "backend-pill ok" : "backend-pill bad"}
+            role="status"
+            title={`Backend ${isHealthy ? "connected" : "offline"}`}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              {isHealthy ? (
+                <path d="M20 6 9 17l-5-5" />
+              ) : (
+                <>
+                  <path d="M18 6 6 18" />
+                  <path d="m6 6 12 12" />
+                </>
+              )}
+            </svg>
           </div>
+          <button
+            aria-label="Open system details"
+            aria-pressed={activeTab === "system"}
+            className={
+              activeTab === "system"
+                ? "system-details-icon-button active"
+                : "system-details-icon-button"
+            }
+            onClick={() => setActiveTab("system")}
+            title="System Details"
+            type="button"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.5a2 2 0 0 1-1 1.73l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.5a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
         </div>
       </header>
 
