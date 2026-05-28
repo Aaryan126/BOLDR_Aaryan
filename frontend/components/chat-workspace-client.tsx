@@ -217,6 +217,7 @@ export function ChatWorkspaceClient({
   const [composer, setComposer] = useState("");
   const [pendingMessage, setPendingMessage] = useState("");
   const [selectedSampleId, setSelectedSampleId] = useState("");
+  const [sampleMenuOpen, setSampleMenuOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [selectedApprovalId, setSelectedApprovalId] = useState("");
@@ -227,6 +228,7 @@ export function ChatWorkspaceClient({
   const [gapNote, setGapNote] = useState("");
   const [kbReviewNote, setKbReviewNote] = useState("");
   const messageStreamRef = useRef<HTMLDivElement | null>(null);
+  const sampleMenuRef = useRef<HTMLDivElement | null>(null);
 
   const sampleOptions = useMemo(
     () =>
@@ -316,6 +318,8 @@ export function ChatWorkspaceClient({
   const visibleExternalBenchmarks = [...externalBenchmarks]
     .sort((left, right) => benchmarkPriority(left) - benchmarkPriority(right))
     .slice(0, 3);
+  const selectedSampleOption =
+    sampleOptions.find((sample) => sample.ticket_id === selectedSampleId) ?? null;
 
   const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const stream = messageStreamRef.current;
@@ -339,6 +343,7 @@ export function ChatWorkspaceClient({
     setComposer("");
     setPendingMessage("");
     setSelectedSampleId("");
+    setSampleMenuOpen(false);
     setSelectedApprovalId("");
     setSelectedGapId("");
     setApprovalDraft("");
@@ -350,6 +355,7 @@ export function ChatWorkspaceClient({
 
   function handleSampleChange(ticketId: string) {
     setSelectedSampleId(ticketId);
+    setSampleMenuOpen(false);
     const selectedSample = sampleOptions.find((sample) => sample.ticket_id === ticketId);
     setComposer(selectedSample ? sampleComposerText(selectedSample) : "");
     requestAnimationFrame(() => scrollMessagesToBottom());
@@ -382,6 +388,27 @@ export function ChatWorkspaceClient({
 
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     setTheme(prefersDark ? "dark" : "light");
+  }, []);
+
+  useEffect(() => {
+    function closeSampleMenu(event: MouseEvent) {
+      if (!sampleMenuRef.current?.contains(event.target as Node)) {
+        setSampleMenuOpen(false);
+      }
+    }
+
+    function closeSampleMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSampleMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", closeSampleMenu);
+    document.addEventListener("keydown", closeSampleMenuOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeSampleMenu);
+      document.removeEventListener("keydown", closeSampleMenuOnEscape);
+    };
   }, []);
 
   useEffect(() => {
@@ -738,20 +765,51 @@ export function ChatWorkspaceClient({
             </div>
 
             <div className="chat-composer">
-              <div className="sample-select-wrap">
-                <select
-                  aria-label="Try a sample enquiry"
-                  onChange={(event) => handleSampleChange(event.target.value)}
-                  value={selectedSampleId}
+              <div className="sample-select-wrap" ref={sampleMenuRef}>
+                <button
+                  aria-expanded={sampleMenuOpen}
+                  aria-haspopup="listbox"
+                  className="sample-select-button"
+                  onClick={() => setSampleMenuOpen((open) => !open)}
+                  type="button"
                 >
-                  <option value="">Try a sample enquiry</option>
-                  {sampleOptions.map((ticket) => (
-                    <option key={ticket.ticket_id} value={ticket.ticket_id}>
-                      {ticket.ticket_id} - {ticket.subject}
-                    </option>
-                  ))}
-                </select>
-                <span aria-hidden="true" className="sample-select-icon" />
+                  <span>
+                    {selectedSampleOption
+                      ? `${selectedSampleOption.ticket_id} - ${selectedSampleOption.subject}`
+                      : "Try a sample enquiry"}
+                  </span>
+                  <span aria-hidden="true" className="sample-select-icon" />
+                </button>
+                {sampleMenuOpen ? (
+                  <div className="sample-select-menu" role="listbox">
+                    <button
+                      aria-selected={selectedSampleId === ""}
+                      className={selectedSampleId === "" ? "sample-option active" : "sample-option"}
+                      onClick={() => handleSampleChange("")}
+                      role="option"
+                      type="button"
+                    >
+                      <span>Try a sample enquiry</span>
+                    </button>
+                    {sampleOptions.map((ticket) => (
+                      <button
+                        aria-selected={selectedSampleId === ticket.ticket_id}
+                        className={
+                          selectedSampleId === ticket.ticket_id
+                            ? "sample-option active"
+                            : "sample-option"
+                        }
+                        key={ticket.ticket_id}
+                        onClick={() => handleSampleChange(ticket.ticket_id)}
+                        role="option"
+                        type="button"
+                      >
+                        <strong>{ticket.ticket_id}</strong>
+                        <span>{ticket.subject}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <textarea
                 aria-label="Customer question"
@@ -794,7 +852,7 @@ export function ChatWorkspaceClient({
       ) : null}
 
       {activeTab === "approvals" ? (
-        <section className="workspace-view queue-view" aria-labelledby="approvals-heading">
+        <section className="workspace-view queue-view approvals-view" aria-labelledby="approvals-heading">
           <QueueList
             emptyLabel="No answerable demo drafts yet."
             items={approvalQueue}
