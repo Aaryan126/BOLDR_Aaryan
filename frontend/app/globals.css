@@ -6331,6 +6331,133 @@ button {
   line-height: 1.5;
 }
 
+.cs-queue-view .evidence-more-button {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #9fb2c9;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cs-queue-view .evidence-source-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cs-queue-view .evidence-source-files em {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel-bg) 62%, transparent);
+  padding: 4px 8px;
+  color: #c3cede;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.cs-queue-view .evidence-attempt-block {
+  position: relative;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cs-queue-view .evidence-open-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: #9fb2c9;
+  opacity: 0.9;
+}
+
+.cs-queue-view .evidence-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.62);
+  padding: 20px;
+}
+
+.cs-queue-view .evidence-modal {
+  width: min(920px, 100%);
+  max-height: min(82vh, 760px);
+  overflow: auto;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel-bg) 74%, #020617);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.45);
+  padding: 16px;
+}
+
+.cs-queue-view .evidence-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cs-queue-view .evidence-modal-header strong {
+  color: var(--text);
+  font-size: 18px;
+}
+
+.cs-queue-view .evidence-modal-close {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 8px;
+  background: transparent;
+  color: #c8d5e7;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.cs-queue-view .evidence-modal-table-wrap {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  overflow: auto;
+  margin-bottom: 12px;
+}
+
+.cs-queue-view .evidence-modal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cs-queue-view .evidence-modal-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-right: 1px solid rgba(148, 163, 184, 0.1);
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.4;
+  vertical-align: top;
+}
+
+.cs-queue-view .evidence-modal-table tr td:last-child {
+  border-right: 0;
+}
+
+.cs-queue-view .evidence-modal-raw span {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #9fb2c9;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cs-queue-view .evidence-modal-raw p {
+  margin: 0 0 12px;
+  color: var(--text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
 .cs-queue-view .field-stack {
   margin-top: 20px;
 }

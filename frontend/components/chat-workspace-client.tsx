@@ -8,6 +8,7 @@ import {
   CheckSquare,
   Database,
   LayoutDashboard,
+  Maximize2,
   MessagesSquare,
   Radar,
 } from "lucide-react";
@@ -1378,7 +1379,9 @@ function CsQueueTabView({
               <InfoBlock label="Customer Question" text={selectedGap.ticket.message_body} />
               <InfoBlock label="Missing Knowledge" text={selectedGap.gap_state.missing_knowledge} />
               <InfoBlock label="Suggested Next Action" text={selectedGap.gap_state.suggested_next_action} />
-              <InfoBlock label="Evidence Attempted" text={selectedGap.retrieval.evidence[0]?.excerpt ?? "No local evidence produced a definitive answer."} />
+              <EvidenceAttemptedBlock
+                evidences={selectedGap.retrieval.evidence}
+              />
             </div>
             <label className="field-stack"><span>Verified Resolution</span><textarea onChange={(event) => onGapResolutionChange(event.target.value)} value={gapResolution} /></label>
             <label className="field-stack"><span>Resolution Note</span><input onChange={(event) => onGapNoteChange(event.target.value)} placeholder="Optional CS note" value={gapNote} /></label>
@@ -1812,6 +1815,135 @@ function InfoBlock({ label, text }: { label: string; text: string }) {
       <p>{text}</p>
     </div>
   );
+}
+
+function EvidenceAttemptedBlock({
+  evidences,
+}: {
+  evidences: AdhocEnquiryRecord["retrieval"]["evidence"];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const normalized =
+    evidences[0]?.excerpt?.trim() ?? "No local evidence produced a definitive answer.";
+  const previewLimit = 240;
+  const preview =
+    normalized.length > previewLimit ? `${normalized.slice(0, previewLimit)}...` : normalized;
+  const sourceFiles = Array.from(
+    new Set(
+      evidences
+        .map((evidence) => evidence.source_file.trim())
+        .filter((name) => name.length > 0),
+    ),
+  );
+  const parsedRows = parseEvidenceTableRows(normalized);
+
+  return (
+    <>
+      <button
+        className="info-block evidence-attempt-block"
+        onClick={() => setIsOpen(true)}
+        type="button"
+      >
+        <Maximize2 aria-hidden="true" className="evidence-open-icon" size={14} />
+        <span>Evidence Attempted</span>
+        <p>{preview}</p>
+        {sourceFiles.length > 0 ? (
+          <div className="evidence-source-files">
+            {sourceFiles.map((file) => (
+              <em key={file}>{file}</em>
+            ))}
+          </div>
+        ) : null}
+      </button>
+      {isOpen ? (
+        <div
+          aria-modal="true"
+          className="evidence-modal-backdrop"
+          onClick={() => setIsOpen(false)}
+          role="dialog"
+        >
+          <div className="evidence-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="evidence-modal-header">
+              <strong>Evidence Attempted</strong>
+              <button
+                className="evidence-modal-close"
+                onClick={() => setIsOpen(false)}
+                type="button"
+              >
+                Close
+              </button>
+            </div>
+
+            {parsedRows.length > 0 ? (
+              <div className="evidence-modal-table-wrap">
+                <table className="evidence-modal-table">
+                  <tbody>
+                    {parsedRows.map((row, rowIndex) => (
+                      <tr key={`${rowIndex}-${row.join("|")}`}>
+                        {row.map((cell, cellIndex) => (
+                          <td key={`${rowIndex}-${cellIndex}`}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+
+            <div className="evidence-modal-raw">
+              <span>Full excerpt</span>
+              <p>{normalized}</p>
+            </div>
+
+            {sourceFiles.length > 0 ? (
+              <div className="evidence-source-files">
+                {sourceFiles.map((file) => (
+                  <em key={file}>{file}</em>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function parseEvidenceTableRows(text: string): string[][] {
+  const tokens = text
+    .split("|")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+
+  if (tokens.length < 4) {
+    return [];
+  }
+
+  const rows: string[][] = [];
+  let current: string[] = [];
+  for (const token of tokens) {
+    const isRowStart = /^(yes|no)$/i.test(token);
+    if (isRowStart && current.length > 0) {
+      rows.push(current);
+      current = [token];
+    } else {
+      current.push(token);
+    }
+  }
+  if (current.length > 0) {
+    rows.push(current);
+  }
+
+  if (rows.length <= 1) {
+    const chunkSize = 4;
+    const chunked: string[][] = [];
+    for (let index = 0; index < tokens.length; index += chunkSize) {
+      chunked.push(tokens.slice(index, index + chunkSize));
+    }
+    return chunked;
+  }
+
+  return rows;
 }
 
 function EvidenceGrid({ record }: { record: AdhocEnquiryRecord }) {
