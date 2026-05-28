@@ -934,7 +934,7 @@ export function ChatWorkspaceClient({
       ) : null}
 
       {activeTab === "cs" ? (
-        <section className="workspace-view queue-view" aria-labelledby="cs-heading">
+        <section className="workspace-view queue-view cs-queue-view" aria-labelledby="cs-heading">
           <QueueList
             emptyLabel="No unresolved demo gaps yet."
             items={gapQueue}
