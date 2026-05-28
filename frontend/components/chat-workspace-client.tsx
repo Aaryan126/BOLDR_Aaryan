@@ -900,7 +900,6 @@ export function ChatWorkspaceClient({
                   ]}
                 />
                 <div className="detail-grid two">
-                  <InfoBlock label="Customer Question" text={selectedApproval.ticket.message_body} />
                   <InfoBlock
                     label="Routing Guardrail"
                     text={selectedApproval.classification.routing_reason}
