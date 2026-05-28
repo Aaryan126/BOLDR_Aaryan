@@ -9,6 +9,7 @@ import type {
   ThemeRadarItem,
   ThemeRadarResponse,
 } from "@/lib/api";
+import { EmptyState, MetricCard, PageHeader, SectionCard, StatusPill } from "@/components/ui-primitives";
 
 type InsightsClientProps = {
   initialThemeRadar: ThemeRadarResponse | null;
@@ -77,38 +78,27 @@ export function InsightsClient({
 
   return (
     <section className="insights-console" data-testid="phase10-insights">
-      <div className="console-header">
-        <div>
-          <p className="eyebrow">Phase 10 Theme Radar</p>
-          <h3>Marketing Intelligence</h3>
-        </div>
-        <button
-          className="primary-action"
-          disabled={loading}
-          onClick={generateBrief}
-          type="button"
-        >
-          {loading ? "Generating" : "Generate Brief"}
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Phase 10 Theme Radar"
+        title="Marketing Intelligence"
+        subtitle="Track recurring support themes, persona mix, and recommended actions."
+        action={
+          <button
+            className="primary-action"
+            disabled={loading}
+            onClick={generateBrief}
+            type="button"
+          >
+            {loading ? "Generating" : "Generate Brief"}
+          </button>
+        }
+      />
 
       <div className="workbench-stat-grid">
-        <div>
-          <strong>{sourceTicketCount}</strong>
-          <span>Clustered tickets</span>
-        </div>
-        <div>
-          <strong>{themeCount}</strong>
-          <span>Themes</span>
-        </div>
-        <div>
-          <strong>{productGapCount}</strong>
-          <span>Product gaps</span>
-        </div>
-        <div>
-          <strong>{risingCount}</strong>
-          <span>Rising signals</span>
-        </div>
+        <MetricCard value={sourceTicketCount} label="Clustered tickets" />
+        <MetricCard value={themeCount} label="Themes" />
+        <MetricCard value={productGapCount} label="Product gaps" />
+        <MetricCard value={risingCount} label="Rising signals" />
       </div>
 
       {statusMessage ? (
@@ -125,25 +115,20 @@ export function InsightsClient({
 
       {marketingBrief ? (
         <div className="brief-layout">
-          <section className="brief-panel">
-            <div className="mini-heading">
-              <p className="eyebrow">Monthly Brief</p>
-              <strong>{marketingBrief.period_label}</strong>
-            </div>
+          <SectionCard title="Monthly Brief" badge={marketingBrief.period_label}>
             <pre className="brief-markdown">{marketingBrief.markdown}</pre>
-          </section>
+          </SectionCard>
 
-          <section className="opportunity-list">
-            <div className="mini-heading">
-              <p className="eyebrow">Opportunities</p>
-              <strong>{marketingBrief.opportunities.length}</strong>
-            </div>
+          <SectionCard
+            title="Opportunities"
+            badge={String(marketingBrief.opportunities.length)}
+          >
             {marketingBrief.opportunities.slice(0, 5).map((opportunity) => (
               <article className="opportunity-card" key={opportunity.theme_name}>
                 <div className="review-heading">
                   <h4>{opportunity.theme_name}</h4>
                   {opportunity.product_page_update_needed ? (
-                    <span className="status-pill">Page update</span>
+                    <StatusPill label="Page update" tone="warning" />
                   ) : null}
                 </div>
                 <p>{opportunity.insight}</p>
@@ -156,10 +141,13 @@ export function InsightsClient({
                 <small>Evidence: {opportunity.evidence_ticket_ids.join(", ")}</small>
               </article>
             ))}
-          </section>
+          </SectionCard>
         </div>
       ) : (
-        <p className="dataset-unavailable">Marketing brief is unavailable.</p>
+        <EmptyState
+          title="Marketing brief unavailable"
+          body="Generate the brief to populate opportunities, evidence, and next actions."
+        />
       )}
     </section>
   );

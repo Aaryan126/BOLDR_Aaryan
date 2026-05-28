@@ -196,23 +196,31 @@ export function WorkbenchClient({
     }
   }
 
-  async function reviewDraft(status: "approved" | "edited_and_approved" | "rejected") {
+  async function reviewDraft(status: "approved" | "rejected") {
     if (!selectedTicket) {
       return;
     }
-    setLoadingAction(status);
+    const baseDraft = selectedTicket.draft.draft.draft_reply.trim();
+    const nextDraft = draftText.trim();
+    const effectiveStatus =
+      status === "approved" && nextDraft.length > 0 && nextDraft !== baseDraft
+        ? "edited_and_approved"
+        : status;
+    setLoadingAction(effectiveStatus);
     setStatusMessage("");
     try {
       await fetchJson(`/api/drafts/tickets/${selectedTicket.workflow.ticket_id}/review`, {
         method: "POST",
         body: JSON.stringify({
-          status,
+          status: effectiveStatus,
           reviewer_note: reviewerNote || null,
-          edited_reply: status === "edited_and_approved" ? draftText : null,
+          edited_reply: effectiveStatus === "edited_and_approved" ? draftText : null,
         }),
       });
       await refreshTickets(selectedTicket.workflow.ticket_id);
-      setStatusMessage(`Draft ${status.replaceAll("_", " ")} for ${selectedTicket.workflow.ticket_id}.`);
+      setStatusMessage(
+        `Draft ${effectiveStatus.replaceAll("_", " ")} for ${selectedTicket.workflow.ticket_id}.`,
+      );
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Draft review failed.");
     } finally {
@@ -490,14 +498,6 @@ export function WorkbenchClient({
                   type="button"
                 >
                   Approve
-                </button>
-                <button
-                  className="secondary-action"
-                  disabled={loadingAction !== null}
-                  onClick={() => void reviewDraft("edited_and_approved")}
-                  type="button"
-                >
-                  Save Edit
                 </button>
                 <button
                   className="danger-action"

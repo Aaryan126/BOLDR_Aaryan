@@ -1,7 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { Dispatch, KeyboardEvent as ReactKeyboardEvent, ReactNode, RefObject, SetStateAction } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Activity,
+  Bot,
+  CheckSquare,
+  Database,
+  LayoutDashboard,
+  MessagesSquare,
+  Radar,
+} from "lucide-react";
 
 import { resetDemoEnquiries } from "@/lib/api";
 import { getConfiguredApiBaseUrl } from "@/lib/api";
@@ -10,9 +19,11 @@ import type {
   DatasetOverview,
   ExternalBenchmark,
   ExternalBenchmarkOverview,
+  ExternalSource,
   GapMetrics,
   InsightsOverview,
   KnowledgeGapRecord,
+  MarketingOpportunity,
   ThemeRadarItem,
   TicketWorkflowSummary,
   TraceEvent,
@@ -47,6 +58,14 @@ const tabs: Array<{ id: WorkspaceTab; label: string }> = [
   { id: "kb", label: "Knowledge Base" },
   { id: "marketing", label: "Marketing Intel" },
 ];
+const tabIcons: Record<WorkspaceTab, typeof MessagesSquare> = {
+  chat: MessagesSquare,
+  approvals: CheckSquare,
+  cs: Activity,
+  kb: Database,
+  marketing: Radar,
+  system: LayoutDashboard,
+};
 
 const themeStorageKey = "boldr-ui-theme-v1";
 
@@ -547,11 +566,17 @@ export function ChatWorkspaceClient({
     }
   }
 
-  async function reviewAnswer(status: "approved" | "edited_and_approved" | "rejected") {
+  async function reviewAnswer(status: "approved" | "rejected") {
     if (!selectedApproval) {
       return;
     }
-    setLoadingAction(status);
+    const baseDraft = selectedApproval.draft.draft.draft_reply.trim();
+    const nextDraft = approvalDraft.trim();
+    const effectiveStatus =
+      status === "approved" && nextDraft.length > 0 && nextDraft !== baseDraft
+        ? "edited_and_approved"
+        : status;
+    setLoadingAction(effectiveStatus);
     setStatusMessage("");
     try {
       const record = await fetchJson<AdhocEnquiryRecord>(
@@ -560,7 +585,7 @@ export function ChatWorkspaceClient({
           method: "POST",
           body: JSON.stringify({
             status,
-            edited_reply: status === "edited_and_approved" ? approvalDraft : null,
+            edited_reply: effectiveStatus === "edited_and_approved" ? approvalDraft : null,
             reviewer_note: approvalNote || null,
           }),
         },
@@ -676,6 +701,10 @@ export function ChatWorkspaceClient({
               onClick={() => setActiveTab(tab.id)}
               type="button"
             >
+              {(() => {
+                const Icon = tabIcons[tab.id];
+                return <Icon aria-hidden="true" size={14} />;
+              })()}
               {tab.label}
             </button>
           ))}
@@ -705,16 +734,7 @@ export function ChatWorkspaceClient({
             role="status"
             title={`Backend ${isHealthy ? "connected" : "offline"}`}
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              {isHealthy ? (
-                <path d="M20 6 9 17l-5-5" />
-              ) : (
-                <>
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </>
-              )}
-            </svg>
+            <Bot aria-hidden="true" size={14} />
           </div>
           <button
             aria-label="Open system details"
@@ -743,755 +763,722 @@ export function ChatWorkspaceClient({
       ) : null}
 
       {activeTab === "chat" ? (
-        <section className="workspace-view chat-view" aria-labelledby="chat-heading">
-          <div className="chat-main-panel">
-            <div className="chat-heading">
-              <div>
-                <p className="eyebrow">Customer Chat</p>
-                <h1 id="chat-heading">Ask BOLDR support intelligence anything.</h1>
-              </div>
-              <div className="chat-heading-actions">
-                <button
-                  className="secondary-action new-conversation-action"
-                  onClick={startNewConversation}
-                  type="button"
-                >
-                  New conversation
-                </button>
-                <button
-                  className="secondary-action new-conversation-action reset-demo-action"
-                  disabled={loadingAction !== null}
-                  onClick={() => void resetDemo()}
-                  type="button"
-                >
-                  {loadingAction === "reset-demo" ? "Resetting" : "Reset demo"}
-                </button>
-              </div>
-            </div>
-
-            <div className="message-stream" aria-live="polite" ref={messageStreamRef}>
-              {enquiries.length === 0 && !pendingMessage ? (
-                <div className="empty-chat-state">
-                  <p className="eyebrow">Ready</p>
-                  <h2>Type a question or run a real sample enquiry.</h2>
-                  <p>
-                    The system will classify the buyer persona, search BOLDR sources,
-                    expose the evidence path, and pause for human approval before a
-                    customer answer is shown.
-                  </p>
-                </div>
-              ) : null}
-              {enquiries.map((record) => (
-                <ConversationRecord key={record.enquiry_id} record={record} />
-              ))}
-              {pendingMessage ? <PendingConversation message={pendingMessage} /> : null}
-            </div>
-
-            <div className="chat-composer">
-              <div className="sample-select-wrap" ref={sampleMenuRef}>
-                <button
-                  aria-expanded={sampleMenuOpen}
-                  aria-haspopup="listbox"
-                  className="sample-select-button"
-                  onClick={() => setSampleMenuOpen((open) => !open)}
-                  type="button"
-                >
-                  <span>
-                    {selectedSampleOption
-                      ? `${selectedSampleOption.ticket_id} - ${selectedSampleOption.subject}`
-                      : "Try a sample enquiry"}
-                  </span>
-                  <span aria-hidden="true" className="sample-select-icon" />
-                </button>
-                {sampleMenuOpen ? (
-                  <div className="sample-select-menu" role="listbox">
-                    <button
-                      aria-selected={selectedSampleId === ""}
-                      className={selectedSampleId === "" ? "sample-option active" : "sample-option"}
-                      onClick={() => handleSampleChange("")}
-                      role="option"
-                      type="button"
-                    >
-                      <span>Try a sample enquiry</span>
-                    </button>
-                    {sampleOptions.map((ticket) => (
-                      <button
-                        aria-selected={selectedSampleId === ticket.ticket_id}
-                        className={
-                          selectedSampleId === ticket.ticket_id
-                            ? "sample-option active"
-                            : "sample-option"
-                        }
-                        key={ticket.ticket_id}
-                        onClick={() => handleSampleChange(ticket.ticket_id)}
-                        role="option"
-                        type="button"
-                      >
-                        <strong>{ticket.ticket_id}</strong>
-                        <span>{ticket.subject}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-              <textarea
-                aria-label="Customer question"
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  const selectedSample = sampleOptions.find(
-                    (sample) => sample.ticket_id === selectedSampleId,
-                  );
-                  setComposer(nextValue);
-                  if (selectedSample && nextValue !== sampleComposerText(selectedSample)) {
-                    setSelectedSampleId("");
-                  }
-                  requestAnimationFrame(() => scrollMessagesToBottom());
-                }}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" &&
-                    !event.shiftKey &&
-                    !event.nativeEvent.isComposing
-                  ) {
-                    event.preventDefault();
-                    void submitEnquiry();
-                  }
-                }}
-                onFocus={() => scrollMessagesToBottom()}
-                placeholder="Example: Are BOLDR's FKM rubber straps BPA-free and safe for kids?"
-                value={composer}
-              />
-              <button
-                className="primary-action rugged-action"
-                disabled={loadingAction === "submit"}
-                onClick={submitEnquiry}
-                type="button"
-              >
-                {loadingAction === "submit" ? "Processing" : "Send"}
-              </button>
-            </div>
-          </div>
-        </section>
+        <ChatTabView
+          composer={composer}
+          enquiries={enquiries}
+          handleSampleChange={handleSampleChange}
+          loadingAction={loadingAction}
+          messageStreamRef={messageStreamRef}
+          onComposerChange={(nextValue) => {
+            const selectedSample = sampleOptions.find(
+              (sample) => sample.ticket_id === selectedSampleId,
+            );
+            setComposer(nextValue);
+            if (selectedSample && nextValue !== sampleComposerText(selectedSample)) {
+              setSelectedSampleId("");
+            }
+            requestAnimationFrame(() => scrollMessagesToBottom());
+          }}
+          onComposerFocus={() => scrollMessagesToBottom()}
+          onComposerKeyDown={(event) => {
+            if (
+              event.key === "Enter" &&
+              !event.shiftKey &&
+              !event.nativeEvent.isComposing
+            ) {
+              event.preventDefault();
+              void submitEnquiry();
+            }
+          }}
+          onResetDemo={() => void resetDemo()}
+          onSend={submitEnquiry}
+          onStartConversation={startNewConversation}
+          pendingMessage={pendingMessage}
+          sampleMenuOpen={sampleMenuOpen}
+          sampleMenuRef={sampleMenuRef}
+          sampleOptions={sampleOptions}
+          selectedSampleId={selectedSampleId}
+          selectedSampleOption={selectedSampleOption}
+          setSampleMenuOpen={setSampleMenuOpen}
+        />
       ) : null}
 
       {activeTab === "approvals" ? (
-        <section className="workspace-view queue-view approvals-view" aria-labelledby="approvals-heading">
-          <QueueList
-            emptyLabel="No answerable demo drafts yet."
-            items={approvalQueue}
-            selectedId={selectedApproval?.enquiry_id ?? ""}
-            title="Approval Queue"
-            onSelect={setSelectedApprovalId}
-          />
-          <div className="queue-detail-panel">
-            {selectedApproval ? (
-              <>
-                <PanelHeading
-                  eyebrow={selectedApproval.enquiry_id}
-                  title={selectedApproval.ticket.subject}
-                  status={formatLabel(selectedApproval.approval_state.status)}
-                />
-                <SignalRow
-                  values={[
-                    selectedApproval.classification.persona,
-                    selectedApproval.classification.intent,
-                    `${selectedApproval.retrieval.evidence.length} evidence cards`,
-                    formatLabel(selectedApproval.state),
-                  ]}
-                />
-                <div className="detail-grid two">
-                  <InfoBlock
-                    label="Routing Guardrail"
-                    text={selectedApproval.classification.routing_reason}
-                  />
-                </div>
-                <label className="field-stack">
-                  <span>Draft Reply</span>
-                  <textarea
-                    onChange={(event) => setApprovalDraft(event.target.value)}
-                    value={approvalDraft}
-                  />
-                </label>
-                <label className="field-stack">
-                  <span>Reviewer Note</span>
-                  <input
-                    onChange={(event) => setApprovalNote(event.target.value)}
-                    placeholder="Optional note"
-                    value={approvalNote}
-                  />
-                </label>
-                <div className="action-row">
-                  <button
-                    className="secondary-action"
-                    disabled={loadingAction !== null || selectedApproval.state === "approved"}
-                    onClick={() => void reviewAnswer("approved")}
-                    type="button"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="primary-action"
-                    disabled={loadingAction !== null || approvalDraft.trim().length < 5}
-                    onClick={() => void reviewAnswer("edited_and_approved")}
-                    type="button"
-                  >
-                    Edit & Approve
-                  </button>
-                  <button
-                    className="danger-action"
-                    disabled={loadingAction !== null}
-                    onClick={() => void reviewAnswer("rejected")}
-                    type="button"
-                  >
-                    Reject
-                  </button>
-                </div>
-                <EvidenceGrid record={selectedApproval} />
-              </>
-            ) : (
-              <EmptyPanel title="No pending approvals" text="Answerable demo enquiries will appear here." />
-            )}
-          </div>
-        </section>
+        <ApprovalsTabView
+          approvalDraft={approvalDraft}
+          approvalNote={approvalNote}
+          approvalQueue={approvalQueue}
+          loadingAction={loadingAction}
+          onApprove={(status) => void reviewAnswer(status)}
+          onDraftChange={setApprovalDraft}
+          onNoteChange={setApprovalNote}
+          onSelect={setSelectedApprovalId}
+          selectedApproval={selectedApproval}
+        />
       ) : null}
 
       {activeTab === "cs" ? (
-        <section className="workspace-view queue-view cs-queue-view" aria-labelledby="cs-heading">
-          <QueueList
-            emptyLabel="No unresolved demo gaps yet."
-            items={gapQueue}
-            selectedId={selectedGap?.enquiry_id ?? ""}
-            title="CS Queue"
-            onSelect={setSelectedGapId}
-          />
-          <div className="queue-detail-panel">
-            {selectedGap?.gap_state ? (
-              <>
-                <PanelHeading
-                  eyebrow={`${selectedGap.gap_state.priority} priority`}
-                  title={formatLabel(selectedGap.gap_state.gap_theme)}
-                  status={formatLabel(selectedGap.gap_state.status)}
-                />
-                <SignalRow
-                  values={[
-                    selectedGap.classification.persona,
-                    selectedGap.gap_state.owner,
-                    selectedGap.gap_state.product_page_update_needed
-                      ? "Product-page gap"
-                      : "Support-only gap",
-                    selectedGap.gap_state.marketing_signal
-                      ? "Marketing signal"
-                      : "No marketing flag",
-                  ]}
-                />
-                <div className="detail-grid two">
-                  <InfoBlock label="Customer Question" text={selectedGap.ticket.message_body} />
-                  <InfoBlock label="Missing Knowledge" text={selectedGap.gap_state.missing_knowledge} />
-                  <InfoBlock label="Suggested Next Action" text={selectedGap.gap_state.suggested_next_action} />
-                  <InfoBlock
-                    label="Evidence Attempted"
-                    text={
-                      selectedGap.retrieval.evidence[0]?.excerpt ??
-                      "No local evidence produced a definitive answer."
-                    }
-                  />
-                </div>
-                <label className="field-stack">
-                  <span>Verified Resolution</span>
-                  <textarea
-                    onChange={(event) => setGapResolution(event.target.value)}
-                    value={gapResolution}
-                  />
-                </label>
-                <label className="field-stack">
-                  <span>Resolution Note</span>
-                  <input
-                    onChange={(event) => setGapNote(event.target.value)}
-                    placeholder="Optional CS note"
-                    value={gapNote}
-                  />
-                </label>
-                <div className="action-row">
-                  <button
-                    className="secondary-action"
-                    disabled={loadingAction !== null || gapResolution.trim().length < 3}
-                    onClick={resolveGap}
-                    type="button"
-                  >
-                    Resolve Gap
-                  </button>
-                  <button
-                    className="primary-action"
-                    disabled={loadingAction !== null || !selectedGap.gap_state.human_resolution}
-                    onClick={draftKbEntry}
-                    type="button"
-                  >
-                    Draft KB Entry
-                  </button>
-                </div>
-              </>
-            ) : (
-              <EmptyPanel title="No CS ticket selected" text="Unanswerable enquiries will route here." />
-            )}
-          </div>
-        </section>
+        <CsQueueTabView
+          gapNote={gapNote}
+          gapQueue={gapQueue}
+          gapResolution={gapResolution}
+          loadingAction={loadingAction}
+          onDraftKbEntry={draftKbEntry}
+          onGapNoteChange={setGapNote}
+          onGapResolutionChange={setGapResolution}
+          onResolveGap={resolveGap}
+          onSelect={setSelectedGapId}
+          selectedGap={selectedGap}
+        />
       ) : null}
 
       {activeTab === "kb" ? (
-        <section className="workspace-view kb-view" aria-labelledby="kb-heading">
-          <div className="knowledge-summary">
-            <PanelHeading
-              eyebrow="Knowledge Base"
-              title="Source coverage and generated additions"
-              status={`${diagnostics?.document_chunk_count ?? 0} chunks`}
-            />
-            <div className="metric-strip">
-              <Metric label="FAQ entries" value={diagnostics?.faq_entry_count ?? 0} />
-              <Metric label="Product models" value={diagnostics?.product_model_count ?? 0} />
-              <Metric label="Strap SKUs" value={diagnostics?.strap_item_count ?? 0} />
-              <Metric label="Demo KB drafts" value={gapQueue.filter((record) => record.gap_state?.kb_draft).length} />
-            </div>
-            <div className="source-chip-grid">
-              {datasetOverview.sources.map((source) => (
-                <span key={source.file_name}>
-                  {source.file_name} - {source.exists ? "ready" : "missing"}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="kb-columns">
-            <section className="kb-column">
-              <h2>Draft Queue</h2>
-              {pendingKbDrafts.length === 0 ? (
-                <EmptyPanel title="No generated KB drafts" text="Resolve a CS gap to create a draft." />
-              ) : (
-                pendingKbDrafts.map((record) => (
-                  <KBDraftCard
-                    key={record.enquiry_id}
-                    record={record}
-                    selected={selectedGap?.enquiry_id === record.enquiry_id}
-                    onSelect={() => setSelectedGapId(record.enquiry_id)}
-                  />
-                ))
-              )}
-            </section>
-            <section className="kb-column">
-              <h2>Approved Additions</h2>
-              {approvedKbAdditions.length === 0 ? (
-                <EmptyPanel title="No approved additions yet" text="Approved KB drafts will collect here." />
-              ) : (
-                approvedKbAdditions.map((record) => <KBDraftCard key={record.enquiry_id} record={record} />)
-              )}
-            </section>
-          </div>
-
-          {selectedGap?.gap_state?.kb_draft ? (
-            <div className="kb-review-panel">
-              <PanelHeading
-                eyebrow={selectedGap.enquiry_id}
-                title={selectedGap.gap_state.kb_draft.question}
-                status={formatLabel(selectedGap.gap_state.status)}
-              />
-              <p>{selectedGap.gap_state.kb_draft.answer}</p>
-              <label className="field-stack">
-                <span>KB Review Note</span>
-                <input
-                  onChange={(event) => setKbReviewNote(event.target.value)}
-                  placeholder="Optional KB review note"
-                  value={kbReviewNote}
-                />
-              </label>
-              <div className="action-row">
-                <button
-                  className="secondary-action"
-                  disabled={loadingAction !== null}
-                  onClick={() => void reviewKbEntry("approved")}
-                  type="button"
-                >
-                  Approve KB Draft
-                </button>
-                <button
-                  className="danger-action"
-                  disabled={loadingAction !== null}
-                  onClick={() => void reviewKbEntry("rejected")}
-                  type="button"
-                >
-                  Reject KB Draft
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </section>
+        <KnowledgeBaseTabView
+          approvedKbAdditions={approvedKbAdditions}
+          datasetOverview={datasetOverview}
+          diagnostics={diagnostics}
+          gapQueue={gapQueue}
+          kbReviewNote={kbReviewNote}
+          loadingAction={loadingAction}
+          onKbReviewNoteChange={setKbReviewNote}
+          onReviewKbEntry={(status) => void reviewKbEntry(status)}
+          onSelectGap={setSelectedGapId}
+          pendingKbDrafts={pendingKbDrafts}
+          selectedGap={selectedGap}
+        />
       ) : null}
 
       {activeTab === "marketing" ? (
-        <section className="workspace-view marketing-view" aria-labelledby="marketing-heading">
-          <PanelHeading
-            eyebrow="Marketing Intel"
-            title="Customer questions becoming product and campaign signals"
-            status={`${themeRadar?.meta.theme_count ?? 0} existing themes`}
-          />
-          <div className="metric-strip">
-            <Metric label="Dataset themes" value={themeRadar?.meta.theme_count ?? 0} />
-            <Metric label="Demo signals" value={enquiries.length} />
-            <Metric label="Live gaps" value={gapQueue.length} />
-            <Metric label="Product-page gaps" value={productPageSignals.length} />
-          </div>
-
-          <section className="marketing-bonus-shortcut" aria-labelledby="bonus-shortcut-heading">
-            <div>
-              <span className="deliverable-eyebrow">Bonus Challenge</span>
-              <h2 id="bonus-shortcut-heading">External benchmark ready for judges</h2>
-              <p>
-                Internal support themes are compared with public watch-market sentiment to
-                separate BOLDR-specific gaps from market-wide signals.
-              </p>
-            </div>
-            <div className="bonus-shortcut-stats">
-              <div>
-                <strong>{externalBenchmarks.length}</strong>
-                <span>benchmarked themes</span>
-              </div>
-              <div>
-                <strong>{externalSources.length}</strong>
-                <span>source groups</span>
-              </div>
-              <div>
-                <strong>{marketWideBenchmarkCount}</strong>
-                <span>market-wide signals</span>
-              </div>
-            </div>
-            <a className="secondary-action bonus-jump-link" href="#external-benchmark-section">
-              View External Benchmark
-            </a>
-          </section>
-
-          <section className="marketing-panel marketing-deliverable-panel monthly-brief-panel">
-            <div className="deliverable-header">
-              <div>
-                <span className="deliverable-eyebrow">Monthly Brief</span>
-                <h2>What customers are asking that is not on your product pages</h2>
-              </div>
-              <span className="status-pill">{marketingBrief?.period_label ?? "Monthly output"}</span>
-            </div>
-            <div className="deliverable-meta-grid">
-              <div>
-                <span>Source tickets</span>
-                <strong>{marketingBrief?.source_ticket_count ?? 0}</strong>
-              </div>
-              <div>
-                <span>Persona-tagged themes</span>
-                <strong>{marketingOpportunities.length}</strong>
-              </div>
-              <div>
-                <span>Product page updates</span>
-                <strong>{productPageOpportunities.length}</strong>
-              </div>
-              <div>
-                <span>Live demo gaps</span>
-                <strong>{productPageSignals.length}</strong>
-              </div>
-            </div>
-            {monthlyBriefOpportunities.length === 0 ? (
-              <p className="muted-copy">No product-page opportunities are available yet.</p>
-            ) : (
-              <div className="brief-opportunity-grid">
-                {monthlyBriefOpportunities.map((opportunity) => (
-                  <article
-                    className={`brief-opportunity-card ${badgeToneClass(opportunity.persona_focus[0] ?? "")}`}
-                    key={opportunity.theme_name}
-                  >
-                    <div className="opportunity-topline">
-                      <span>{opportunity.theme_name}</span>
-                      {opportunity.product_page_update_needed ? (
-                        <em className="insight-chip tone-warning">Page gap</em>
-                      ) : (
-                        <em className="insight-chip tone-success">Campaign ready</em>
-                      )}
-                    </div>
-                    <h3>{opportunity.campaign_angle}</h3>
-                    <p>{opportunity.insight}</p>
-                    <div className="persona-chip-row">
-                      {opportunity.persona_focus.map((persona) => (
-                        <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
-                          {persona}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="opportunity-action">
-                      <span>Recommended action</span>
-                      <strong>{opportunity.recommended_action}</strong>
-                    </div>
-                    <div className="ticket-ref-row">
-                      {opportunity.evidence_ticket_ids.map((ticketId) => (
-                        <span key={ticketId}>{ticketId}</span>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="marketing-panel marketing-deliverable-panel weekly-cluster-panel">
-            <div className="deliverable-header">
-              <div>
-                <span className="deliverable-eyebrow">Weekly Theme Clustering</span>
-                <h2>Novel and recurring questions grouped by buyer theme</h2>
-              </div>
-              <span className="status-pill">
-                {themeRadar?.meta.clustered_ticket_count ?? 0} clustered tickets
-              </span>
-            </div>
-            {weeklyThemeClusters.length === 0 ? (
-              <p className="muted-copy">No theme clusters are available yet.</p>
-            ) : (
-              <div className="theme-cluster-list">
-                {weeklyThemeClusters.map((theme) => {
-                  const dominantPersona = dominantPersonaFromBreakdown(theme.persona_breakdown);
-                  const sampleQuestion =
-                    theme.common_customer_wording[0] ?? theme.evidence[0]?.customer_wording ?? "";
-                  return (
-                    <article
-                      className={`theme-cluster-row ${badgeToneClass(dominantPersona)}`}
-                      key={theme.theme_name}
-                    >
-                      <div className="theme-cluster-main">
-                        <div className="signal-card-header">
-                          <strong>{theme.theme_name}</strong>
-                          <span className="signal-metric">{theme.frequency} tickets</span>
-                        </div>
-                        {sampleQuestion ? <p>{sampleQuestion}</p> : null}
-                        <div className="signal-card-footer">
-                          <span className={`insight-chip ${badgeToneClass(dominantPersona)}`}>
-                            {dominantPersona}
-                          </span>
-                          <span className="insight-chip tone-accent">
-                            {formatLabel(theme.trend_direction)}
-                          </span>
-                          {theme.product_page_gap ? (
-                            <span className="insight-chip tone-warning">Product page gap</span>
-                          ) : (
-                            <span className="insight-chip tone-success">Covered</span>
-                          )}
-                          {theme.gap_count > 0 ? (
-                            <span className="insight-chip tone-warning">
-                              {theme.gap_count} unresolved
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="theme-cluster-actions">
-                        <div>
-                          <span>KB action</span>
-                          <p>{theme.recommended_kb_action}</p>
-                        </div>
-                        <div>
-                          <span>Marketing action</span>
-                          <p>{theme.recommended_marketing_action}</p>
-                        </div>
-                        <div className="ticket-ref-row">
-                          {theme.representative_ticket_ids.map((ticketId) => (
-                            <span key={ticketId}>{ticketId}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section
-            className="marketing-panel marketing-deliverable-panel external-benchmark-panel"
-            id="external-benchmark-section"
-          >
-            <div className="deliverable-header">
-              <div>
-                <span className="deliverable-eyebrow">Bonus External Benchmark</span>
-                <h2>Internal demand vs external watch-market sentiment</h2>
-              </div>
-              <span className="status-pill">{externalSourceTypes.size} source types</span>
-            </div>
-            <div className="deliverable-meta-grid">
-              <div>
-                <span>Benchmarked themes</span>
-                <strong>{externalBenchmarks.length}</strong>
-              </div>
-              <div>
-                <span>Source groups</span>
-                <strong>{externalSources.length}</strong>
-              </div>
-              <div>
-                <span>Market-wide signals</span>
-                <strong>{marketWideBenchmarkCount}</strong>
-              </div>
-              <div>
-                <span>Source URLs</span>
-                <strong>{externalSourceUrlCount}</strong>
-              </div>
-            </div>
-            {visibleExternalBenchmarks.length === 0 ? (
-              <p className="muted-copy">External benchmark data is unavailable.</p>
-            ) : (
-              <div className="external-benchmark-grid">
-                {visibleExternalBenchmarks.map((benchmark) => {
-                  const externalSourceCount =
-                    benchmark.external_source_count ?? benchmark.external_sources.length;
-                  const signalStrength = benchmark.signal_strength ?? "directional";
-                  const rationale =
-                    benchmark.benchmark_rationale ??
-                    "Internal support themes are being compared against curated external market signals.";
-                  const validationSteps = benchmark.validation_steps ?? [];
-                  return (
-                    <article
-                      className={`external-benchmark-card ${benchmarkToneClass(benchmark)}`}
-                      key={benchmark.theme_key}
-                    >
-                      <div className="external-benchmark-heading">
-                        <span>{formatLabel(benchmark.external_sentiment)}</span>
-                        <strong>{Math.round(benchmark.confidence * 100)}%</strong>
-                      </div>
-                      <h3>{benchmark.theme}</h3>
-                      <div className="signal-card-footer">
-                        <span className={`insight-chip ${benchmarkToneClass(benchmark)}`}>
-                          {formatBenchmarkClassification(benchmark.classification)}
-                        </span>
-                        <span className="insight-chip tone-accent">
-                          {benchmark.external_mention_count} external mentions
-                        </span>
-                        <span className="insight-chip tone-neutral">
-                          {benchmark.internal_ticket_count} internal tickets
-                        </span>
-                        <span className="insight-chip tone-neutral">
-                          {formatLabel(signalStrength)} signal
-                        </span>
-                        <span className="insight-chip tone-accent">
-                          {externalSourceCount} sources
-                        </span>
-                      </div>
-                      <p>{rationale}</p>
-                      <p>{benchmark.recommended_action}</p>
-                      <div className="benchmark-persona-row">
-                        {benchmark.internal_personas.slice(0, 3).map((persona) => (
-                          <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
-                            {persona}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="benchmark-source-list">
-                        {benchmark.external_sources.slice(0, 2).map((source) => (
-                          <a href={source.source_url} key={source.source_url} rel="noreferrer" target="_blank">
-                            {source.name} - {source.mention_count} mentions
-                          </a>
-                        ))}
-                      </div>
-                      {validationSteps.length > 0 ? (
-                        <div className="benchmark-validation-list">
-                          {validationSteps.slice(0, 2).map((step) => (
-                            <span key={step}>{step}</span>
-                          ))}
-                        </div>
-                      ) : null}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-            <div className="source-registry-strip">
-              {externalSources.slice(0, 5).map((source) => (
-                <a href={source.url} key={source.source_id} rel="noreferrer" target="_blank">
-                  <strong>{source.name}</strong>
-                  <span>{source.source_type.replaceAll("_", " ")}</span>
-                </a>
-              ))}
-            </div>
-          </section>
-
-          <div className="marketing-grid">
-            <section className="marketing-panel">
-              <h2>Five-persona breakdown</h2>
-              <div className="persona-signal-list">
-                {requiredPersonas.map((persona) => (
-                  <div className={badgeToneClass(persona)} key={persona}>
-                    <span>{persona}</span>
-                    <strong>{livePersonaCounts[persona] ?? 0}</strong>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="marketing-panel">
-              <h2>Live demo signals</h2>
-              {liveGapThemes.length === 0 ? (
-                <p className="muted-copy">Submit a gap enquiry to create a live signal.</p>
-              ) : (
-                liveGapThemes.map(([theme, count]) => (
-                  <article className="signal-card market-signal-card tone-warning" key={theme}>
-                    <div className="signal-card-header">
-                      <strong>{theme}</strong>
-                      <span className="signal-metric">{count} signal{count === 1 ? "" : "s"}</span>
-                    </div>
-                    <p>
-                      Recommended action: add product-page proof points and FAQ copy before
-                      using this claim in campaigns.
-                    </p>
-                    <div className="signal-card-footer">
-                      <span className="insight-chip tone-warning">Needs proof</span>
-                    </div>
-                  </article>
-                ))
-              )}
-            </section>
-
-            <section className="marketing-panel">
-              <h2>Campaign and page actions</h2>
-              {marketingOpportunities.slice(0, 4).map((opportunity) => (
-                <article
-                  className={`signal-card market-signal-card ${badgeToneClass(opportunity.persona_focus[0] ?? "")}`}
-                  key={opportunity.theme_name}
-                >
-                  <div className="signal-card-header">
-                    <strong>{opportunity.campaign_angle}</strong>
-                    <span className="signal-metric">
-                      {opportunity.evidence_ticket_ids.length} refs
-                    </span>
-                  </div>
-                  <div className="persona-chip-row">
-                    {opportunity.persona_focus.map((persona) => (
-                      <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>
-                        {persona}
-                      </span>
-                    ))}
-                  </div>
-                  <p>{opportunity.recommended_action}</p>
-                  <div className="signal-card-footer">
-                    {opportunity.product_page_update_needed ? (
-                      <span className="insight-chip tone-warning">Product page update</span>
-                    ) : (
-                      <span className="insight-chip tone-success">Campaign ready</span>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </section>
-          </div>
-        </section>
+        <MarketingTabView
+          enquiriesCount={enquiries.length}
+          externalBenchmarks={externalBenchmarks}
+          externalSourceTypesSize={externalSourceTypes.size}
+          externalSourceUrlCount={externalSourceUrlCount}
+          externalSources={externalSources}
+          gapQueueLength={gapQueue.length}
+          liveGapThemes={liveGapThemes}
+          livePersonaCounts={livePersonaCounts}
+          marketWideBenchmarkCount={marketWideBenchmarkCount}
+          marketingBrief={marketingBrief}
+          marketingOpportunities={marketingOpportunities}
+          monthlyBriefOpportunities={monthlyBriefOpportunities}
+          productPageOpportunities={productPageOpportunities}
+          productPageSignals={productPageSignals}
+          themeRadar={themeRadar}
+          visibleExternalBenchmarks={visibleExternalBenchmarks}
+          weeklyThemeClusters={weeklyThemeClusters}
+        />
       ) : null}
 
       {activeTab === "system" ? (
-        <section className="workspace-view system-details-view">
-          <div className="system-summary-bar">
-            <span>{workflowStatus?.stable_endpoint_count ?? 0} stable endpoints</span>
-            <span>{initialGaps.length} dataset gaps</span>
-            <span>{initialGapMetrics?.product_page_update_needed_count ?? 0} product-page gaps</span>
-          </div>
-          <div className="system-details-content">{systemDetails}</div>
-        </section>
+        <SystemTabView
+          initialGapMetrics={initialGapMetrics}
+          initialGaps={initialGaps}
+          systemDetails={systemDetails}
+          workflowStatus={workflowStatus}
+        />
       ) : null}
     </main>
+  );
+}
+
+function ChatTabView({
+  composer,
+  enquiries,
+  handleSampleChange,
+  loadingAction,
+  messageStreamRef,
+  onComposerChange,
+  onComposerFocus,
+  onComposerKeyDown,
+  onResetDemo,
+  onSend,
+  onStartConversation,
+  pendingMessage,
+  sampleMenuOpen,
+  sampleMenuRef,
+  sampleOptions,
+  selectedSampleId,
+  selectedSampleOption,
+  setSampleMenuOpen,
+}: {
+  composer: string;
+  enquiries: AdhocEnquiryRecord[];
+  handleSampleChange: (ticketId: string) => void;
+  loadingAction: string | null;
+  messageStreamRef: RefObject<HTMLDivElement | null>;
+  onComposerChange: (nextValue: string) => void;
+  onComposerFocus: () => void;
+  onComposerKeyDown: (event: ReactKeyboardEvent<HTMLTextAreaElement>) => void;
+  onResetDemo: () => void;
+  onSend: () => void;
+  onStartConversation: () => void;
+  pendingMessage: string;
+  sampleMenuOpen: boolean;
+  sampleMenuRef: RefObject<HTMLDivElement | null>;
+  sampleOptions: TicketWorkflowSummary[];
+  selectedSampleId: string;
+  selectedSampleOption: TicketWorkflowSummary | null;
+  setSampleMenuOpen: Dispatch<SetStateAction<boolean>>;
+}) {
+  return (
+    <section className="workspace-view chat-view" aria-labelledby="chat-heading">
+      <div className="chat-main-panel">
+        <div className="chat-heading">
+          <div>
+            <p className="eyebrow">Customer Chat</p>
+            <h1 id="chat-heading">Ask BOLDR support intelligence anything.</h1>
+          </div>
+          <div className="chat-heading-actions">
+            <button className="secondary-action new-conversation-action" onClick={onStartConversation} type="button">
+              New conversation
+            </button>
+            <button
+              className="secondary-action new-conversation-action reset-demo-action"
+              disabled={loadingAction !== null}
+              onClick={onResetDemo}
+              type="button"
+            >
+              {loadingAction === "reset-demo" ? "Resetting" : "Reset demo"}
+            </button>
+          </div>
+        </div>
+
+        <div className="message-stream" aria-live="polite" ref={messageStreamRef}>
+          {enquiries.length === 0 && !pendingMessage ? (
+            <div className="empty-chat-state">
+              <p className="eyebrow">Ready</p>
+              <h2>Type a question or run a real sample enquiry.</h2>
+              <p>
+                The system will classify the buyer persona, search BOLDR sources, expose the
+                evidence path, and pause for human approval before a customer answer is shown.
+              </p>
+            </div>
+          ) : null}
+          {enquiries.map((record) => (
+            <ConversationRecord key={record.enquiry_id} record={record} />
+          ))}
+          {pendingMessage ? <PendingConversation message={pendingMessage} /> : null}
+        </div>
+
+        <div className="chat-composer">
+          <div className="sample-select-wrap" ref={sampleMenuRef}>
+            <button
+              aria-expanded={sampleMenuOpen}
+              aria-haspopup="listbox"
+              className="sample-select-button"
+              onClick={() => setSampleMenuOpen((open) => !open)}
+              type="button"
+            >
+              <span>
+                {selectedSampleOption
+                  ? `${selectedSampleOption.ticket_id} - ${selectedSampleOption.subject}`
+                  : "Try a sample enquiry"}
+              </span>
+              <span aria-hidden="true" className="sample-select-icon" />
+            </button>
+            {sampleMenuOpen ? (
+              <div className="sample-select-menu" role="listbox">
+                <button
+                  aria-selected={selectedSampleId === ""}
+                  className={selectedSampleId === "" ? "sample-option active" : "sample-option"}
+                  onClick={() => handleSampleChange("")}
+                  role="option"
+                  type="button"
+                >
+                  <span>Try a sample enquiry</span>
+                </button>
+                {sampleOptions.map((ticket) => (
+                  <button
+                    aria-selected={selectedSampleId === ticket.ticket_id}
+                    className={selectedSampleId === ticket.ticket_id ? "sample-option active" : "sample-option"}
+                    key={ticket.ticket_id}
+                    onClick={() => handleSampleChange(ticket.ticket_id)}
+                    role="option"
+                    type="button"
+                  >
+                    <strong>{ticket.ticket_id}</strong>
+                    <span>{ticket.subject}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          <textarea
+            aria-label="Customer question"
+            onChange={(event) => onComposerChange(event.target.value)}
+            onFocus={onComposerFocus}
+            onKeyDown={onComposerKeyDown}
+            placeholder="Example: Are BOLDR's FKM rubber straps BPA-free and safe for kids?"
+            value={composer}
+          />
+          <button className="primary-action rugged-action" disabled={loadingAction === "submit"} onClick={onSend} type="button">
+            {loadingAction === "submit" ? "Processing" : "Send"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MarketingTabView({
+  enquiriesCount,
+  externalBenchmarks,
+  externalSourceTypesSize,
+  externalSourceUrlCount,
+  externalSources,
+  gapQueueLength,
+  liveGapThemes,
+  livePersonaCounts,
+  marketWideBenchmarkCount,
+  marketingBrief,
+  marketingOpportunities,
+  monthlyBriefOpportunities,
+  productPageOpportunities,
+  productPageSignals,
+  themeRadar,
+  visibleExternalBenchmarks,
+  weeklyThemeClusters,
+}: {
+  enquiriesCount: number;
+  externalBenchmarks: ExternalBenchmark[];
+  externalSourceTypesSize: number;
+  externalSourceUrlCount: number;
+  externalSources: ExternalSource[];
+  gapQueueLength: number;
+  liveGapThemes: Array<[string, number]>;
+  livePersonaCounts: Record<string, number>;
+  marketWideBenchmarkCount: number;
+  marketingBrief: InsightsOverview["marketingBrief"];
+  marketingOpportunities: MarketingOpportunity[];
+  monthlyBriefOpportunities: MarketingOpportunity[];
+  productPageOpportunities: MarketingOpportunity[];
+  productPageSignals: AdhocEnquiryRecord[];
+  themeRadar: InsightsOverview["themeRadar"];
+  visibleExternalBenchmarks: ExternalBenchmark[];
+  weeklyThemeClusters: ThemeRadarItem[];
+}) {
+  return (
+    <section className="workspace-view marketing-view" aria-labelledby="marketing-heading">
+      <PanelHeading
+        eyebrow="Marketing Intel"
+        title="Customer questions becoming product and campaign signals"
+        status={`${themeRadar?.meta.theme_count ?? 0} existing themes`}
+      />
+      <div className="metric-strip">
+        <Metric label="Dataset themes" value={themeRadar?.meta.theme_count ?? 0} />
+        <Metric label="Demo signals" value={enquiriesCount} />
+        <Metric label="Live gaps" value={gapQueueLength} />
+        <Metric label="Product-page gaps" value={productPageSignals.length} />
+      </div>
+
+      <section className="marketing-bonus-shortcut" aria-labelledby="bonus-shortcut-heading">
+        <div>
+          <span className="deliverable-eyebrow">Bonus Challenge</span>
+          <h2 id="bonus-shortcut-heading">External benchmark ready for judges</h2>
+          <p>
+            Internal support themes are compared with public watch-market sentiment to separate
+            BOLDR-specific gaps from market-wide signals.
+          </p>
+        </div>
+        <div className="bonus-shortcut-stats">
+          <div>
+            <strong>{externalBenchmarks.length}</strong>
+            <span>benchmarked themes</span>
+          </div>
+          <div>
+            <strong>{externalSources.length}</strong>
+            <span>source groups</span>
+          </div>
+          <div>
+            <strong>{marketWideBenchmarkCount}</strong>
+            <span>market-wide signals</span>
+          </div>
+        </div>
+        <a className="secondary-action bonus-jump-link" href="#external-benchmark-section">
+          View External Benchmark
+        </a>
+      </section>
+
+      <MarketingDeliverables
+        externalBenchmarks={externalBenchmarks}
+        externalSourceTypesSize={externalSourceTypesSize}
+        externalSourceUrlCount={externalSourceUrlCount}
+        externalSources={externalSources}
+        liveGapThemes={liveGapThemes}
+        livePersonaCounts={livePersonaCounts}
+        marketWideBenchmarkCount={marketWideBenchmarkCount}
+        marketingBrief={marketingBrief}
+        marketingOpportunities={marketingOpportunities}
+        monthlyBriefOpportunities={monthlyBriefOpportunities}
+        productPageOpportunities={productPageOpportunities}
+        productPageSignals={productPageSignals}
+        visibleExternalBenchmarks={visibleExternalBenchmarks}
+        weeklyThemeClusters={weeklyThemeClusters}
+      />
+    </section>
+  );
+}
+
+function MarketingDeliverables({
+  externalBenchmarks,
+  externalSourceTypesSize,
+  externalSourceUrlCount,
+  externalSources,
+  liveGapThemes,
+  livePersonaCounts,
+  marketWideBenchmarkCount,
+  marketingBrief,
+  marketingOpportunities,
+  monthlyBriefOpportunities,
+  productPageOpportunities,
+  productPageSignals,
+  visibleExternalBenchmarks,
+  weeklyThemeClusters,
+}: {
+  externalBenchmarks: ExternalBenchmark[];
+  externalSourceTypesSize: number;
+  externalSourceUrlCount: number;
+  externalSources: ExternalSource[];
+  liveGapThemes: Array<[string, number]>;
+  livePersonaCounts: Record<string, number>;
+  marketWideBenchmarkCount: number;
+  marketingBrief: InsightsOverview["marketingBrief"];
+  marketingOpportunities: MarketingOpportunity[];
+  monthlyBriefOpportunities: MarketingOpportunity[];
+  productPageOpportunities: MarketingOpportunity[];
+  productPageSignals: AdhocEnquiryRecord[];
+  visibleExternalBenchmarks: ExternalBenchmark[];
+  weeklyThemeClusters: ThemeRadarItem[];
+}) {
+  return (
+    <>
+      <section className="marketing-panel marketing-deliverable-panel monthly-brief-panel">
+        <div className="deliverable-header">
+          <div>
+            <span className="deliverable-eyebrow">Monthly Brief</span>
+            <h2>What customers are asking that is not on your product pages</h2>
+          </div>
+          <span className="status-pill">{marketingBrief?.period_label ?? "Monthly output"}</span>
+        </div>
+        <div className="deliverable-meta-grid">
+          <div><span>Source tickets</span><strong>{marketingBrief?.source_ticket_count ?? 0}</strong></div>
+          <div><span>Persona-tagged themes</span><strong>{marketingOpportunities.length}</strong></div>
+          <div><span>Product page updates</span><strong>{productPageOpportunities.length}</strong></div>
+          <div><span>Live demo gaps</span><strong>{productPageSignals.length}</strong></div>
+        </div>
+        {monthlyBriefOpportunities.length === 0 ? (
+          <p className="muted-copy">No product-page opportunities are available yet.</p>
+        ) : (
+          <div className="brief-opportunity-grid">
+            {monthlyBriefOpportunities.map((opportunity) => (
+              <article className={`brief-opportunity-card ${badgeToneClass(opportunity.persona_focus[0] ?? "")}`} key={opportunity.theme_name}>
+                <div className="opportunity-topline">
+                  <span>{opportunity.theme_name}</span>
+                  {opportunity.product_page_update_needed ? <em className="insight-chip tone-warning">Page gap</em> : <em className="insight-chip tone-success">Campaign ready</em>}
+                </div>
+                <h3>{opportunity.campaign_angle}</h3>
+                <p>{opportunity.insight}</p>
+                <div className="persona-chip-row">
+                  {opportunity.persona_focus.map((persona) => (
+                    <span className={`insight-chip ${badgeToneClass(persona)}`} key={persona}>{persona}</span>
+                  ))}
+                </div>
+                <div className="opportunity-action"><span>Recommended action</span><strong>{opportunity.recommended_action}</strong></div>
+                <div className="ticket-ref-row">
+                  {opportunity.evidence_ticket_ids.map((ticketId) => <span key={ticketId}>{ticketId}</span>)}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="marketing-panel marketing-deliverable-panel weekly-cluster-panel">
+        <div className="deliverable-header">
+          <div>
+            <span className="deliverable-eyebrow">Weekly Theme Clustering</span>
+            <h2>Novel and recurring questions grouped by buyer theme</h2>
+          </div>
+          <span className="status-pill">{weeklyThemeClusters.length} visible themes</span>
+        </div>
+        {weeklyThemeClusters.length === 0 ? (
+          <p className="muted-copy">No theme clusters are available yet.</p>
+        ) : (
+          <div className="theme-cluster-list">
+            {weeklyThemeClusters.map((theme) => {
+              const dominantPersona = dominantPersonaFromBreakdown(theme.persona_breakdown);
+              const sampleQuestion = theme.common_customer_wording[0] ?? theme.evidence[0]?.customer_wording ?? "";
+              return (
+                <article className={`theme-cluster-row ${badgeToneClass(dominantPersona)}`} key={theme.theme_name}>
+                  <div className="theme-cluster-main">
+                    <div className="signal-card-header"><strong>{theme.theme_name}</strong><span className="signal-metric">{theme.frequency} tickets</span></div>
+                    {sampleQuestion ? <p>{sampleQuestion}</p> : null}
+                  </div>
+                  <div className="theme-cluster-actions">
+                    <div><span>KB action</span><p>{theme.recommended_kb_action}</p></div>
+                    <div><span>Marketing action</span><p>{theme.recommended_marketing_action}</p></div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="marketing-panel marketing-deliverable-panel external-benchmark-panel" id="external-benchmark-section">
+        <div className="deliverable-header">
+          <div><span className="deliverable-eyebrow">Bonus External Benchmark</span><h2>Internal demand vs external watch-market sentiment</h2></div>
+          <span className="status-pill">{externalSourceTypesSize} source types</span>
+        </div>
+        <div className="deliverable-meta-grid">
+          <div><span>Benchmarked themes</span><strong>{externalBenchmarks.length}</strong></div>
+          <div><span>Source groups</span><strong>{externalSources.length}</strong></div>
+          <div><span>Market-wide signals</span><strong>{marketWideBenchmarkCount}</strong></div>
+          <div><span>Source URLs</span><strong>{externalSourceUrlCount}</strong></div>
+        </div>
+        <div className="external-benchmark-grid">
+          {visibleExternalBenchmarks.map((benchmark) => (
+            <article className={`external-benchmark-card ${benchmarkToneClass(benchmark)}`} key={benchmark.theme_key}>
+              <div className="external-benchmark-heading"><span>{formatLabel(benchmark.external_sentiment)}</span><strong>{Math.round(benchmark.confidence * 100)}%</strong></div>
+              <h3>{benchmark.theme}</h3>
+              <p>{formatBenchmarkClassification(benchmark.classification)}</p>
+              <p>{benchmark.recommended_action}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <div className="marketing-grid">
+        <section className="marketing-panel">
+          <h2>Five-persona breakdown</h2>
+          <div className="persona-signal-list">
+            {requiredPersonas.map((persona) => (
+              <div className={badgeToneClass(persona)} key={persona}><span>{persona}</span><strong>{livePersonaCounts[persona] ?? 0}</strong></div>
+            ))}
+          </div>
+        </section>
+        <section className="marketing-panel">
+          <h2>Live demo signals</h2>
+          {liveGapThemes.map(([theme, count]) => (
+            <article className="signal-card market-signal-card tone-warning" key={theme}>
+              <div className="signal-card-header"><strong>{theme}</strong><span className="signal-metric">{count} signal{count === 1 ? "" : "s"}</span></div>
+              <p>Recommended action: add product-page proof points and FAQ copy before using this claim in campaigns.</p>
+            </article>
+          ))}
+        </section>
+      </div>
+    </>
+  );
+}
+
+function ApprovalsTabView({
+  approvalDraft,
+  approvalNote,
+  approvalQueue,
+  loadingAction,
+  onApprove,
+  onDraftChange,
+  onNoteChange,
+  onSelect,
+  selectedApproval,
+}: {
+  approvalDraft: string;
+  approvalNote: string;
+  approvalQueue: AdhocEnquiryRecord[];
+  loadingAction: string | null;
+  onApprove: (status: "approved" | "rejected") => void;
+  onDraftChange: (value: string) => void;
+  onNoteChange: (value: string) => void;
+  onSelect: (id: string) => void;
+  selectedApproval: AdhocEnquiryRecord | null;
+}) {
+  return (
+    <section className="workspace-view queue-view approvals-view" aria-labelledby="approvals-heading">
+      <QueueList
+        emptyLabel="No answerable demo drafts yet."
+        items={approvalQueue}
+        selectedId={selectedApproval?.enquiry_id ?? ""}
+        title="Approval Queue"
+        onSelect={onSelect}
+      />
+      <div className="queue-detail-panel">
+        {selectedApproval ? (
+          <>
+            <PanelHeading
+              eyebrow={selectedApproval.enquiry_id}
+              title={selectedApproval.ticket.subject}
+              status={formatLabel(selectedApproval.approval_state.status)}
+            />
+            <SignalRow
+              values={[
+                selectedApproval.classification.persona,
+                selectedApproval.classification.intent,
+                `${selectedApproval.retrieval.evidence.length} evidence cards`,
+                formatLabel(selectedApproval.state),
+              ]}
+            />
+            <div className="detail-grid two">
+              <InfoBlock label="Routing Guardrail" text={selectedApproval.classification.routing_reason} />
+            </div>
+            <label className="field-stack">
+              <span>Draft Reply</span>
+              <textarea onChange={(event) => onDraftChange(event.target.value)} value={approvalDraft} />
+            </label>
+            <label className="field-stack">
+              <span>Reviewer Note</span>
+              <input onChange={(event) => onNoteChange(event.target.value)} placeholder="Optional note" value={approvalNote} />
+            </label>
+            <div className="action-row">
+              <button className="primary-action" disabled={loadingAction !== null || selectedApproval.state === "approved"} onClick={() => onApprove("approved")} type="button">Approve</button>
+              <button className="danger-action" disabled={loadingAction !== null} onClick={() => onApprove("rejected")} type="button">Reject</button>
+            </div>
+            <EvidenceGrid record={selectedApproval} />
+          </>
+        ) : (
+          <EmptyPanel title="No pending approvals" text="Answerable demo enquiries will appear here." />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CsQueueTabView({
+  gapNote,
+  gapQueue,
+  gapResolution,
+  loadingAction,
+  onDraftKbEntry,
+  onGapNoteChange,
+  onGapResolutionChange,
+  onResolveGap,
+  onSelect,
+  selectedGap,
+}: {
+  gapNote: string;
+  gapQueue: AdhocEnquiryRecord[];
+  gapResolution: string;
+  loadingAction: string | null;
+  onDraftKbEntry: () => void;
+  onGapNoteChange: (value: string) => void;
+  onGapResolutionChange: (value: string) => void;
+  onResolveGap: () => void;
+  onSelect: (id: string) => void;
+  selectedGap: AdhocEnquiryRecord | null;
+}) {
+  return (
+    <section className="workspace-view queue-view cs-queue-view" aria-labelledby="cs-heading">
+      <QueueList emptyLabel="No unresolved demo gaps yet." items={gapQueue} selectedId={selectedGap?.enquiry_id ?? ""} title="CS Queue" onSelect={onSelect} />
+      <div className="queue-detail-panel">
+        {selectedGap?.gap_state ? (
+          <>
+            <PanelHeading eyebrow={`${selectedGap.gap_state.priority} priority`} title={formatLabel(selectedGap.gap_state.gap_theme)} status={formatLabel(selectedGap.gap_state.status)} />
+            <SignalRow values={[selectedGap.classification.persona, selectedGap.gap_state.owner, selectedGap.gap_state.product_page_update_needed ? "Product-page gap" : "Support-only gap", selectedGap.gap_state.marketing_signal ? "Marketing signal" : "No marketing flag"]} />
+            <div className="detail-grid two">
+              <InfoBlock label="Customer Question" text={selectedGap.ticket.message_body} />
+              <InfoBlock label="Missing Knowledge" text={selectedGap.gap_state.missing_knowledge} />
+              <InfoBlock label="Suggested Next Action" text={selectedGap.gap_state.suggested_next_action} />
+              <InfoBlock label="Evidence Attempted" text={selectedGap.retrieval.evidence[0]?.excerpt ?? "No local evidence produced a definitive answer."} />
+            </div>
+            <label className="field-stack"><span>Verified Resolution</span><textarea onChange={(event) => onGapResolutionChange(event.target.value)} value={gapResolution} /></label>
+            <label className="field-stack"><span>Resolution Note</span><input onChange={(event) => onGapNoteChange(event.target.value)} placeholder="Optional CS note" value={gapNote} /></label>
+            <div className="action-row">
+              <button className="secondary-action" disabled={loadingAction !== null || gapResolution.trim().length < 3} onClick={onResolveGap} type="button">Resolve Gap</button>
+              <button className="primary-action" disabled={loadingAction !== null || !selectedGap.gap_state.human_resolution} onClick={onDraftKbEntry} type="button">Draft KB Entry</button>
+            </div>
+          </>
+        ) : (
+          <EmptyPanel title="No CS ticket selected" text="Unanswerable enquiries will route here." />
+        )}
+      </div>
+    </section>
+  );
+}
+
+function KnowledgeBaseTabView({
+  approvedKbAdditions,
+  datasetOverview,
+  diagnostics,
+  gapQueue,
+  kbReviewNote,
+  loadingAction,
+  onKbReviewNoteChange,
+  onReviewKbEntry,
+  onSelectGap,
+  pendingKbDrafts,
+  selectedGap,
+}: {
+  approvedKbAdditions: AdhocEnquiryRecord[];
+  datasetOverview: DatasetOverview;
+  diagnostics: DatasetOverview["diagnostics"];
+  gapQueue: AdhocEnquiryRecord[];
+  kbReviewNote: string;
+  loadingAction: string | null;
+  onKbReviewNoteChange: (value: string) => void;
+  onReviewKbEntry: (status: "approved" | "rejected") => void;
+  onSelectGap: (id: string) => void;
+  pendingKbDrafts: AdhocEnquiryRecord[];
+  selectedGap: AdhocEnquiryRecord | null;
+}) {
+  return (
+    <section className="workspace-view kb-view" aria-labelledby="kb-heading">
+      <div className="knowledge-summary">
+        <PanelHeading eyebrow="Knowledge Base" title="Source coverage and generated additions" status={`${diagnostics?.document_chunk_count ?? 0} chunks`} />
+        <div className="metric-strip">
+          <Metric label="FAQ entries" value={diagnostics?.faq_entry_count ?? 0} />
+          <Metric label="Product models" value={diagnostics?.product_model_count ?? 0} />
+          <Metric label="Strap SKUs" value={diagnostics?.strap_item_count ?? 0} />
+          <Metric label="Demo KB drafts" value={gapQueue.filter((record) => record.gap_state?.kb_draft).length} />
+        </div>
+        <div className="source-chip-grid">
+          {datasetOverview.sources.map((source) => <span key={source.file_name}>{source.file_name} - {source.exists ? "ready" : "missing"}</span>)}
+        </div>
+      </div>
+      <div className="kb-columns">
+        <section className="kb-column">
+          <h2>Draft Queue</h2>
+          {pendingKbDrafts.length === 0 ? <EmptyPanel title="No generated KB drafts" text="Resolve a CS gap to create a draft." /> : pendingKbDrafts.map((record) => <KBDraftCard key={record.enquiry_id} record={record} selected={selectedGap?.enquiry_id === record.enquiry_id} onSelect={() => onSelectGap(record.enquiry_id)} />)}
+        </section>
+        <section className="kb-column">
+          <h2>Approved Additions</h2>
+          {approvedKbAdditions.length === 0 ? <EmptyPanel title="No approved additions yet" text="Approved KB drafts will collect here." /> : approvedKbAdditions.map((record) => <KBDraftCard key={record.enquiry_id} record={record} />)}
+        </section>
+      </div>
+      {selectedGap?.gap_state?.kb_draft ? (
+        <div className="kb-review-panel">
+          <PanelHeading eyebrow={selectedGap.enquiry_id} title={selectedGap.gap_state.kb_draft.question} status={formatLabel(selectedGap.gap_state.status)} />
+          <p>{selectedGap.gap_state.kb_draft.answer}</p>
+          <label className="field-stack"><span>KB Review Note</span><input onChange={(event) => onKbReviewNoteChange(event.target.value)} placeholder="Optional KB review note" value={kbReviewNote} /></label>
+          <div className="action-row">
+            <button className="secondary-action" disabled={loadingAction !== null} onClick={() => onReviewKbEntry("approved")} type="button">Approve KB Draft</button>
+            <button className="danger-action" disabled={loadingAction !== null} onClick={() => onReviewKbEntry("rejected")} type="button">Reject KB Draft</button>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function SystemTabView({
+  initialGapMetrics,
+  initialGaps,
+  systemDetails,
+  workflowStatus,
+}: {
+  initialGapMetrics: GapMetrics | null;
+  initialGaps: KnowledgeGapRecord[];
+  systemDetails: ReactNode;
+  workflowStatus: WorkflowOverview["statusReport"];
+}) {
+  return (
+    <section className="workspace-view system-details-view">
+      <div className="system-summary-bar">
+        <span>{workflowStatus?.stable_endpoint_count ?? 0} stable endpoints</span>
+        <span>{initialGaps.length} dataset gaps</span>
+        <span>{initialGapMetrics?.product_page_update_needed_count ?? 0} product-page gaps</span>
+      </div>
+      <div className="system-details-content">{systemDetails}</div>
+    </section>
   );
 }
 

@@ -9,6 +9,7 @@ import type {
   ExternalSource,
   ExternalSourceListResponse,
 } from "@/lib/api";
+import { MetricCard, PageHeader } from "@/components/ui-primitives";
 
 type ExternalBenchmarkClientProps = {
   initialSources: ExternalSource[];
@@ -80,46 +81,29 @@ export function ExternalBenchmarkClient({
 
   return (
     <section className="external-console" data-testid="phase12-external">
-      <div className="console-header">
-        <div>
-          <p className="eyebrow">Phase 12 Bonus</p>
-          <h3>External Sentiment Benchmarking</h3>
-        </div>
-        <button
-          className="primary-action"
-          disabled={loading}
-          onClick={generateBenchmarks}
-          type="button"
-        >
-          {loading ? "Benchmarking" : "Generate Benchmarks"}
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Phase 12 Bonus"
+        title="External Sentiment Benchmarking"
+        subtitle="Curated external evidence compared against internal support signals."
+        action={
+          <button
+            className="primary-action"
+            disabled={loading}
+            onClick={generateBenchmarks}
+            type="button"
+          >
+            {loading ? "Benchmarking" : "Generate Benchmarks"}
+          </button>
+        }
+      />
 
       <div className="workbench-stat-grid">
-        <div>
-          <strong>{benchmarks.length}</strong>
-          <span>Benchmarked themes</span>
-        </div>
-        <div>
-          <strong>{sources.length}</strong>
-          <span>Source groups</span>
-        </div>
-        <div>
-          <strong>{sourceTypes.size}</strong>
-          <span>Source types</span>
-        </div>
-        <div>
-          <strong>{marketWideCount}</strong>
-          <span>Market-wide signals</span>
-        </div>
-        <div>
-          <strong>{sourceUrlCount}</strong>
-          <span>Source URLs</span>
-        </div>
-        <div>
-          <strong>{strongSignalCount}</strong>
-          <span>Strong signals</span>
-        </div>
+        <MetricCard value={benchmarks.length} label="Benchmarked themes" />
+        <MetricCard value={sources.length} label="Source groups" />
+        <MetricCard value={sourceTypes.size} label="Source types" />
+        <MetricCard value={marketWideCount} label="Market-wide signals" />
+        <MetricCard value={sourceUrlCount} label="Source URLs" />
+        <MetricCard value={strongSignalCount} label="Strong signals" />
       </div>
 
       {statusMessage ? (

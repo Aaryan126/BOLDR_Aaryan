@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:ui:snapshots": "playwright test -c playwright.config.ts"
   },
   "dependencies": {
+    "lucide-react": "^0.469.0",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -22,6 +24,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@playwright/test": "^1.54.2",
     "eslint": "^9.18.0",
     "eslint-config-next": "^15.3.0",
     "typescript": "^5.7.0"

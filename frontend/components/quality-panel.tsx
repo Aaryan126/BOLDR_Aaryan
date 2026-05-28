@@ -1,4 +1,5 @@
 import type { QualityScorecard } from "@/lib/api";
+import { MetricCard, PageHeader } from "@/components/ui-primitives";
 
 type QualityPanelProps = {
   scorecard: QualityScorecard | null;
@@ -31,35 +32,24 @@ export function QualityPanel({ scorecard }: QualityPanelProps) {
 
   return (
     <section className="quality-console" data-testid="phase11-quality">
-      <div className="console-header">
-        <div>
-          <p className="eyebrow">Phase 11 Quality</p>
-          <h3>Evaluation Scorecard</h3>
-        </div>
-        <span className={`status-pill status-${scorecard.overall_status}`}>
-          {scorecard.overall_status.replaceAll("_", " ")}
-        </span>
-      </div>
+      <PageHeader
+        eyebrow="Phase 11 Quality"
+        title="Evaluation Scorecard"
+        subtitle="Audit reliability, guardrail compliance, and fixture pass rates."
+        action={
+          <span className={`status-pill status-${scorecard.overall_status}`}>
+            {scorecard.overall_status.replaceAll("_", " ")}
+          </span>
+        }
+      />
 
       <p className="quality-summary">{scorecard.summary}</p>
 
       <div className="workbench-stat-grid">
-        <div>
-          <strong>{scorecard.total_ticket_count}</strong>
-          <span>Tickets evaluated</span>
-        </div>
-        <div>
-          <strong>{passCount}</strong>
-          <span>Passing metrics</span>
-        </div>
-        <div>
-          <strong>{documentedCount}</strong>
-          <span>Documented notes</span>
-        </div>
-        <div>
-          <strong>{goldenPassCount}</strong>
-          <span>Golden fixtures</span>
-        </div>
+        <MetricCard value={scorecard.total_ticket_count} label="Tickets evaluated" />
+        <MetricCard value={passCount} label="Passing metrics" />
+        <MetricCard value={documentedCount} label="Documented notes" />
+        <MetricCard value={goldenPassCount} label="Golden fixtures" />
       </div>
 
       <div className="quality-grid">
