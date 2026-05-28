@@ -6125,6 +6125,47 @@ button {
   background: color-mix(in srgb, var(--panel-bg) 54%, transparent);
 }
 
+/* Remove side-border treatments from review, queue, and KB pages. */
+.approvals-view .queue-list-panel,
+.approvals-view .queue-detail-panel,
+.approvals-view .queue-row,
+.approvals-view .info-block,
+.approvals-view .field-stack input,
+.approvals-view .field-stack textarea,
+.approvals-view .evidence-card,
+.approvals-view .guardrail-card,
+.approvals-view .signal-row span,
+.cs-queue-view .queue-list-panel,
+.cs-queue-view .queue-detail-panel,
+.cs-queue-view .queue-row,
+.cs-queue-view .info-block,
+.cs-queue-view .field-stack input,
+.cs-queue-view .field-stack textarea,
+.cs-queue-view .signal-row span,
+.kb-view .knowledge-summary,
+.kb-view .kb-column,
+.kb-view .kb-review-panel,
+.kb-view .metric-strip > div,
+.kb-view .source-chip-grid span,
+.kb-view .kb-draft-tile,
+.kb-view .field-stack input {
+  border-left: 0;
+  border-right: 0;
+}
+
+.approvals-view .detail-grid.two::before {
+  display: none;
+}
+
+.approvals-view .queue-row.active {
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
+}
+
+.cs-queue-view .queue-row.active,
+.kb-view .kb-draft-tile.active {
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
+}
+
 @media (max-width: 760px) {
   .chat-view .chat-main-panel {
     height: calc(100dvh - 92px);

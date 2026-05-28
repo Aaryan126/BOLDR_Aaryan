@@ -85,7 +85,9 @@ function getApiBaseUrl() {
 }
 
 function formatLabel(value: string | null | undefined) {
-  return (value ?? "unknown").replaceAll("_", " ");
+  return (value ?? "unknown")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function badgeToneClass(value: string) {
@@ -968,7 +970,7 @@ export function ChatWorkspaceClient({
               <>
                 <PanelHeading
                   eyebrow={`${selectedGap.gap_state.priority} priority`}
-                  title={selectedGap.gap_state.gap_theme}
+                  title={formatLabel(selectedGap.gap_state.gap_theme)}
                   status={formatLabel(selectedGap.gap_state.status)}
                 />
                 <SignalRow
