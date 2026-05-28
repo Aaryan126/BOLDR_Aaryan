@@ -332,6 +332,27 @@ export function ChatWorkspaceClient({
     });
   }, []);
 
+  const scrollLatestUserMessageIntoView = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const stream = messageStreamRef.current;
+    if (!stream) {
+      return;
+    }
+
+    const pendingUserMessage = stream.querySelector<HTMLElement>(
+      ".pending-conversation .chat-message.user",
+    );
+    const userMessages = stream.querySelectorAll<HTMLElement>(
+      ".conversation-record .chat-message.user",
+    );
+    const latestUserMessage =
+      pendingUserMessage ?? userMessages.item(userMessages.length - 1);
+
+    latestUserMessage?.scrollIntoView({
+      block: "start",
+      behavior,
+    });
+  }, []);
+
   function startNewConversation() {
     clearLocalDemoState();
     setStatusMessage("");
@@ -415,9 +436,9 @@ export function ChatWorkspaceClient({
     if (activeTab !== "chat") {
       return;
     }
-    const frame = requestAnimationFrame(() => scrollMessagesToBottom());
+    const frame = requestAnimationFrame(() => scrollLatestUserMessageIntoView());
     return () => cancelAnimationFrame(frame);
-  }, [activeTab, enquiries, scrollMessagesToBottom]);
+  }, [activeTab, enquiries, pendingMessage, scrollLatestUserMessageIntoView]);
 
   useEffect(() => {
     let cancelled = false;
