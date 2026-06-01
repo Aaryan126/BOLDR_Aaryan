@@ -51,6 +51,8 @@ def review_ticket_draft(ticket_id: str, review: DraftReviewRequest) -> TicketDra
         status=review.status,
         reviewer_note=review.reviewer_note,
         edited_reply=review.edited_reply if review.status == "edited_and_approved" else None,
+        reason_codes=review.reason_codes,
+        factual_corrections_made=review.factual_corrections_made,
     )
     _APPROVALS[draft.ticket_id] = approval
     return draft.model_copy(update={"approval": approval})

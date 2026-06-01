@@ -242,6 +242,8 @@ SignalDesk includes approval gates because customer support content can create b
 | Draft answer ready | Requires human approval before sending |
 | FAQ update ready | Requires human review before publishing |
 
+Responsible AI failure modes are documented in `docs/responsible-ai.md`, including detection, containment, user-visible behavior, and escalation paths for retrieval misses, source conflicts, contradiction risk, ambiguous queries, and prompt-injection-like phrasing.
+
 ## AI And Tooling
 
 The AI layer is configured to use GLM-5.1 through FPT AI Factory when live credentials are enabled. GLM-5.1 is used because this workflow needs structured reasoning over evidence, not only open-ended chat.

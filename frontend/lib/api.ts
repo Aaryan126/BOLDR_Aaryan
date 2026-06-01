@@ -119,6 +119,11 @@ export type DraftEvaluation = {
   guardrail_failures_count: number;
   evidence_backed_customer_reply_count: number;
   approval_status_counts: Record<string, number>;
+  claim_grounding_rate: number;
+  contradiction_detection_rate: number;
+  false_safe_rate: number;
+  abstention_usefulness_rate: number;
+  high_risk_claim_unsupported_rate: number;
 };
 
 export type DraftOverview = {
@@ -494,10 +499,32 @@ export type TicketDraftDetail = {
     passed: boolean;
     message: string;
   }>;
+  claim_verification: Array<{
+    sentence: string;
+    sentence_type: "factual_claim" | "procedural_or_next_step" | "politeness_or_non_factual";
+    verdict: "supported" | "unsupported" | "contradicted" | "not_applicable";
+    evidence_links: Array<{
+      evidence_id: string;
+      source_file: string;
+      snippet: string;
+    }>;
+    contradiction_sources: string[];
+    notes: string | null;
+  }>;
+  safety_decision: {
+    risk_level: "low" | "medium" | "high";
+    requires_human_review: boolean;
+    downgrade_applied: boolean;
+    downgrade_reason: string | null;
+    recommended_action: string | null;
+  } | null;
+  failure_modes: string[];
   approval: {
     status: ApprovalStatus;
     reviewer_note: string | null;
     edited_reply: string | null;
+    reason_codes: string[];
+    factual_corrections_made: boolean;
   };
 };
 
@@ -562,6 +589,8 @@ export type AdhocApprovalState = {
   reviewer_note: string | null;
   edited_reply: string | null;
   approved_reply: string | null;
+  reason_codes: string[];
+  factual_corrections_made: boolean;
 };
 
 export type AdhocEnquiryRecord = {

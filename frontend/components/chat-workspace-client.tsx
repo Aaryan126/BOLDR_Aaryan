@@ -78,6 +78,15 @@ const requiredPersonas = [
   "Sustainability Advocate",
 ];
 
+const reviewReasonOptions = [
+  { code: "evidence_ok", label: "Evidence checked and valid" },
+  { code: "tone_edit", label: "Tone/wording edit" },
+  { code: "clarity_edit", label: "Clarity improvement" },
+  { code: "factual_fix", label: "Factual correction" },
+  { code: "policy_risk", label: "Policy/risk concern" },
+  { code: "unsupported_claim", label: "Unsupported claim removed" },
+];
+
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
@@ -246,6 +255,9 @@ export function ChatWorkspaceClient({
   const [selectedGapId, setSelectedGapId] = useState("");
   const [approvalDraft, setApprovalDraft] = useState("");
   const [approvalNote, setApprovalNote] = useState("");
+  const [approvalReasonCodes, setApprovalReasonCodes] = useState<string[]>([]);
+  const [approvalCustomReasonCode, setApprovalCustomReasonCode] = useState("");
+  const [approvalFactualCorrections, setApprovalFactualCorrections] = useState(false);
   const [gapResolution, setGapResolution] = useState("");
   const [gapNote, setGapNote] = useState("");
   const [kbReviewNote, setKbReviewNote] = useState("");
@@ -502,6 +514,9 @@ export function ChatWorkspaceClient({
     if (!selectedApproval) {
       setApprovalDraft("");
       setApprovalNote("");
+      setApprovalReasonCodes([]);
+      setApprovalCustomReasonCode("");
+      setApprovalFactualCorrections(false);
       return;
     }
     setApprovalDraft(
@@ -509,6 +524,9 @@ export function ChatWorkspaceClient({
         selectedApproval.draft.draft.draft_reply,
     );
     setApprovalNote(selectedApproval.approval_state.reviewer_note ?? "");
+    setApprovalReasonCodes(selectedApproval.approval_state.reason_codes ?? []);
+    setApprovalCustomReasonCode("");
+    setApprovalFactualCorrections(selectedApproval.approval_state.factual_corrections_made ?? false);
   }, [selectedApproval?.enquiry_id, selectedApproval]);
 
   useEffect(() => {
@@ -585,9 +603,13 @@ export function ChatWorkspaceClient({
         {
           method: "POST",
           body: JSON.stringify({
-            status,
+            status: effectiveStatus,
             edited_reply: effectiveStatus === "edited_and_approved" ? approvalDraft : null,
             reviewer_note: approvalNote || null,
+            reason_codes: approvalCustomReasonCode.trim()
+              ? [...approvalReasonCodes, approvalCustomReasonCode.trim()]
+              : approvalReasonCodes,
+            factual_corrections_made: approvalFactualCorrections,
           }),
         },
       );
@@ -808,11 +830,17 @@ export function ChatWorkspaceClient({
         <ApprovalsTabView
           approvalDraft={approvalDraft}
           approvalNote={approvalNote}
+          approvalReasonCodes={approvalReasonCodes}
+          approvalCustomReasonCode={approvalCustomReasonCode}
+          approvalFactualCorrections={approvalFactualCorrections}
           approvalQueue={approvalQueue}
           loadingAction={loadingAction}
           onApprove={(status) => void reviewAnswer(status)}
           onDraftChange={setApprovalDraft}
           onNoteChange={setApprovalNote}
+          onReasonCodesChange={setApprovalReasonCodes}
+          onCustomReasonCodeChange={setApprovalCustomReasonCode}
+          onFactualCorrectionsChange={setApprovalFactualCorrections}
           onSelect={setSelectedApprovalId}
           selectedApproval={selectedApproval}
         />
@@ -873,6 +901,7 @@ export function ChatWorkspaceClient({
 
       {activeTab === "system" ? (
         <SystemTabView
+          enquiries={enquiries}
           initialGapMetrics={initialGapMetrics}
           initialGaps={initialGaps}
           systemDetails={systemDetails}
@@ -1276,21 +1305,33 @@ function MarketingDeliverables({
 function ApprovalsTabView({
   approvalDraft,
   approvalNote,
+  approvalReasonCodes,
+  approvalCustomReasonCode,
+  approvalFactualCorrections,
   approvalQueue,
   loadingAction,
   onApprove,
   onDraftChange,
+  onFactualCorrectionsChange,
   onNoteChange,
+  onReasonCodesChange,
+  onCustomReasonCodeChange,
   onSelect,
   selectedApproval,
 }: {
   approvalDraft: string;
   approvalNote: string;
+  approvalReasonCodes: string[];
+  approvalCustomReasonCode: string;
+  approvalFactualCorrections: boolean;
   approvalQueue: AdhocEnquiryRecord[];
   loadingAction: string | null;
   onApprove: (status: "approved" | "rejected") => void;
   onDraftChange: (value: string) => void;
+  onFactualCorrectionsChange: (value: boolean) => void;
   onNoteChange: (value: string) => void;
+  onReasonCodesChange: (value: string[]) => void;
+  onCustomReasonCodeChange: (value: string) => void;
   onSelect: (id: string) => void;
   selectedApproval: AdhocEnquiryRecord | null;
 }) {
@@ -1330,10 +1371,51 @@ function ApprovalsTabView({
               <span>Reviewer Note</span>
               <input onChange={(event) => onNoteChange(event.target.value)} placeholder="Optional note" value={approvalNote} />
             </label>
+            <div className="info-block approvals-telemetry-row">
+              <span>Review Telemetry (optional)</span>
+              <div className="approvals-telemetry-options">
+                {reviewReasonOptions.map((option) => (
+                  <label
+                    className={approvalReasonCodes.includes(option.code) ? "approvals-telemetry-chip active" : "approvals-telemetry-chip"}
+                    key={option.code}
+                  >
+                    <input
+                      checked={approvalReasonCodes.includes(option.code)}
+                      onChange={(event) => {
+                        if (event.target.checked) {
+                          onReasonCodesChange([...approvalReasonCodes, option.code]);
+                        } else {
+                          onReasonCodesChange(approvalReasonCodes.filter((code) => code !== option.code));
+                        }
+                      }}
+                      type="checkbox"
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+                <label className={approvalFactualCorrections ? "approvals-telemetry-chip active" : "approvals-telemetry-chip"}>
+                  <input
+                    checked={approvalFactualCorrections}
+                    onChange={(event) => onFactualCorrectionsChange(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>Factual corrections made</span>
+                </label>
+              </div>
+              <label className="field-stack">
+                <span>Custom reason code</span>
+                <input
+                  onChange={(event) => onCustomReasonCodeChange(event.target.value)}
+                  placeholder="optional_custom_code"
+                  value={approvalCustomReasonCode}
+                />
+              </label>
+            </div>
             <div className="action-row">
               <button className="primary-action" disabled={loadingAction !== null || selectedApproval.state === "approved"} onClick={() => onApprove("approved")} type="button">Approve</button>
               <button className="danger-action" disabled={loadingAction !== null} onClick={() => onApprove("rejected")} type="button">Reject</button>
             </div>
+            <ClaimEvidenceFlowMap record={selectedApproval} />
             <EvidenceGrid record={selectedApproval} />
           </>
         ) : (
@@ -1463,16 +1545,24 @@ function KnowledgeBaseTabView({
 }
 
 function SystemTabView({
+  enquiries,
   initialGapMetrics,
   initialGaps,
   systemDetails,
   workflowStatus,
 }: {
+  enquiries: AdhocEnquiryRecord[];
   initialGapMetrics: GapMetrics | null;
   initialGaps: KnowledgeGapRecord[];
   systemDetails: ReactNode;
   workflowStatus: WorkflowOverview["statusReport"];
 }) {
+  const failureModeCounts = enquiries.reduce<Record<string, number>>((acc, record) => {
+    for (const mode of record.draft.failure_modes ?? []) {
+      acc[mode] = (acc[mode] ?? 0) + 1;
+    }
+    return acc;
+  }, {});
   return (
     <section className="workspace-view system-details-view">
       <div className="system-summary-bar">
@@ -1481,6 +1571,144 @@ function SystemTabView({
         <span>{initialGapMetrics?.product_page_update_needed_count ?? 0} product-page gaps</span>
       </div>
       <div className="system-details-content">{systemDetails}</div>
+      <section className="marketing-panel">
+        <h2>Responsible AI Diagnostics</h2>
+        <div className="persona-signal-list">
+          {Object.entries(failureModeCounts).length === 0 ? (
+            <span className="tone-neutral">No active failure modes detected in current demo session.</span>
+          ) : (
+            Object.entries(failureModeCounts).map(([mode, count]) => (
+              <div className="tone-warning" key={mode}>
+                <span>{formatLabel(mode)}</span>
+                <strong>{count}</strong>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function ClaimEvidenceFlowMap({ record }: { record: AdhocEnquiryRecord }) {
+  const claims = record.draft.claim_verification ?? [];
+  if (claims.length === 0) {
+    return null;
+  }
+  const evidenceNodeMap = new Map<string, { source: string; snippet: string }>();
+  claims.forEach((claim) => {
+    claim.evidence_links.forEach((link) => {
+      if (!evidenceNodeMap.has(link.evidence_id)) {
+        evidenceNodeMap.set(link.evidence_id, {
+          source: link.source_file,
+          snippet: link.snippet,
+        });
+      }
+    });
+  });
+  const evidenceNodes = [...evidenceNodeMap.entries()];
+  const evidenceIndexById = new Map<string, number>();
+  evidenceNodes.forEach(([evidenceId], index) => evidenceIndexById.set(evidenceId, index));
+
+  const width = 1100;
+  const leftX = 220;
+  const rightX = 860;
+  const topPadding = 40;
+  const leftGap = 88;
+  const rightGap = 112;
+  const leftY = (index: number) => topPadding + index * leftGap;
+  const rightY = (index: number) => topPadding + index * rightGap;
+  const canvasHeight = Math.max(
+    220,
+    topPadding * 2 + Math.max((evidenceNodes.length - 1) * leftGap, (claims.length - 1) * rightGap),
+  );
+
+  function wrapText(text: string, maxCharsPerLine: number, maxLines: number) {
+    const words = text.trim().split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (candidate.length <= maxCharsPerLine) {
+        current = candidate;
+        continue;
+      }
+      if (current) {
+        lines.push(current);
+      }
+      current = word;
+      if (lines.length === maxLines) {
+        break;
+      }
+    }
+    if (lines.length < maxLines && current) {
+      lines.push(current);
+    }
+    if (lines.length > maxLines) {
+      lines.length = maxLines;
+    }
+    if (lines.length === maxLines && words.join(" ").length > lines.join(" ").length) {
+      lines[maxLines - 1] = `${lines[maxLines - 1].replace(/[.]{3}$/, "")}...`;
+    }
+    return lines;
+  }
+
+  return (
+    <section className="approvals-flow-map">
+      <h3>Claim-to-Evidence Map</h3>
+      <p className="muted-copy">
+        Flowchart view: evidence nodes on the left feed claim nodes on the right.
+      </p>
+      <div className="approvals-flow-canvas">
+        <svg aria-label="Claim to evidence flow diagram" role="img" viewBox={`0 0 ${width} ${canvasHeight}`}>
+          {claims.map((claim, claimIndex) =>
+            claim.evidence_links.map((link, linkIndex) => {
+              const sourceIndex = evidenceIndexById.get(link.evidence_id);
+              if (sourceIndex === undefined) {
+                return null;
+              }
+              const x1 = leftX + 170;
+              const y1 = leftY(sourceIndex);
+              const x2 = rightX - 170;
+              const y2 = rightY(claimIndex);
+              const path = `M ${x1} ${y1} C ${x1 + 120} ${y1}, ${x2 - 120} ${y2}, ${x2} ${y2}`;
+              return (
+                <path
+                  className={claim.verdict === "contradicted" ? "approvals-flow-line risk" : "approvals-flow-line"}
+                  d={path}
+                  key={`${link.evidence_id}-${claimIndex}-${linkIndex}`}
+                />
+              );
+            }),
+          )}
+          {evidenceNodes.map(([evidenceId, meta], index) => (
+            <g key={evidenceId} transform={`translate(${leftX - 170}, ${leftY(index) - 30})`}>
+              <rect className="approvals-flow-node evidence" height="60" rx="10" width="340" x="0" y="0" />
+              <text className="approvals-flow-node-title" x="12" y="24">
+                {evidenceId}
+              </text>
+              <text className="approvals-flow-node-subtitle" x="12" y="44">
+                {meta.source}
+              </text>
+            </g>
+          ))}
+          {claims.map((claim, index) => (
+            <g key={`${claim.sentence}-${index}`} transform={`translate(${rightX - 170}, ${rightY(index) - 40})`}>
+              <rect className={`approvals-flow-node claim ${claim.verdict === "contradicted" ? "risk" : ""}`} height="80" rx="10" width="340" x="0" y="0" />
+              <text className="approvals-flow-node-title" x="12" y="24">
+                {formatLabel(claim.verdict)} · {formatLabel(claim.sentence_type)}
+              </text>
+              <text className="approvals-flow-node-subtitle" x="12" y="46">
+                {wrapText(claim.sentence, 54, 2).map((line, lineIndex) => (
+                  <tspan dy={lineIndex === 0 ? 0 : 14} key={`${line}-${lineIndex}`} x="12">
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
     </section>
   );
 }

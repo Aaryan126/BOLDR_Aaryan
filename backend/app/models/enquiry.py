@@ -58,6 +58,8 @@ class EnquiryApprovalRequest(BaseModel):
     status: Literal["approved", "edited_and_approved", "rejected"] = "approved"
     edited_reply: str | None = None
     reviewer_note: str | None = None
+    reason_codes: list[str] = Field(default_factory=list)
+    factual_corrections_made: bool = False
 
 
 class EnquiryGapResolutionRequest(BaseModel):
@@ -92,6 +94,8 @@ class AdhocApprovalState(BaseModel):
     reviewer_note: str | None = None
     edited_reply: str | None = None
     approved_reply: str | None = None
+    reason_codes: list[str] = Field(default_factory=list)
+    factual_corrections_made: bool = False
 
 
 class AdhocEnquiryRecord(BaseModel):

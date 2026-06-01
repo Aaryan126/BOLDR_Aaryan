@@ -143,6 +143,8 @@ def review_enquiry_answer(
             reviewer_note=request.reviewer_note,
             edited_reply=None,
             approved_reply=None,
+            reason_codes=request.reason_codes,
+            factual_corrections_made=request.factual_corrections_made,
         )
         updated = record.model_copy(
             update={
@@ -161,6 +163,8 @@ def review_enquiry_answer(
             reviewer_note=request.reviewer_note,
             edited_reply=edited_reply,
             approved_reply=approved_reply,
+            reason_codes=request.reason_codes,
+            factual_corrections_made=request.factual_corrections_made,
         )
         updated = record.model_copy(
             update={
@@ -396,7 +400,7 @@ def _build_trace(classification, retrieval, draft, source_refs: list[str], answe
     if unsupported:
         answerability_detail = f"{answerability_detail} Unsupported theme: {unsupported}."
 
-    return [
+    events = [
         TraceEvent(
             step="reading_enquiry",
             status="completed",
@@ -449,6 +453,20 @@ def _build_trace(classification, retrieval, draft, source_refs: list[str], answe
             evidence_ids=evidence_ids,
         ),
     ]
+    if draft.failure_modes:
+        events.append(
+            TraceEvent(
+                step="responsible_ai_check",
+                status="blocked" if draft.safety_decision and draft.safety_decision.downgrade_applied else "completed",
+                title="Responsible AI checks",
+                detail=(
+                    "Detected risk modes: "
+                    + ", ".join(mode.replace("_", " ") for mode in draft.failure_modes)
+                ),
+                evidence_ids=evidence_ids,
+            )
+        )
+    return events
 
 
 def _infer_question_type(message: str) -> str:

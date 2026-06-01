@@ -24,6 +24,9 @@ def test_quality_scorecard_reports_thresholds_and_documented_exception() -> None
     assert metrics["evidence_coverage"]["value"] == 1.0
     assert metrics["unsupported_claim_guardrails"]["value"] == 0.0
     assert metrics["source_conflict_handling"]["value"] == 1.0
+    assert "claim_grounding_rate" in metrics
+    assert "false_safe_rate" in metrics
+    assert "abstention_usefulness_rate" in metrics
 
 
 def test_quality_scorecard_golden_fixtures_pass_core_scenarios() -> None:
@@ -68,3 +71,4 @@ def test_evaluation_contract_is_in_openapi() -> None:
 
     assert response.status_code == 200
     assert "/api/evaluation/scorecard" in response.json()["paths"]
+    assert "/api/evaluation/review-trends" in response.json()["paths"]

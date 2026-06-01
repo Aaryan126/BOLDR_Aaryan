@@ -36,6 +36,8 @@ def test_golden_answerable_ticket_drafts_are_evidence_backed() -> None:
         assert draft.decision.can_send_to_customer is True
         assert draft.draft.evidence_ids
         assert draft.draft.claims
+        assert draft.claim_verification
+        assert draft.safety_decision is not None
         assert all(term in draft.draft.draft_reply for term in expected_terms)
         assert all(guardrail.passed for guardrail in draft.guardrails)
 

@@ -60,3 +60,24 @@ class QualityScorecard(BaseModel):
 class QualityScorecardResponse(BaseModel):
     status: Literal["ok"] = "ok"
     data: QualityScorecard
+
+
+class ReviewReasonMetric(BaseModel):
+    reason_code: str
+    count: int
+
+
+class ReviewTrendSnapshot(BaseModel):
+    total_reviewed: int
+    approved_count: int
+    rejected_count: int
+    edited_count: int
+    factual_correction_count: int
+    factual_correction_rate: float
+    avg_edit_distance_ratio: float
+    top_reason_codes: list[ReviewReasonMetric]
+
+
+class ReviewTrendResponse(BaseModel):
+    status: Literal["ok"] = "ok"
+    data: ReviewTrendSnapshot

@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from collections import Counter
 
 from app.models.evaluation import (
     GoldenFixtureResult,
     QualityIssue,
     QualityMetric,
     QualityScorecard,
+    ReviewReasonMetric,
+    ReviewTrendSnapshot,
 )
 from app.services.classifications import (
     get_classification_evaluation,
@@ -16,6 +19,7 @@ from app.services.classifications import (
 )
 from app.services.datasets import get_dataset_snapshot
 from app.services.drafts import get_draft_evaluation, get_ticket_draft
+from app.services.enquiries import list_enquiries
 from app.services.retrieval import get_retrieval_evaluation
 
 
@@ -177,6 +181,42 @@ def get_quality_scorecard(phase: str) -> QualityScorecard:
             detail="Rate-card sources are preferred over lower-priority FAQ/SOP text when pricing or turnaround conflicts appear.",
         ),
         QualityMetric(
+            metric_id="claim_grounding_rate",
+            label="Claim grounding rate",
+            value=draft_eval.claim_grounding_rate,
+            target=0.95,
+            unit="ratio",
+            status="pass" if draft_eval.claim_grounding_rate >= 0.95 else "fail",
+            detail="Share of factual draft claims that are explicitly supported by evidence links.",
+        ),
+        QualityMetric(
+            metric_id="false_safe_rate",
+            label="False-safe rate",
+            value=draft_eval.false_safe_rate,
+            target=0.0,
+            unit="ratio",
+            status="pass" if draft_eval.false_safe_rate <= 0.01 else "fail",
+            detail="Unsafe drafts that would have appeared safe without claim verification.",
+        ),
+        QualityMetric(
+            metric_id="abstention_usefulness_rate",
+            label="Abstention usefulness rate",
+            value=draft_eval.abstention_usefulness_rate,
+            target=0.9,
+            unit="ratio",
+            status="pass" if draft_eval.abstention_usefulness_rate >= 0.9 else "documented_exception",
+            detail="When the system blocks a response, the block should be correct and operationally useful.",
+        ),
+        QualityMetric(
+            metric_id="high_risk_claim_unsupported_rate",
+            label="High-risk unsupported claim rate",
+            value=draft_eval.high_risk_claim_unsupported_rate,
+            target=0.0,
+            unit="ratio",
+            status="pass" if draft_eval.high_risk_claim_unsupported_rate == 0.0 else "documented_exception",
+            detail="Proportion of high-risk drafts that still contain unsupported or contradicted claims.",
+        ),
+        QualityMetric(
             metric_id="golden_fixture_pass_rate",
             label="Golden fixture pass rate",
             value=_ratio(
@@ -210,6 +250,45 @@ def get_quality_scorecard(phase: str) -> QualityScorecard:
             "The core workflow is demo-ready with one documented routing exception: "
             "CSV escalation labels disagree with evidence-backed safe-answer behavior on a small set of tickets."
         ),
+    )
+
+
+def get_review_trends() -> ReviewTrendSnapshot:
+    reviewed = [
+        enquiry
+        for enquiry in list_enquiries()
+        if enquiry.approval_state.status in {"approved", "edited_and_approved", "rejected"}
+    ]
+    approved_count = sum(1 for item in reviewed if item.approval_state.status == "approved")
+    edited_count = sum(1 for item in reviewed if item.approval_state.status == "edited_and_approved")
+    rejected_count = sum(1 for item in reviewed if item.approval_state.status == "rejected")
+    factual_correction_count = sum(
+        1 for item in reviewed if item.approval_state.factual_corrections_made
+    )
+    reason_counts: Counter[str] = Counter()
+    edit_distance_ratios: list[float] = []
+
+    for item in reviewed:
+        reason_counts.update(item.approval_state.reason_codes)
+        approved_text = item.approval_state.approved_reply or ""
+        draft_text = item.draft.draft.draft_reply or ""
+        if approved_text and draft_text:
+            edit_distance_ratios.append(_normalized_edit_distance_ratio(draft_text, approved_text))
+
+    return ReviewTrendSnapshot(
+        total_reviewed=len(reviewed),
+        approved_count=approved_count,
+        rejected_count=rejected_count,
+        edited_count=edited_count,
+        factual_correction_count=factual_correction_count,
+        factual_correction_rate=_ratio(factual_correction_count, len(reviewed)),
+        avg_edit_distance_ratio=round(sum(edit_distance_ratios) / len(edit_distance_ratios), 4)
+        if edit_distance_ratios
+        else 0.0,
+        top_reason_codes=[
+            ReviewReasonMetric(reason_code=reason, count=count)
+            for reason, count in reason_counts.most_common(8)
+        ],
     )
 
 
@@ -302,3 +381,26 @@ def _ratio(numerator: int, denominator: int) -> float:
 
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _normalized_edit_distance_ratio(left: str, right: str) -> float:
+    if left == right:
+        return 0.0
+    m, n = len(left), len(right)
+    if m == 0 or n == 0:
+        return 1.0
+    dp = list(range(n + 1))
+    for i in range(1, m + 1):
+        prev = dp[0]
+        dp[0] = i
+        for j in range(1, n + 1):
+            current = dp[j]
+            cost = 0 if left[i - 1] == right[j - 1] else 1
+            dp[j] = min(
+                dp[j] + 1,
+                dp[j - 1] + 1,
+                prev + cost,
+            )
+            prev = current
+    distance = dp[n]
+    return round(distance / max(m, n), 4)

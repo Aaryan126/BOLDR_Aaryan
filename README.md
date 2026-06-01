@@ -22,6 +22,7 @@ BOLDR SignalDesk is an approval-first customer intelligence workflow for the BOL
 - [Product requirements](docs/prd.md)
 - [Dataset guide](docs/sample-dataset.md)
 - [Implementation plan](implementation_plan.md)
+- [Responsible AI failure-mode matrix](docs/responsible-ai.md)
 
 ## Tech Stack
 

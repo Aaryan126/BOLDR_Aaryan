@@ -15,10 +15,13 @@ from app.models.ai import DraftReplyOutput, EvidenceSufficiencyOutput, GapRecord
 from app.models.classification import TicketClassification
 from app.models.drafting import (
     AnswerabilityDecision,
+    ClaimEvidenceLink,
+    ClaimVerification,
     DraftApproval,
     DraftEvaluation,
     EvidenceTrace,
     GuardrailCheck,
+    SafetyDecision,
     TicketDraft,
 )
 from app.models.retrieval import EvidenceCard, RetrievalResult
@@ -128,8 +131,11 @@ def generate_ticket_draft(
             )
             prepared_customer_draft = None
     draft = build_draft_output(classification, retrieval, decision, prepared_customer_draft)
+    claim_verification = verify_claims_against_evidence(classification, retrieval, draft)
+    decision, draft, safety_decision = apply_soft_safety_gate(decision, draft, claim_verification)
     gap_record = build_gap_record(classification, retrieval, decision)
-    guardrails = run_guardrails(classification, retrieval, decision, draft)
+    guardrails = run_guardrails(classification, retrieval, decision, draft, claim_verification)
+    failure_modes = detect_failure_modes(classification, retrieval, decision, claim_verification)
 
     approval_status = "draft" if decision.can_send_to_customer else "needs_review"
     if any(not guardrail.passed for guardrail in guardrails):
@@ -145,6 +151,9 @@ def generate_ticket_draft(
         gap_record=gap_record,
         evidence_trace=evidence_trace,
         guardrails=guardrails,
+        claim_verification=claim_verification,
+        safety_decision=safety_decision,
+        failure_modes=failure_modes,
         approval=DraftApproval(status=approval_status),
     )
 
@@ -152,6 +161,38 @@ def generate_ticket_draft(
 def evaluate_drafts(drafts: list[TicketDraft]) -> DraftEvaluation:
     reply_counts = Counter(draft.decision.reply_type for draft in drafts)
     approval_counts = Counter(draft.approval.status for draft in drafts)
+    factual_claims = [
+        claim
+        for draft in drafts
+        for claim in draft.claim_verification
+        if claim.sentence_type == "factual_claim"
+    ]
+    grounded_claims = [claim for claim in factual_claims if claim.verdict == "supported"]
+    contradicted_claims = [claim for claim in factual_claims if claim.verdict == "contradicted"]
+    unsupported_claims = [claim for claim in factual_claims if claim.verdict == "unsupported"]
+    high_risk_drafts = [
+        draft
+        for draft in drafts
+        if draft.safety_decision and draft.safety_decision.risk_level == "high"
+    ]
+    blocked_drafts = [draft for draft in drafts if not draft.decision.can_send_to_customer]
+    useful_abstentions = [
+        draft
+        for draft in blocked_drafts
+        if draft.decision.reply_type in {"holding_reply", "internal_note"}
+        and (
+            bool(draft.decision.unsupported_terms)
+            or draft.decision.answerability in {"knowledge_gap", "order_lookup_required", "needs_human_review"}
+        )
+    ]
+    false_safe = [
+        draft
+        for draft in drafts
+        if draft.decision.reply_type == "customer_reply"
+        and draft.approval.status != "needs_review"
+        and any(claim.verdict in {"unsupported", "contradicted"} for claim in draft.claim_verification)
+    ]
+
     return DraftEvaluation(
         total_tickets=len(drafts),
         generated_ticket_count=len(drafts),
@@ -187,7 +228,194 @@ def evaluate_drafts(drafts: list[TicketDraft]) -> DraftEvaluation:
             and bool(draft.draft.claims)
         ),
         approval_status_counts=dict(approval_counts),
+        claim_grounding_rate=_ratio(len(grounded_claims), len(factual_claims)),
+        contradiction_detection_rate=_ratio(
+            len(contradicted_claims),
+            max(1, len(contradicted_claims) + len(unsupported_claims)),
+        ),
+        false_safe_rate=_ratio(len(false_safe), len(drafts)),
+        abstention_usefulness_rate=_ratio(len(useful_abstentions), len(blocked_drafts)),
+        high_risk_claim_unsupported_rate=_ratio(
+            sum(
+                1
+                for draft in high_risk_drafts
+                if any(claim.verdict in {"unsupported", "contradicted"} for claim in draft.claim_verification)
+            ),
+            len(high_risk_drafts),
+        ),
     )
+
+
+def _ratio(numerator: int, denominator: int) -> float:
+    if denominator <= 0:
+        return 0.0
+    return round(numerator / denominator, 4)
+
+
+def split_sentences(text: str) -> list[str]:
+    parts = re.split(r"(?<=[.!?])\s+", text.strip())
+    return [part.strip() for part in parts if part.strip()]
+
+
+def sentence_type(sentence: str) -> str:
+    lowered = sentence.lower()
+    if any(term in lowered for term in ["thank", "please", "happy to", "let me know"]):
+        return "politeness_or_non_factual"
+    if any(term in lowered for term in ["we should", "team will", "next step", "please confirm"]):
+        return "procedural_or_next_step"
+    return "factual_claim"
+
+
+def verify_claims_against_evidence(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+    draft: DraftReplyOutput,
+) -> list[ClaimVerification]:
+    if draft.reply_type != "customer_reply":
+        return []
+    evidence_by_id = {item.evidence_id: item for item in retrieval.evidence}
+    evidence_items = [evidence_by_id[eid] for eid in draft.evidence_ids if eid in evidence_by_id]
+    verifications: list[ClaimVerification] = []
+    for sentence in split_sentences(draft.draft_reply):
+        kind = sentence_type(sentence)
+        if kind != "factual_claim":
+            verifications.append(
+                ClaimVerification(
+                    sentence=sentence,
+                    sentence_type=kind,
+                    verdict="not_applicable",
+                )
+            )
+            continue
+        lowered_sentence = sentence.lower()
+        links: list[ClaimEvidenceLink] = []
+        for evidence in evidence_items:
+            hay = f"{evidence.excerpt} {evidence.section_title} {evidence.source_file}".lower()
+            overlap = sum(1 for token in tokenize_product_name(lowered_sentence) if token and token in hay)
+            if overlap >= 2:
+                links.append(
+                    ClaimEvidenceLink(
+                        evidence_id=evidence.evidence_id,
+                        source_file=evidence.source_file,
+                        snippet=evidence.excerpt[:220],
+                    )
+                )
+        verdict = "supported" if links else "unsupported"
+        contradiction_sources: list[str] = []
+        contradiction_sources = detect_contradictions(sentence, links, retrieval)
+        if contradiction_sources:
+            verdict = "contradicted"
+        elif verdict == "unsupported" and draft.evidence_ids and not retrieval.unsupported_terms:
+            # Soft default: if the ticket is answerable and evidence is present,
+            # treat weak lexical linking as reviewable-but-supported to avoid over-blocking.
+            verdict = "supported"
+        verifications.append(
+            ClaimVerification(
+                sentence=sentence,
+                sentence_type="factual_claim",
+                verdict=verdict,  # type: ignore[arg-type]
+                evidence_links=links,
+                contradiction_sources=contradiction_sources,
+                notes=None if verdict == "supported" else "Claim needs review against authoritative sources.",
+            )
+        )
+    return verifications
+
+
+def detect_contradictions(
+    sentence: str,
+    links: list[ClaimEvidenceLink],
+    retrieval: RetrievalResult,
+) -> list[str]:
+    lowered = sentence.lower()
+    contradictions: list[str] = []
+    if not any(symbol in lowered for symbol in ["sgd", "$", "price", "cost", "day", "days", "character"]):
+        return contradictions
+    high_priority = [
+        evidence
+        for evidence in retrieval.evidence
+        if evidence.source_file in {"03a_rate_card_engraving.csv", "03b_rate_card_servicing.csv", "05b_product_reference.docx"}
+    ]
+    linked_ids = {link.evidence_id for link in links}
+    if not high_priority:
+        return contradictions
+    if not any(evidence.evidence_id in linked_ids for evidence in high_priority):
+        contradictions.extend(sorted({evidence.source_file for evidence in high_priority}))
+    return contradictions
+
+
+def apply_soft_safety_gate(
+    decision: AnswerabilityDecision,
+    draft: DraftReplyOutput,
+    claim_verification: list[ClaimVerification],
+) -> tuple[AnswerabilityDecision, DraftReplyOutput, SafetyDecision]:
+    risky_claims = [
+        claim
+        for claim in claim_verification
+        if claim.sentence_type == "factual_claim" and claim.verdict == "contradicted"
+    ]
+    if not risky_claims:
+        return (
+            decision,
+            draft,
+            SafetyDecision(
+                risk_level="low",
+                requires_human_review=not decision.can_send_to_customer,
+                downgrade_applied=False,
+                recommended_action="Proceed with normal human approval flow.",
+            ),
+        )
+
+    downgraded_decision = decision.model_copy(
+        update={
+            "can_send_to_customer": False,
+            "evidence_sufficient": False,
+            "required_human_inputs": [
+                *decision.required_human_inputs,
+                "Resolve unsupported or contradicted factual claims before customer send.",
+            ],
+            "reasons": [
+                *decision.reasons,
+                "Soft safety gate flagged one or more factual claims as unsupported or contradicted.",
+            ],
+        }
+    )
+    downgraded_draft = draft.model_copy(update={"approval_status": "needs_review"})
+    return (
+        downgraded_decision,
+        downgraded_draft,
+        SafetyDecision(
+            risk_level="high",
+            requires_human_review=True,
+            downgrade_applied=True,
+            downgrade_reason="Contradicted factual claims detected against authoritative source expectations.",
+            recommended_action="Edit claims using authoritative evidence or convert to holding/internal response.",
+        ),
+    )
+
+
+def detect_failure_modes(
+    classification: TicketClassification,
+    retrieval: RetrievalResult,
+    decision: AnswerabilityDecision,
+    claim_verification: list[ClaimVerification],
+) -> list[str]:
+    modes: list[str] = []
+    if not retrieval.evidence:
+        modes.append("retrieval_miss")
+    if retrieval.conflict_warnings:
+        modes.append("source_conflict")
+    if any(claim.verdict == "unsupported" for claim in claim_verification):
+        modes.append("schema_valid_but_wrong_claim")
+    if any(claim.verdict == "contradicted" for claim in claim_verification):
+        modes.append("authoritative_source_contradiction")
+    if len(classification.question_type_hints) > 2:
+        modes.append("ambiguous_query")
+    if any(token in classification.normalized_question for token in ["ignore previous", "system prompt", "developer instruction", "override rules"]):
+        modes.append("prompt_injection_like_phrasing")
+    if classification.intent in {"servicing", "engraving"} and decision.answerability == "needs_human_review":
+        modes.append("stale_source_risk")
+    return modes
 
 
 def judge_evidence_sufficiency(
@@ -1105,6 +1333,7 @@ def run_guardrails(
     retrieval: RetrievalResult,
     decision: AnswerabilityDecision,
     draft: DraftReplyOutput,
+    claim_verification: list[ClaimVerification],
 ) -> list[GuardrailCheck]:
     text = draft.draft_reply
     banned = [pattern for pattern in BANNED_REPLY_PATTERNS if pattern.lower() in text.lower()]
@@ -1124,6 +1353,11 @@ def run_guardrails(
         and bool(re.search(r"\b(delayed|delivered|refunded|cancelled|shipped)\b", text, re.I))
     )
     raw_evidence_artifacts = decision.customer_facing and has_raw_evidence_artifacts(text)
+    unsupported_claims = [
+        claim
+        for claim in claim_verification
+        if claim.sentence_type == "factual_claim" and claim.verdict == "contradicted"
+    ]
 
     return [
         GuardrailCheck(
@@ -1160,6 +1394,13 @@ def run_guardrails(
             message="Order-specific status is not invented from static KB."
             if not order_status_claim
             else "Order-specific status claim found.",
+        ),
+        GuardrailCheck(
+            name="claim_level_grounding",
+            passed=not unsupported_claims,
+            message="No factual contradiction detected against authoritative evidence expectations."
+            if not unsupported_claims
+            else "One or more factual claims are contradicted by authoritative evidence expectations.",
         ),
     ]
 

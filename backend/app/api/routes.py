@@ -20,7 +20,7 @@ from app.models.enquiry import (
     EnquiryKBReviewRequest,
     EnquiryResetResponse,
 )
-from app.models.evaluation import QualityScorecardResponse
+from app.models.evaluation import QualityScorecardResponse, ReviewTrendResponse
 from app.models.external import (
     ExternalBenchmarkResponse,
     ExternalMentionListResponse,
@@ -73,7 +73,7 @@ from app.services.enquiries import (
     review_enquiry_answer,
     review_enquiry_kb_entry,
 )
-from app.services.evaluation import get_quality_scorecard
+from app.services.evaluation import get_quality_scorecard, get_review_trends
 from app.services.external import (
     generate_external_benchmarks,
     list_external_mentions,
@@ -370,6 +370,11 @@ def marketing_brief_generate(
 @router.get("/api/evaluation/scorecard", tags=["evaluation"])
 def evaluation_scorecard() -> QualityScorecardResponse:
     return QualityScorecardResponse(data=get_quality_scorecard(get_settings().app_phase))
+
+
+@router.get("/api/evaluation/review-trends", tags=["evaluation"])
+def evaluation_review_trends() -> ReviewTrendResponse:
+    return ReviewTrendResponse(data=get_review_trends())
 
 
 @router.get("/api/external/sources", tags=["external"])
