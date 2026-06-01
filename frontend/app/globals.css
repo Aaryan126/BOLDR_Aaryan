@@ -6243,6 +6243,18 @@ button {
   font-weight: 600;
 }
 
+.approvals-flow-doc-icon path:first-child {
+  fill: rgba(191, 219, 254, 0.18);
+  stroke: rgba(147, 197, 253, 0.7);
+  stroke-width: 1.2;
+}
+
+.approvals-flow-doc-icon path:last-child {
+  fill: none;
+  stroke: rgba(147, 197, 253, 0.8);
+  stroke-width: 1.2;
+}
+
 /* CS queue uses the same split-pane density as approvals. */
 .cs-queue-view {
   width: 100%;

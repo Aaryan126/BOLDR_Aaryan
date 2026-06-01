@@ -1684,10 +1684,14 @@ function ClaimEvidenceFlowMap({ record }: { record: AdhocEnquiryRecord }) {
           {evidenceNodes.map(([evidenceId, meta], index) => (
             <g key={evidenceId} transform={`translate(${leftX - 170}, ${leftY(index) - 30})`}>
               <rect className="approvals-flow-node evidence" height="60" rx="10" width="340" x="0" y="0" />
-              <text className="approvals-flow-node-title" x="12" y="24">
+              <g className="approvals-flow-doc-icon" transform="translate(12, 14)">
+                <path d="M2 0h14l4 4v18H2z" />
+                <path d="M16 0v4h4" />
+              </g>
+              <text className="approvals-flow-node-title" x="44" y="24">
                 {evidenceId}
               </text>
-              <text className="approvals-flow-node-subtitle" x="12" y="44">
+              <text className="approvals-flow-node-subtitle" x="44" y="44">
                 {meta.source}
               </text>
             </g>
