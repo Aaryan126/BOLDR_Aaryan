@@ -5,7 +5,9 @@ export const metadata: Metadata = {
   title: "BOLDR SignalDesk",
   description: "Customer intelligence workbench for BOLDR watch support.",
   icons: {
-    icon: "/icon.png",
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    shortcut: [{ url: "/favicon.ico" }],
+    apple: [{ url: "/icon.png", type: "image/png" }],
   },
 };
 
