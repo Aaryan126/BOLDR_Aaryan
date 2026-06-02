@@ -11,17 +11,17 @@ The GLM/FPT key must only live on the backend as a private environment variable.
 
 ## Current Status
 
-As of 2026-05-20, both services are deployed and publicly reachable:
+As of 2026-06-01, both services are deployed and publicly reachable:
 
 ```text
-Frontend latest deployment URL: https://frontend-maxnme6gr-aaryans-projects-4b4bf5a5.vercel.app
+Frontend latest deployment URL: https://frontend-nv3t8uhkf-aaryans-projects-4b4bf5a5.vercel.app
 Frontend stable alias URL: https://frontend-ashy-mu-csvn2wfbmk.vercel.app
 Vercel scope/project: aaryans-projects-4b4bf5a5/frontend
 Vercel project id: prj_3NbOBbM9aCGpWDR28npmmc0w9Ay8
 
 Backend Cloud Run URL: https://boldr-signaldesk-backend-734024547221.us-central1.run.app
 Backend Cloud Run service: boldr-signaldesk-backend
-Backend Cloud Run revision: boldr-signaldesk-backend-00007-24q
+Backend Cloud Run revision: boldr-signaldesk-backend-00014-nft
 ```
 
 The Vercel production environment variable is set:
@@ -39,6 +39,7 @@ Cloud Run /health returns {"status":"ok"}.
 Cloud Run /api/ai/status reports configured=true and live_enabled=true.
 Cloud Run CORS allows the Vercel stable alias and latest deployment URL.
 Public /api/enquiries creates an awaiting_approval draft with evidence and guardrails.
+Public /api/evaluation/review-trends returns the human-review trend contract.
 ```
 
 Vercel SSO deployment protection was disabled for this project so the public `*.vercel.app` URLs return `200` instead of `401`.
@@ -52,7 +53,8 @@ npx --yes vercel project protection disable frontend --sso
 Backend tests pass locally:
 
 ```text
-backend pytest: 69 passed
+backend pytest: 73 passed
+frontend typecheck/lint: pass
 ```
 
 The backend repo is also prepared for Railway deployment, the Railway CLI login succeeded, and backend tests pass locally. Railway project creation was attempted with:
