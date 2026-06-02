@@ -4,6 +4,12 @@ BOLDR's support team has a real small-business problem: every customer question 
 
 BOLDR SignalDesk focuses on the core challenge first. It uses the six actual local data files in `Boldr Data/`, maps every enquiry to the five required personas, and preserves human approval before any reply or FAQ update becomes customer-facing.
 
+# Live Demo
+
+- Frontend stable URL: https://frontend-ashy-mu-csvn2wfbmk.vercel.app
+- Frontend latest deployment URL: https://frontend-a5ocis372-aaryans-projects-4b4bf5a5.vercel.app
+- Backend Cloud Run URL: https://boldr-signaldesk-backend-734024547221.us-central1.run.app
+
 # Workflow Logic And Demonstration
 
 The SignalDesk demo flow is:
@@ -13,16 +19,18 @@ The SignalDesk demo flow is:
 3. Search BOLDR's FAQ, product reference, SOP, and rate cards with source priority.
 4. Draft a customer reply only when evidence supports it.
 5. Route unsupported or order-specific questions to CS without making unsupported claims.
-6. Let a human resolve the gap, then draft an FAQ entry for review.
-7. Cluster weekly themes and generate a monthly marketing brief.
+6. Let CS generate two evidence-aware resolution options for a gap: an Attempted Answer and safer Customer Wording.
+7. Let a human resolve the gap, then draft an FAQ entry for review.
+8. Cluster weekly themes and generate a monthly marketing brief.
 
 Verified system metrics:
 
 | Metric | Current result |
 |---|---:|
 | Tickets processed | 70 |
-| Customer drafts queued | 44 |
-| Knowledge-gap tickets blocked from hallucination | 10 |
+| Draft/review records generated | 70 |
+| Approval queue items | 26 |
+| Knowledge-gap tickets blocked from hallucination | 9 |
 | Themes detected | 9 |
 | Marketing opportunities generated | 6 |
 | External source groups benchmarked | 7 |
@@ -68,6 +76,7 @@ The system is approval-first:
 
 - Customer replies are drafts until a human approves, edits, or rejects them.
 - Unsupported claims become holding replies and CS gap records, not invented answers.
+- CS resolution suggestions are customer-facing drafts only; internal routing language is rejected before suggestions are shown.
 - Order status questions become internal lookup tasks, not static KB answers.
 - FAQ additions require a verified human resolution before drafting.
 - Draft FAQ entries require human approval before being treated as approved additions.
@@ -85,6 +94,7 @@ Repo proof:
 - Product requirements: `docs/prd.md`.
 - Implementation sequence: `implementation_plan.md`.
 - Non-technical workflow documentation with diagrams: `WORKFLOW_DOCUMENTATION.md`.
+- Deployment notes: `deployment.md`.
 - Demo script: `VIDEO_SCRIPT.md`.
 
 Useful verification commands:
@@ -100,7 +110,15 @@ npm run lint
 npm run typecheck
 ```
 
+Live deployment checks:
+
+```bash
+curl https://boldr-signaldesk-backend-734024547221.us-central1.run.app/health
+curl https://boldr-signaldesk-backend-734024547221.us-central1.run.app/api/ai/status
+curl https://boldr-signaldesk-backend-734024547221.us-central1.run.app/api/evaluation/scorecard
+```
+
 Demo reset options:
 
-- UI: click `Reset demo` in Customer Chat.
-- API: `curl -X POST http://127.0.0.1:8000/api/enquiries/reset`.
+- UI: open https://frontend-ashy-mu-csvn2wfbmk.vercel.app and click `Reset demo` in Customer Chat.
+- API: `curl -X POST https://boldr-signaldesk-backend-734024547221.us-central1.run.app/api/enquiries/reset`.
