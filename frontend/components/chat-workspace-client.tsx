@@ -1569,13 +1569,6 @@ function KnowledgeBaseTabView({
           {datasetOverview.sources.map((source) => <span key={source.file_name}>{source.file_name} - {source.exists ? "ready" : "missing"}</span>)}
         </div>
       </div>
-      <KnowledgeSourceMap
-        approvedKbAdditions={approvedKbAdditions}
-        datasetOverview={datasetOverview}
-        enquiries={enquiries}
-        gapRecords={gapQueue}
-        pendingKbDrafts={pendingKbDrafts}
-      />
       <div className="kb-columns">
         <section className="kb-column">
           <h2>Draft Queue</h2>
@@ -1597,6 +1590,13 @@ function KnowledgeBaseTabView({
           </div>
         </div>
       ) : null}
+      <KnowledgeSourceMap
+        approvedKbAdditions={approvedKbAdditions}
+        datasetOverview={datasetOverview}
+        enquiries={enquiries}
+        gapRecords={gapQueue}
+        pendingKbDrafts={pendingKbDrafts}
+      />
     </section>
   );
 }
@@ -1736,7 +1736,14 @@ function KnowledgeSourceMap({
       status: approvedKbAdditions.length > 0 ? "Growing" : "Empty",
       detail: "Human-approved FAQ additions generated from resolved CS gaps.",
       detailItems: approvedKbAdditions.length
-        ? approvedKbAdditions.map((record) => record.gap_state?.kb_draft?.question ?? record.ticket.subject).slice(0, 3)
+        ? approvedKbAdditions.map((record) => {
+            const question = record.gap_state?.kb_draft?.question ?? record.ticket.subject;
+            const answer =
+              record.gap_state?.kb_draft?.answer ??
+              record.gap_state?.human_resolution ??
+              "No CS answer saved.";
+            return `Q: ${question}\nA: ${answer}`;
+          }).slice(0, 3)
         : ["No approved demo additions yet"],
       x: 70,
       y: 538,
