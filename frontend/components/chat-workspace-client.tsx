@@ -7,10 +7,14 @@ import {
   Bot,
   CheckSquare,
   Database,
+  FileText,
   LayoutDashboard,
   Maximize2,
   MessagesSquare,
   Radar,
+  Table2,
+  Workflow,
+  X,
 } from "lucide-react";
 
 import { resetDemoEnquiries } from "@/lib/api";
@@ -1604,6 +1608,7 @@ type KBMapNode = {
   kind: KBMapNodeKind;
   label: string;
   metric: string;
+  icon: "document" | "table" | "database" | "workflow";
   status: string;
   detail: string;
   detailItems: string[];
@@ -1630,7 +1635,7 @@ function KnowledgeSourceMap({
   gapRecords: AdhocEnquiryRecord[];
   pendingKbDrafts: AdhocEnquiryRecord[];
 }) {
-  const [selectedNodeId, setSelectedNodeId] = useState("faq");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const diagnostics = datasetOverview.diagnostics;
   const sourceByTerms = (...terms: string[]) =>
     datasetOverview.sources.find((source) => {
@@ -1667,6 +1672,7 @@ function KnowledgeSourceMap({
       kind: "source",
       label: "FAQ Document",
       metric: `${diagnostics?.faq_entry_count ?? 0} entries`,
+      icon: "document",
       status: faqSource.status,
       detail: "Customer-facing wording and existing support coverage.",
       detailItems: faqSource.items,
@@ -1678,6 +1684,7 @@ function KnowledgeSourceMap({
       kind: "source",
       label: "Product Reference",
       metric: `${diagnostics?.product_model_count ?? 0} models`,
+      icon: "document",
       status: productSource.status,
       detail: "Authoritative product specs, safety, strap, and availability facts.",
       detailItems: productSource.items,
@@ -1689,6 +1696,7 @@ function KnowledgeSourceMap({
       kind: "source",
       label: "Support SOP",
       metric: `${diagnostics?.document_chunk_count ?? 0} chunks`,
+      icon: "document",
       status: sopSource.status,
       detail: "Routing, tone, escalation, and approval process guidance.",
       detailItems: sopSource.items,
@@ -1700,6 +1708,7 @@ function KnowledgeSourceMap({
       kind: "source",
       label: "Engraving Rate Card",
       metric: `${diagnostics?.engraving_rate_card_count ?? 0} rules`,
+      icon: "table",
       status: engravingSource.status,
       detail: "Authoritative engraving prices, character limits, and turnaround rules.",
       detailItems: engravingSource.items,
@@ -1711,6 +1720,7 @@ function KnowledgeSourceMap({
       kind: "source",
       label: "Servicing Rate Card",
       metric: `${diagnostics?.servicing_rate_card_count ?? 0} rules`,
+      icon: "table",
       status: servicingSource.status,
       detail: "Authoritative servicing scope, price, and turnaround rules.",
       detailItems: servicingSource.items,
@@ -1722,6 +1732,7 @@ function KnowledgeSourceMap({
       kind: "source",
       label: "Approved Additions",
       metric: `${approvedKbAdditions.length} approved`,
+      icon: "database",
       status: approvedKbAdditions.length > 0 ? "Growing" : "Empty",
       detail: "Human-approved FAQ additions generated from resolved CS gaps.",
       detailItems: approvedKbAdditions.length
@@ -1735,6 +1746,7 @@ function KnowledgeSourceMap({
       kind: "topic",
       label: "Product Specs",
       metric: `${diagnostics?.product_model_count ?? 0} models`,
+      icon: "workflow",
       status: "Covered",
       detail: "Model, SKU, compatibility, and availability questions draw from product references.",
       detailItems: ["Product reference", "FAQ wording", "Evidence cards in approvals"],
@@ -1746,6 +1758,7 @@ function KnowledgeSourceMap({
       kind: "topic",
       label: "Strap & Material Safety",
       metric: `${diagnostics?.strap_item_count ?? 0} strap SKUs`,
+      icon: "workflow",
       status: "Covered",
       detail: "Safety, BPA, strap material, and compatibility answers are grounded in product data.",
       detailItems: ["Product reference", "FAQ document", "Health-conscious buyer signals"],
@@ -1757,6 +1770,7 @@ function KnowledgeSourceMap({
       kind: "topic",
       label: "Engraving",
       metric: `${diagnostics?.engraving_rate_card_count ?? 0} rules`,
+      icon: "workflow",
       status: "Authoritative",
       detail: "Pricing and hard limits come from the engraving rate card.",
       detailItems: ["Rate card priority source", "Gift workflow", "Character and timing rules"],
@@ -1768,6 +1782,7 @@ function KnowledgeSourceMap({
       kind: "topic",
       label: "Servicing",
       metric: `${diagnostics?.servicing_rate_card_count ?? 0} rules`,
+      icon: "workflow",
       status: "Authoritative",
       detail: "Service scope, pricing, and turnaround rely on the servicing rate card.",
       detailItems: ["Rate card priority source", "Escalation-sensitive answers", "CS review when stale"],
@@ -1779,6 +1794,7 @@ function KnowledgeSourceMap({
       kind: "topic",
       label: "Shipping & Order Policy",
       metric: `${shippingGaps.length} live gaps`,
+      icon: "workflow",
       status: shippingGaps.length > 0 ? "Needs CS" : "Monitored",
       detail: "Order-specific or missing policy cases route to CS rather than static KB answers.",
       detailItems: ["SOP routing", "FAQ policy wording", "Shopify lookup later"],
@@ -1790,6 +1806,7 @@ function KnowledgeSourceMap({
       kind: "topic",
       label: "Sustainability Signals",
       metric: `${sustainabilityGaps.length} live gaps`,
+      icon: "workflow",
       status: sustainabilityGaps.length > 0 ? "Emerging" : "Monitored",
       detail: "Carbon-neutral, vegan, recycling, and material questions become product-page and KB signals.",
       detailItems: sustainabilityGaps.length
@@ -1803,6 +1820,7 @@ function KnowledgeSourceMap({
       kind: "output",
       label: "Evidence-backed Replies",
       metric: `${customerVisibleReplies.length} released`,
+      icon: "database",
       status: "Human-gated",
       detail: "Supported answers become customer-visible only after approval or verified CS resolution.",
       detailItems: ["Approval queue", "Customer Chat response", "Grounding guardrails"],
@@ -1814,6 +1832,7 @@ function KnowledgeSourceMap({
       kind: "output",
       label: "CS Gap Routing",
       metric: `${gapRecords.length} records`,
+      icon: "database",
       status: "No hallucination",
       detail: "Unsupported or order-specific questions are routed for human confirmation.",
       detailItems: ["Missing knowledge", "Owner and priority", "Evidence attempted"],
@@ -1825,6 +1844,7 @@ function KnowledgeSourceMap({
       kind: "output",
       label: "Draft KB Updates",
       metric: `${pendingKbDrafts.length} pending`,
+      icon: "database",
       status: "Reviewable",
       detail: "Resolved gaps can become draft FAQ entries when the answer is reusable.",
       detailItems: pendingKbDrafts.length
@@ -1836,7 +1856,7 @@ function KnowledgeSourceMap({
   ];
 
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
-  const selectedNode = nodeById.get(selectedNodeId) ?? nodes[0];
+  const selectedNode = selectedNodeId ? nodeById.get(selectedNodeId) ?? null : null;
   const connections: KBMapConnection[] = [
     { from: "faq", to: "product_specs" },
     { from: "faq", to: "shipping_policy" },
@@ -1860,13 +1880,12 @@ function KnowledgeSourceMap({
     <section className="kb-source-map" aria-labelledby="kb-source-map-heading">
       <div className="kb-source-map-header">
         <div>
-          <span className="deliverable-eyebrow">KB Topology</span>
-          <h2 id="kb-source-map-heading">What the knowledge base is made of</h2>
+          <h2 id="kb-source-map-heading" className="deliverable-eyebrow">KB Topology</h2>
         </div>
         <span className="status-pill">{datasetOverview.sources.filter((source) => source.exists).length} sources ready</span>
       </div>
-      <div className="kb-source-map-layout">
-        <div className="kb-source-map-canvas">
+      <div className="kb-source-map-canvas">
+        <div className="kb-source-map-plane">
           <svg aria-hidden="true" viewBox="0 0 1080 690">
             {connections.map((connection) => {
               const from = nodeById.get(connection.from);
@@ -1890,31 +1909,59 @@ function KnowledgeSourceMap({
           </svg>
           {nodes.map((node) => (
             <button
-              className={`kb-map-node ${node.kind} ${selectedNode.id === node.id ? "active" : ""}`}
+              className={`kb-map-node ${node.kind} ${selectedNode?.id === node.id ? "active" : ""}`}
               key={node.id}
               onClick={() => setSelectedNodeId(node.id)}
               style={{ left: node.x, top: node.y }}
               type="button"
             >
-              <span>{formatLabel(node.kind)}</span>
-              <strong>{node.label}</strong>
-              <small>{node.metric}</small>
+              {node.kind === "output" ? null : (
+                <span className="kb-map-node-icon">
+                  <KBMapIcon icon={node.icon} />
+                </span>
+              )}
+              <span className="kb-map-node-kind">{formatLabel(node.kind)}</span>
+              <strong className="kb-map-node-label">{node.label}</strong>
+              <small className="kb-map-node-metric">{node.metric}</small>
             </button>
           ))}
         </div>
-        <aside className={`kb-map-detail-panel ${selectedNode.kind}`}>
-          <span>{formatLabel(selectedNode.kind)} · {selectedNode.status}</span>
-          <h3>{selectedNode.label}</h3>
-          <p>{selectedNode.detail}</p>
-          <div className="kb-map-detail-list">
-            {selectedNode.detailItems.map((item, index) => (
-              <div key={`${selectedNode.id}-${item}-${index}`}>{item}</div>
-            ))}
-          </div>
-        </aside>
+        {selectedNode ? (
+          <aside className={`kb-map-detail-popover ${selectedNode.kind}`}>
+            <button
+              aria-label="Close KB node details"
+              className="kb-map-popover-close"
+              onClick={() => setSelectedNodeId(null)}
+              type="button"
+            >
+              <X aria-hidden="true" />
+            </button>
+            <span>{formatLabel(selectedNode.kind)} · {selectedNode.status}</span>
+            <h3>{selectedNode.label}</h3>
+            <p>{selectedNode.detail}</p>
+            <div className="kb-map-detail-list">
+              {selectedNode.detailItems.map((item, index) => (
+                <div key={`${selectedNode.id}-${item}-${index}`}>{item}</div>
+              ))}
+            </div>
+          </aside>
+        ) : null}
       </div>
     </section>
   );
+}
+
+function KBMapIcon({ icon }: { icon: KBMapNode["icon"] }) {
+  if (icon === "table") {
+    return <Table2 aria-hidden="true" />;
+  }
+  if (icon === "database") {
+    return <Database aria-hidden="true" />;
+  }
+  if (icon === "workflow") {
+    return <Workflow aria-hidden="true" />;
+  }
+  return <FileText aria-hidden="true" />;
 }
 
 function SystemTabView({
