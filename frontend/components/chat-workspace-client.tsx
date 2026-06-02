@@ -681,6 +681,26 @@ export function ChatWorkspaceClient({
     }
   }
 
+  async function suggestGapResolutions() {
+    if (!selectedCsGap) {
+      return;
+    }
+    setLoadingAction("suggest-resolutions");
+    setStatusMessage("");
+    try {
+      const record = await fetchJson<AdhocEnquiryRecord>(
+        `/api/enquiries/${selectedCsGap.enquiry_id}/suggest-resolutions`,
+        { method: "POST" },
+      );
+      setEnquiries((current) => upsertRecord(current, record));
+      setSelectedGapId(record.enquiry_id);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Resolution suggestions failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
   async function closeGap() {
     if (!selectedCsGap) {
       return;
@@ -896,6 +916,7 @@ export function ChatWorkspaceClient({
           onGapResolutionChange={setGapResolution}
           onResolveGap={resolveGap}
           onSelect={setSelectedGapId}
+          onSuggestResolutions={suggestGapResolutions}
           selectedGap={selectedCsGap}
         />
       ) : null}
@@ -1477,6 +1498,7 @@ function CsQueueTabView({
   onGapResolutionChange,
   onResolveGap,
   onSelect,
+  onSuggestResolutions,
   selectedGap,
 }: {
   gapNote: string;
@@ -1489,8 +1511,13 @@ function CsQueueTabView({
   onGapResolutionChange: (value: string) => void;
   onResolveGap: () => void;
   onSelect: (id: string) => void;
+  onSuggestResolutions: () => void;
   selectedGap: AdhocEnquiryRecord | null;
 }) {
+  const resolutionSuggestions = selectedGap?.gap_state?.resolution_suggestions ?? [];
+  const canSuggestResolutions = selectedGap?.gap_state?.status === "needs_resolution";
+  const isSuggestingResolutions = loadingAction === "suggest-resolutions";
+
   return (
     <section className="workspace-view queue-view cs-queue-view" aria-labelledby="cs-heading">
       <QueueList emptyLabel="No unresolved demo gaps yet." items={gapQueue} selectedId={selectedGap?.enquiry_id ?? ""} title="CS Queue" onSelect={onSelect} />
@@ -1507,7 +1534,45 @@ function CsQueueTabView({
                 evidences={selectedGap.retrieval.evidence}
               />
             </div>
-            <label className="field-stack"><span>Verified Resolution</span><textarea onChange={(event) => onGapResolutionChange(event.target.value)} value={gapResolution} /></label>
+            <label className="field-stack">
+              <span className="field-stack-header">
+                <span>Verified Resolution</span>
+                {selectedGap.gap_state.status === "needs_resolution" ? (
+                  <button
+                    className="inline-ai-action"
+                    disabled={loadingAction !== null || !canSuggestResolutions}
+                    onClick={onSuggestResolutions}
+                    type="button"
+                  >
+                    {isSuggestingResolutions ? <span aria-hidden="true" className="inline-loading-dot" /> : null}
+                    Suggest resolutions
+                  </button>
+                ) : null}
+              </span>
+              <textarea onChange={(event) => onGapResolutionChange(event.target.value)} value={gapResolution} />
+            </label>
+            {resolutionSuggestions.length > 0 && selectedGap.gap_state.status === "needs_resolution" ? (
+              <div className="cs-draft-options" aria-label="Suggested verified resolutions">
+                {resolutionSuggestions.map((suggestion) => (
+                  <article className="cs-draft-card" key={suggestion.suggestion_id}>
+                    <div className="cs-draft-card-header">
+                      <strong>{suggestion.label}</strong>
+                      <span>{formatLabel(suggestion.suggestion_type)}</span>
+                    </div>
+                    <p>{suggestion.suggested_resolution}</p>
+                    <em>{suggestion.rationale}</em>
+                    <button
+                      className="primary-action"
+                      disabled={loadingAction !== null}
+                      onClick={() => onGapResolutionChange(suggestion.suggested_resolution)}
+                      type="button"
+                    >
+                      Use as Resolution
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : null}
             <label className="field-stack"><span>Resolution Note</span><input onChange={(event) => onGapNoteChange(event.target.value)} placeholder="Optional CS note" value={gapNote} /></label>
             <div className="action-row">
               {selectedGap.gap_state.status === "needs_resolution" ? (

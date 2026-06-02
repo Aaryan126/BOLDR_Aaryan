@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import re
+import json
 from collections import Counter
 from datetime import UTC, datetime
 
+from app.core.config import get_settings
 from app.intelligence.classifier import classify_ticket
+from app.intelligence.ai_provider import AIProviderError, FPTGLMProvider
 from app.intelligence.drafting import generate_ticket_draft
-from app.models.ai import KBDraftOutput
+from app.intelligence.structured_outputs import StructuredOutputError, parse_structured_output
+from app.models.ai import ChatMessage, KBDraftOutput
 from app.models.classification import RequiredPersona
 from app.models.dataset import TicketRecord
 from app.models.drafting import DraftApproval
@@ -15,6 +19,8 @@ from app.models.enquiry import (
     AdhocEnquiryRecord,
     AdhocEnquiryRequest,
     AdhocGapState,
+    CSResolutionSuggestion,
+    CSResolutionSuggestionOutput,
     EnquiryApprovalRequest,
     EnquiryGapResolutionRequest,
     EnquiryKBReviewRequest,
@@ -204,6 +210,29 @@ def resolve_enquiry_gap(
             "updated_at": _now_iso(),
             "gap_state": gap_state,
             "customer_visible_response": human_resolution,
+        }
+    )
+    _ENQUIRIES[record.enquiry_id] = updated
+    return updated
+
+
+def generate_enquiry_gap_resolution_suggestions(enquiry_id: str) -> AdhocEnquiryRecord | None:
+    record = get_enquiry(enquiry_id)
+    if record is None:
+        return None
+    if record.gap_state is None:
+        raise EnquiryTransitionError("This enquiry does not have a CS gap to suggest from.")
+    if record.gap_state.status != "needs_resolution":
+        raise EnquiryTransitionError("Resolution suggestions are only available before resolving a CS gap.")
+
+    suggestions = _compose_ai_resolution_suggestions(record) or _build_cs_resolution_suggestions(record)
+    gap_state = record.gap_state.model_copy(
+        update={"resolution_suggestions": suggestions}
+    )
+    updated = record.model_copy(
+        update={
+            "updated_at": _now_iso(),
+            "gap_state": gap_state,
         }
     )
     _ENQUIRIES[record.enquiry_id] = updated
@@ -409,6 +438,144 @@ def _build_gap_state(classification, retrieval, draft) -> AdhocGapState:
         product_page_update_needed=product_page_update_needed,
         marketing_signal=marketing_signal,
     )
+
+
+def _build_cs_resolution_suggestions(record: AdhocEnquiryRecord) -> list[CSResolutionSuggestion]:
+    if record.gap_state is None:
+        return []
+
+    owner = record.gap_state.owner
+    unsupported = ", ".join(record.retrieval.unsupported_terms)
+    unsupported_sentence = (
+        f" I also do not want to make an unsupported claim about {unsupported}."
+        if unsupported
+        else ""
+    )
+
+    return [
+        CSResolutionSuggestion(
+            suggestion_id="attempted_answer",
+            suggestion_type="attempted_answer",
+            label="Attempted Answer",
+            suggested_resolution=(
+                "Thanks for checking with us. I do not want to confirm something we have not "
+                f"verified yet.{unsupported_sentence} I have flagged this with our team so we "
+                "can confirm the correct answer before giving you a definitive response."
+            ),
+            rationale=f"Best-effort customer-facing response based on attempted evidence and confirmation needed from {owner}.",
+        ),
+        CSResolutionSuggestion(
+            suggestion_id="customer_wording",
+            suggestion_type="customer_wording",
+            label="Customer Wording",
+            suggested_resolution=(
+                "Thanks for your question. This is not clearly covered in our current support "
+                "sources, so we are treating it as a knowledge gap rather than guessing. "
+                "Our team will verify the policy or product detail and update you with the "
+                "confirmed answer."
+            ),
+            rationale="General customer-ready response that explains the gap without internal process language.",
+        ),
+    ]
+
+
+def _compose_ai_resolution_suggestions(record: AdhocEnquiryRecord) -> list[CSResolutionSuggestion] | None:
+    settings = get_settings()
+    if not settings.ai_live_enabled or not settings.fpt_ai_api_key or record.gap_state is None:
+        return None
+
+    prompt_payload = {
+        "schema": CSResolutionSuggestionOutput.model_json_schema(),
+        "ticket": {
+            "ticket_id": record.enquiry_id,
+            "customer_question": record.ticket.message_body,
+            "intent": record.classification.intent,
+            "persona": record.classification.persona,
+            "answerability": record.classification.answerability,
+            "routing_reason": record.classification.routing_reason,
+            "operational_tags": record.classification.operational_tags,
+        },
+        "gap": {
+            "theme": record.gap_state.gap_theme,
+            "missing_knowledge": record.gap_state.missing_knowledge,
+            "owner": record.gap_state.owner,
+            "suggested_next_action": record.gap_state.suggested_next_action,
+        },
+        "retrieval": {
+            "sufficient_evidence": record.retrieval.sufficient_evidence,
+            "insufficiency_reason": record.retrieval.insufficiency_reason,
+            "unsupported_terms": record.retrieval.unsupported_terms,
+            "evidence": [
+                {
+                    "source_file": evidence.source_file,
+                    "section_title": evidence.section_title,
+                    "supports_answer": evidence.supports_answer,
+                    "excerpt": evidence.excerpt,
+                }
+                for evidence in record.retrieval.evidence[:5]
+            ],
+        },
+    }
+    messages = [
+        ChatMessage(
+            role="system",
+            content=(
+                "You generate two customer-facing draft responses for a BOLDR CS rep to "
+                "insert into a Verified Resolution field and edit before sending. Return only "
+                "valid JSON matching the schema. The first suggestion must be an Attempted Answer "
+                "based on the attempted evidence and must not overclaim. The second must be "
+                "Customer Wording for the safe 'we do not know yet / we are checking' response. "
+                "suggested_resolution must be customer-facing text only. Do not include internal "
+                "instructions such as route to CS, assign an "
+                "owner, evidence attempted, local sources, unsupported terms, or policy gap. "
+                "Do not invent product, shipping, sustainability, warranty, order, or servicing "
+                "facts not supported by the supplied context. If the question appears unrelated "
+                "to BOLDR support, respond with polite clarification or support-scope wording."
+            ),
+        ),
+        ChatMessage(
+            role="user",
+            content=json.dumps(prompt_payload, ensure_ascii=True, indent=2),
+        ),
+    ]
+
+    provider = FPTGLMProvider(
+        api_key=settings.fpt_ai_api_key,
+        base_url=settings.fpt_ai_base_url,
+        model=settings.glm_model,
+        timeout_seconds=min(settings.ai_timeout_seconds, 8.0),
+        max_retries=0,
+        thinking_enabled=settings.glm_thinking_enabled,
+    )
+    try:
+        response = provider.chat(messages, temperature=0.2, max_tokens=700)
+        output = parse_structured_output(response.content, CSResolutionSuggestionOutput)
+        return _validate_resolution_suggestions(output.suggestions)
+    except (AIProviderError, StructuredOutputError, ValueError):
+        return None
+    finally:
+        provider.close()
+
+
+def _validate_resolution_suggestions(
+    suggestions: list[CSResolutionSuggestion],
+) -> list[CSResolutionSuggestion]:
+    if len(suggestions) != 2:
+        raise ValueError("Expected exactly two CS resolution suggestions.")
+    forbidden_phrases = [
+        "route to",
+        "assign an owner",
+        "local cs sources",
+        "attempted evidence",
+        "unsupported terms",
+        "policy gap",
+        "knowledge gap",
+    ]
+    for suggestion in suggestions:
+        text = suggestion.suggested_resolution.lower()
+        if any(phrase in text for phrase in forbidden_phrases):
+            raise ValueError("CS resolution suggestion included internal workflow language.")
+    return suggestions
 
 
 def _build_trace(classification, retrieval, draft, source_refs: list[str], answerable: bool) -> list[TraceEvent]:

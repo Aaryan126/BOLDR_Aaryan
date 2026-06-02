@@ -31,6 +31,7 @@ DemoGapStatus = Literal[
     "approved",
     "rejected",
 ]
+CSResolutionSuggestionType = Literal["attempted_answer", "customer_wording"]
 
 
 class TraceEvent(BaseModel):
@@ -75,6 +76,18 @@ class EnquiryKBReviewRequest(BaseModel):
     reviewer_note: str | None = None
 
 
+class CSResolutionSuggestion(BaseModel):
+    suggestion_id: str
+    suggestion_type: CSResolutionSuggestionType
+    label: str
+    suggested_resolution: str
+    rationale: str
+
+
+class CSResolutionSuggestionOutput(BaseModel):
+    suggestions: list[CSResolutionSuggestion] = Field(min_length=2, max_length=2)
+
+
 class AdhocGapState(BaseModel):
     status: DemoGapStatus
     gap_theme: str
@@ -86,6 +99,7 @@ class AdhocGapState(BaseModel):
     marketing_signal: bool
     human_resolution: str | None = None
     reviewer_note: str | None = None
+    resolution_suggestions: list[CSResolutionSuggestion] = Field(default_factory=list)
     kb_draft: KBDraftOutput | None = None
     kb_review_note: str | None = None
     kb_reviewed_at: str | None = None

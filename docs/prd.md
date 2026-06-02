@@ -100,7 +100,7 @@ The system must create a repeatable intelligence loop:
 - Every ad-hoc enquiry shows a visible processing trace: reading, persona classification, knowledge search, evidence review, answerability check, and draft-or-route decision.
 - Answerable questions create a draft that waits in Approvals until a human approves, edits, or rejects it.
 - Unsupported questions create CS Queue items with missing knowledge, owner, priority, evidence attempted, and next action.
-- Human CS resolution releases the verified answer back to Customer Chat, then asks the agent whether to draft a reusable KB entry or close the one-off case without KB work.
+- CS Queue can generate two grounded resolution suggestions from the customer question, attempted evidence, missing knowledge, and owner: an attempted answer based on attempted evidence, and a customer-wording fallback for the "we are checking / not confirmed yet" response. When live AI is enabled, this uses GLM through the configured provider with structured output validation; offline and test runs use deterministic customer-safe fallback wording. The agent can insert one into Verified Resolution, edit it, then resolve the gap before drafting a reusable KB entry or closing the one-off case without KB work.
 - KB drafts require approve/reject review before they appear as approved additions.
 - Knowledge Base includes a clickable source-map visualization showing source files, covered support topics, and outputs such as evidence-backed replies, CS gap routing, draft KB updates, and approved additions.
 - Marketing Intel combines existing theme radar data with live demo enquiry signals and explicitly maps those signals to the five required personas.
@@ -847,7 +847,7 @@ The Phase 12 frontend consumes these APIs in a single interactive workbench:
 
 - inbox list with search, filters, and batch processing
 - ticket review with customer message, routing tags, editable draft, evidence, guardrails, and review actions
-- knowledge gap queue with verified resolution, FAQ draft generation, suggested FAQ section, product-page update flags, gap metrics, generated FAQ preview, and FAQ approve/reject review gates
+- knowledge gap queue with verified resolution, two editable resolution suggestions, FAQ draft generation, suggested FAQ section, product-page update flags, gap metrics, generated FAQ preview, and FAQ approve/reject review gates
 - weekly theme clustering with frequency, trend, dominant persona, source ticket IDs, product-page gap flags, KB actions, and marketing actions
 - monthly marketing intelligence brief headed by the exact required product-page-gap question, with persona tags, evidence ticket IDs, campaign angles, and recommended page updates
 - embedded external benchmark summary with three highlighted themes, internal ticket counts, external mention counts, market-wide/BOLDR-specific classification, confidence, recommendation, and public source links

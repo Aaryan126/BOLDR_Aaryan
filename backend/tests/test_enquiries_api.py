@@ -130,6 +130,46 @@ def test_gap_resolution_kb_draft_and_review_transitions() -> None:
     assert reviewed_body["gap_state"]["kb_reviewed_at"]
 
 
+def test_unresolved_gap_can_generate_two_resolution_suggestions() -> None:
+    client = TestClient(create_app())
+    created = client.post(
+        "/api/enquiries",
+        json={"message": "Do you offer carbon-neutral shipping for BOLDR watches?"},
+    ).json()
+    enquiry_id = created["enquiry_id"]
+
+    drafted = client.post(f"/api/enquiries/{enquiry_id}/suggest-resolutions")
+    assert drafted.status_code == 200
+    drafted_body = drafted.json()
+    suggestions = drafted_body["gap_state"]["resolution_suggestions"]
+    assert len(suggestions) == 2
+    assert {
+        suggestion["suggestion_id"] for suggestion in suggestions
+    } == {"attempted_answer", "customer_wording"}
+    assert suggestions[0]["label"] == "Attempted Answer"
+    assert suggestions[1]["label"] == "Customer Wording"
+    assert all("Route to" not in suggestion["suggested_resolution"] for suggestion in suggestions)
+    assert all("Current local CS sources" not in suggestion["suggested_resolution"] for suggestion in suggestions)
+    assert suggestions[0]["suggested_resolution"].startswith("Thanks for checking with us.")
+    assert drafted_body["state"] == "needs_team_confirmation"
+    assert drafted_body["customer_visible_response"] is None
+
+    resolved = client.post(
+        f"/api/enquiries/{enquiry_id}/resolve-gap",
+        json={
+            "human_resolution": suggestions[0]["suggested_resolution"],
+            "reviewer_note": "CS edited and confirmed suggested wording.",
+        },
+    )
+    assert resolved.status_code == 200
+    resolved_body = resolved.json()
+    assert resolved_body["state"] == "gap_resolved"
+    assert resolved_body["gap_state"]["human_resolution"].startswith("Thanks for checking with us.")
+
+    after_resolve = client.post(f"/api/enquiries/{enquiry_id}/suggest-resolutions")
+    assert after_resolve.status_code == 409
+
+
 def test_resolved_gap_can_be_closed_without_kb_draft() -> None:
     client = TestClient(create_app())
     created = client.post(

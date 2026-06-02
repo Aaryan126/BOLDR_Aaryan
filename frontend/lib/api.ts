@@ -573,6 +573,13 @@ export type AdhocGapState = {
   marketing_signal: boolean;
   human_resolution: string | null;
   reviewer_note: string | null;
+  resolution_suggestions: Array<{
+    suggestion_id: string;
+    suggestion_type: "attempted_answer" | "customer_wording";
+    label: string;
+    suggested_resolution: string;
+    rationale: string;
+  }>;
   kb_draft: {
     gap_theme: string;
     faq_section: string;

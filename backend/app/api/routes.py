@@ -66,6 +66,7 @@ from app.services.enquiries import (
     close_enquiry_gap,
     create_enquiry,
     draft_enquiry_kb_entry,
+    generate_enquiry_gap_resolution_suggestions,
     get_enquiry,
     list_enquiries,
     list_prioritized_sample_tickets,
@@ -308,6 +309,17 @@ def adhoc_enquiry_resolve_gap(
 def adhoc_enquiry_close_gap(enquiry_id: str) -> AdhocEnquiryRecord:
     try:
         record = close_enquiry_gap(enquiry_id)
+    except EnquiryTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Enquiry not found: {enquiry_id}")
+    return record
+
+
+@router.post("/api/enquiries/{enquiry_id}/suggest-resolutions", tags=["enquiries"])
+def adhoc_enquiry_suggest_resolutions(enquiry_id: str) -> AdhocEnquiryRecord:
+    try:
+        record = generate_enquiry_gap_resolution_suggestions(enquiry_id)
     except EnquiryTransitionError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     if record is None:

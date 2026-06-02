@@ -6565,6 +6565,53 @@ button {
   margin-top: 20px;
 }
 
+.cs-queue-view .field-stack-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.cs-queue-view .inline-ai-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: #69a8ff;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cs-queue-view .inline-ai-action:hover:not(:disabled) {
+  color: #9cc6ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cs-queue-view .inline-ai-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.cs-queue-view .inline-loading-dot {
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(105, 168, 255, 0.28);
+  border-top-color: #69a8ff;
+  border-radius: 999px;
+  animation: inlineAiSpin 0.75s linear infinite;
+}
+
+@keyframes inlineAiSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .cs-queue-view .field-stack textarea,
 .cs-queue-view .field-stack input {
   border-color: rgba(148, 163, 184, 0.14);
@@ -6589,6 +6636,76 @@ button {
   min-height: 42px;
   border-radius: 10px;
   padding: 0 18px;
+}
+
+.cs-queue-view .ai-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-queue-view .cs-draft-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cs-queue-view .cs-draft-card {
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.055), transparent 48%),
+    color-mix(in srgb, var(--panel-elevated) 68%, transparent);
+  padding: 14px;
+}
+
+.cs-queue-view .cs-draft-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cs-queue-view .cs-draft-card-header strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.cs-queue-view .cs-draft-card-header span {
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  padding: 4px 8px;
+  color: #8fb8ff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cs-queue-view .cs-draft-card p {
+  max-height: 132px;
+  overflow: auto;
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.cs-queue-view .cs-draft-card em {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.cs-queue-view .cs-draft-card .primary-action {
+  width: 100%;
+  min-height: 38px;
 }
 
 /* Knowledge Base color alignment with Customer Chat and Approvals. */
@@ -6978,7 +7095,8 @@ button {
 
   .approvals-view .detail-grid.two,
   .approvals-view .evidence-grid,
-  .cs-queue-view .detail-grid.two {
+  .cs-queue-view .detail-grid.two,
+  .cs-queue-view .cs-draft-options {
     grid-template-columns: 1fr;
   }
 
