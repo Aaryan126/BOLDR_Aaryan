@@ -105,7 +105,11 @@ def test_gap_resolution_kb_draft_and_review_transitions() -> None:
         },
     )
     assert resolved.status_code == 200
-    assert resolved.json()["state"] == "gap_resolved"
+    resolved_body = resolved.json()
+    assert resolved_body["state"] == "gap_resolved"
+    assert resolved_body["customer_visible_response"].startswith(
+        "BOLDR is not currently claiming carbon-neutral shipping."
+    )
 
     drafted = client.post(f"/api/enquiries/{enquiry_id}/draft-kb")
     assert drafted.status_code == 200
@@ -124,6 +128,41 @@ def test_gap_resolution_kb_draft_and_review_transitions() -> None:
     assert reviewed_body["state"] == "kb_approved"
     assert reviewed_body["gap_state"]["status"] == "approved"
     assert reviewed_body["gap_state"]["kb_reviewed_at"]
+
+
+def test_resolved_gap_can_be_closed_without_kb_draft() -> None:
+    client = TestClient(create_app())
+    created = client.post(
+        "/api/enquiries",
+        json={"message": "Do you offer strap recycling for worn out straps?"},
+    ).json()
+    enquiry_id = created["enquiry_id"]
+
+    premature = client.post(f"/api/enquiries/{enquiry_id}/close-gap")
+    assert premature.status_code == 409
+
+    resolved = client.post(
+        f"/api/enquiries/{enquiry_id}/resolve-gap",
+        json={
+            "human_resolution": (
+                "BOLDR does not currently offer a strap recycling take-back program."
+            ),
+            "reviewer_note": "Confirmed by CS lead.",
+        },
+    )
+    assert resolved.status_code == 200
+
+    closed = client.post(f"/api/enquiries/{enquiry_id}/close-gap")
+    assert closed.status_code == 200
+    closed_body = closed.json()
+    assert closed_body["state"] == "gap_closed"
+    assert closed_body["gap_state"]["status"] == "closed_without_kb"
+    assert closed_body["customer_visible_response"] == (
+        "BOLDR does not currently offer a strap recycling take-back program."
+    )
+
+    drafted_after_close = client.post(f"/api/enquiries/{enquiry_id}/draft-kb")
+    assert drafted_after_close.status_code == 409
 
 
 def test_sample_ticket_path_uses_dataset_ticket() -> None:

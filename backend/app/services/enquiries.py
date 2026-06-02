@@ -189,10 +189,11 @@ def resolve_enquiry_gap(
     if record.gap_state is None:
         raise EnquiryTransitionError("This enquiry does not have a CS gap to resolve.")
 
+    human_resolution = _normalize_sentence(request.human_resolution)
     gap_state = record.gap_state.model_copy(
         update={
             "status": "resolved_needs_kb_draft",
-            "human_resolution": _normalize_sentence(request.human_resolution),
+            "human_resolution": human_resolution,
             "owner": request.owner or record.gap_state.owner,
             "reviewer_note": request.reviewer_note,
         }
@@ -200,6 +201,30 @@ def resolve_enquiry_gap(
     updated = record.model_copy(
         update={
             "state": "gap_resolved",
+            "updated_at": _now_iso(),
+            "gap_state": gap_state,
+            "customer_visible_response": human_resolution,
+        }
+    )
+    _ENQUIRIES[record.enquiry_id] = updated
+    return updated
+
+
+def close_enquiry_gap(enquiry_id: str) -> AdhocEnquiryRecord | None:
+    record = get_enquiry(enquiry_id)
+    if record is None:
+        return None
+    if record.gap_state is None:
+        raise EnquiryTransitionError("This enquiry does not have a CS gap to close.")
+    if not record.gap_state.human_resolution:
+        raise EnquiryTransitionError("Resolve the CS gap before closing it.")
+    if record.gap_state.status != "resolved_needs_kb_draft":
+        raise EnquiryTransitionError("Only a resolved CS gap can be closed without a KB draft.")
+
+    gap_state = record.gap_state.model_copy(update={"status": "closed_without_kb"})
+    updated = record.model_copy(
+        update={
+            "state": "gap_closed",
             "updated_at": _now_iso(),
             "gap_state": gap_state,
         }
@@ -218,6 +243,8 @@ def draft_enquiry_kb_entry(enquiry_id: str) -> AdhocEnquiryRecord | None:
         raise EnquiryTransitionError(
             "A verified CS resolution is required before drafting a KB entry."
         )
+    if record.gap_state.status != "resolved_needs_kb_draft":
+        raise EnquiryTransitionError("Only a resolved CS gap can be drafted into a KB entry.")
 
     kb_draft = KBDraftOutput(
         gap_theme=record.gap_state.gap_theme,

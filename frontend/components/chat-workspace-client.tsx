@@ -282,17 +282,30 @@ export function ChatWorkspaceClient({
     [enquiries],
   );
 
-  const gapQueue = useMemo(
+  const gapRecords = useMemo(
     () => enquiries.filter((record) => Boolean(record.gap_state)),
     [enquiries],
+  );
+  const gapQueue = useMemo(
+    () =>
+      gapRecords.filter((record) =>
+        record.gap_state?.status === "needs_resolution" ||
+        record.gap_state?.status === "resolved_needs_kb_draft",
+      ),
+    [gapRecords],
   );
 
   const selectedApproval =
     approvalQueue.find((record) => record.enquiry_id === selectedApprovalId) ??
     approvalQueue[0] ??
     null;
-  const selectedGap =
+  const selectedCsGap =
     gapQueue.find((record) => record.enquiry_id === selectedGapId) ?? gapQueue[0] ?? null;
+  const selectedGap =
+    gapRecords.find((record) => record.enquiry_id === selectedGapId) ??
+    selectedCsGap ??
+    gapRecords[0] ??
+    null;
 
   const diagnostics = datasetOverview.diagnostics;
   const workflowStatus = workflowOverview.statusReport;
@@ -310,23 +323,20 @@ export function ChatWorkspaceClient({
 
   const liveGapThemes = useMemo(() => {
     const counts: Record<string, number> = {};
-    gapQueue.forEach((record) => {
+    gapRecords.forEach((record) => {
       const theme = record.gap_state?.gap_theme ?? "Unclassified gap";
       counts[theme] = (counts[theme] ?? 0) + 1;
     });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [gapQueue]);
+  }, [gapRecords]);
 
-  const approvedKbAdditions = gapQueue.filter(
+  const approvedKbAdditions = gapRecords.filter(
     (record) => record.gap_state?.status === "approved" && record.gap_state.kb_draft,
   );
-  const pendingKbDrafts = gapQueue.filter(
-    (record) =>
-      record.gap_state?.status === "kb_draft_ready" ||
-      record.gap_state?.status === "resolved_needs_kb_draft" ||
-      record.gap_state?.status === "needs_resolution",
+  const pendingKbDrafts = gapRecords.filter(
+    (record) => record.gap_state?.status === "kb_draft_ready",
   );
-  const productPageSignals = gapQueue.filter(
+  const productPageSignals = gapRecords.filter(
     (record) => record.gap_state?.product_page_update_needed,
   );
   const themeClusters = themeRadar?.data ?? [];
@@ -505,10 +515,10 @@ export function ChatWorkspaceClient({
   }, [approvalQueue, selectedApproval]);
 
   useEffect(() => {
-    if (!selectedGap && gapQueue[0]) {
+    if (!selectedCsGap && gapQueue[0]) {
       setSelectedGapId(gapQueue[0].enquiry_id);
     }
-  }, [gapQueue, selectedGap]);
+  }, [gapQueue, selectedCsGap]);
 
   useEffect(() => {
     if (!selectedApproval) {
@@ -622,14 +632,14 @@ export function ChatWorkspaceClient({
   }
 
   async function resolveGap() {
-    if (!selectedGap) {
+    if (!selectedCsGap) {
       return;
     }
     setLoadingAction("resolve-gap");
     setStatusMessage("");
     try {
       const record = await fetchJson<AdhocEnquiryRecord>(
-        `/api/enquiries/${selectedGap.enquiry_id}/resolve-gap`,
+        `/api/enquiries/${selectedCsGap.enquiry_id}/resolve-gap`,
         {
           method: "POST",
           body: JSON.stringify({
@@ -647,20 +657,44 @@ export function ChatWorkspaceClient({
   }
 
   async function draftKbEntry() {
-    if (!selectedGap) {
+    if (!selectedCsGap) {
       return;
     }
     setLoadingAction("draft-kb");
     setStatusMessage("");
     try {
       const record = await fetchJson<AdhocEnquiryRecord>(
-        `/api/enquiries/${selectedGap.enquiry_id}/draft-kb`,
+        `/api/enquiries/${selectedCsGap.enquiry_id}/draft-kb`,
         { method: "POST" },
       );
       setEnquiries((current) => upsertRecord(current, record));
+      setSelectedGapId(record.enquiry_id);
       setActiveTab("kb");
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "KB draft failed.");
+    } finally {
+      setLoadingAction(null);
+    }
+  }
+
+  async function closeGap() {
+    if (!selectedCsGap) {
+      return;
+    }
+    setLoadingAction("close-gap");
+    setStatusMessage("");
+    try {
+      const record = await fetchJson<AdhocEnquiryRecord>(
+        `/api/enquiries/${selectedCsGap.enquiry_id}/close-gap`,
+        { method: "POST" },
+      );
+      setEnquiries((current) => upsertRecord(current, record));
+      const nextGap = gapQueue.find(
+        (gapRecord) => gapRecord.enquiry_id !== record.enquiry_id,
+      );
+      setSelectedGapId(nextGap?.enquiry_id ?? "");
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Gap close failed.");
     } finally {
       setLoadingAction(null);
     }
@@ -852,12 +886,13 @@ export function ChatWorkspaceClient({
           gapQueue={gapQueue}
           gapResolution={gapResolution}
           loadingAction={loadingAction}
+          onCloseGap={closeGap}
           onDraftKbEntry={draftKbEntry}
           onGapNoteChange={setGapNote}
           onGapResolutionChange={setGapResolution}
           onResolveGap={resolveGap}
           onSelect={setSelectedGapId}
-          selectedGap={selectedGap}
+          selectedGap={selectedCsGap}
         />
       ) : null}
 
@@ -866,7 +901,7 @@ export function ChatWorkspaceClient({
           approvedKbAdditions={approvedKbAdditions}
           datasetOverview={datasetOverview}
           diagnostics={diagnostics}
-          gapQueue={gapQueue}
+          gapQueue={gapRecords}
           kbReviewNote={kbReviewNote}
           loadingAction={loadingAction}
           onKbReviewNoteChange={setKbReviewNote}
@@ -1431,6 +1466,7 @@ function CsQueueTabView({
   gapQueue,
   gapResolution,
   loadingAction,
+  onCloseGap,
   onDraftKbEntry,
   onGapNoteChange,
   onGapResolutionChange,
@@ -1442,6 +1478,7 @@ function CsQueueTabView({
   gapQueue: AdhocEnquiryRecord[];
   gapResolution: string;
   loadingAction: string | null;
+  onCloseGap: () => void;
   onDraftKbEntry: () => void;
   onGapNoteChange: (value: string) => void;
   onGapResolutionChange: (value: string) => void;
@@ -1468,8 +1505,14 @@ function CsQueueTabView({
             <label className="field-stack"><span>Verified Resolution</span><textarea onChange={(event) => onGapResolutionChange(event.target.value)} value={gapResolution} /></label>
             <label className="field-stack"><span>Resolution Note</span><input onChange={(event) => onGapNoteChange(event.target.value)} placeholder="Optional CS note" value={gapNote} /></label>
             <div className="action-row">
-              <button className="secondary-action" disabled={loadingAction !== null || gapResolution.trim().length < 3} onClick={onResolveGap} type="button">Resolve Gap</button>
-              <button className="primary-action" disabled={loadingAction !== null || !selectedGap.gap_state.human_resolution} onClick={onDraftKbEntry} type="button">Draft KB Entry</button>
+              {selectedGap.gap_state.status === "needs_resolution" ? (
+                <button className="secondary-action" disabled={loadingAction !== null || gapResolution.trim().length < 3} onClick={onResolveGap} type="button">Resolve Gap</button>
+              ) : (
+                <>
+                  <button className="primary-action" disabled={loadingAction !== null || !selectedGap.gap_state.human_resolution} onClick={onDraftKbEntry} type="button">Draft KB Entry</button>
+                  <button className="secondary-action" disabled={loadingAction !== null} onClick={onCloseGap} type="button">Done</button>
+                </>
+              )}
             </div>
           </>
         ) : (
@@ -1909,6 +1952,12 @@ function renderInlineMarkdown(value: string) {
 }
 
 function customerStateMessage(record: AdhocEnquiryRecord) {
+  if (record.state === "gap_resolved") {
+    return "Verified CS response released. The team can decide whether this should become reusable KB content.";
+  }
+  if (record.state === "gap_closed") {
+    return "Verified CS response released. This case was closed without a KB draft.";
+  }
   if (record.customer_visible_response) {
     return "Approved answer released to the customer chat.";
   }
@@ -1920,9 +1969,6 @@ function customerStateMessage(record: AdhocEnquiryRecord) {
   }
   if (record.state === "needs_team_confirmation") {
     return "This needs team confirmation. A CS ticket has been created.";
-  }
-  if (record.state === "gap_resolved") {
-    return "Team confirmation added. A KB draft can now be generated.";
   }
   if (record.state === "kb_draft_ready") {
     return "Verified resolution converted into a KB draft for approval.";

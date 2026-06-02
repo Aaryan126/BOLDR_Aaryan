@@ -18,6 +18,7 @@ EnquiryState = Literal[
     "rejected",
     "needs_team_confirmation",
     "gap_resolved",
+    "gap_closed",
     "kb_draft_ready",
     "kb_approved",
     "kb_rejected",
@@ -25,6 +26,7 @@ EnquiryState = Literal[
 DemoGapStatus = Literal[
     "needs_resolution",
     "resolved_needs_kb_draft",
+    "closed_without_kb",
     "kb_draft_ready",
     "approved",
     "rejected",

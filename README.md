@@ -116,7 +116,7 @@ Before each run, click `Reset demo` in Customer Chat.
    ```text
    Do you offer carbon-neutral shipping or a strap recycling take-back program?
    ```
-5. Open `CS Queue`, add a verified resolution, and draft a KB entry.
+5. Open `CS Queue`, add a verified resolution, then either draft a KB entry or close the one-off case.
 6. Open `Marketing Intel` to see theme clustering, monthly brief, and external benchmark.
 7. Open `System Details` to see source proof and evaluation metrics.
 

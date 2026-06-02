@@ -551,6 +551,7 @@ export type EnquiryState =
   | "rejected"
   | "needs_team_confirmation"
   | "gap_resolved"
+  | "gap_closed"
   | "kb_draft_ready"
   | "kb_approved"
   | "kb_rejected";
@@ -559,6 +560,7 @@ export type AdhocGapState = {
   status:
     | "needs_resolution"
     | "resolved_needs_kb_draft"
+    | "closed_without_kb"
     | "kb_draft_ready"
     | "approved"
     | "rejected";
