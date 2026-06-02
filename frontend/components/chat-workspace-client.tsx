@@ -722,7 +722,7 @@ export function ChatWorkspaceClient({
         },
       );
       setEnquiries((current) => upsertRecord(current, record));
-      if (status === "rejected" && selectedGapId === record.enquiry_id) {
+      if (selectedGapId === record.enquiry_id) {
         const nextDraft = pendingKbDrafts.find(
           (draftRecord) => draftRecord.enquiry_id !== record.enquiry_id,
         );
@@ -1572,7 +1572,7 @@ function KnowledgeBaseTabView({
           {approvedKbAdditions.length === 0 ? <EmptyPanel title="No approved additions yet" text="Approved KB drafts will collect here." /> : approvedKbAdditions.map((record) => <KBDraftCard key={record.enquiry_id} record={record} />)}
         </section>
       </div>
-      {selectedGap?.gap_state?.kb_draft ? (
+      {selectedGap?.gap_state?.status === "kb_draft_ready" && selectedGap.gap_state.kb_draft ? (
         <div className="kb-review-panel">
           <PanelHeading eyebrow={selectedGap.enquiry_id} title={selectedGap.gap_state.kb_draft.question} status={formatLabel(selectedGap.gap_state.status)} />
           <p>{selectedGap.gap_state.kb_draft.answer}</p>
