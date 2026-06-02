@@ -35,7 +35,8 @@ flowchart LR
     Draft --> Approval["Human approval queue"]
     Approval --> Send["Approved reply can be sent"]
     Decision -->|"No"| Gap["Create knowledge-gap record"]
-    Gap --> CS["CS team adds verified resolution"]
+    Gap --> Suggest["Suggest two CS resolution options"]
+    Suggest --> CS["CS team edits verified resolution"]
     CS --> FAQ["Draft FAQ or product-page update"]
     FAQ --> Review["Human review before publishing"]
     Retrieve --> Themes["Theme clustering"]
@@ -167,13 +168,16 @@ If current sources do not prove the claim, the system creates a CS queue item wi
 - Suggested next action.
 - A safe holding response when appropriate.
 
-After a human adds a verified resolution, SignalDesk can draft a new FAQ entry.
+In the CS Queue, the support user can click `Suggest resolutions` beside the Verified Resolution field. SignalDesk returns two editable options: an attempted answer based on attempted evidence and a safer customer-wording fallback for cases where the team should say it is checking or cannot confirm yet. The user can insert one option, edit it, and then resolve the gap.
+
+After a human confirms the verified resolution, SignalDesk can draft a new FAQ entry.
 
 ```mermaid
 flowchart TB
     GapQuestion["Unsupported customer question"] --> GapRecord["Knowledge-gap record"]
     GapRecord --> Owner["Assigned CS or ops owner"]
-    Owner --> Resolution["Human verified resolution"]
+    Owner --> Suggestions["Two editable resolution suggestions"]
+    Suggestions --> Resolution["Human edited verified resolution"]
     Resolution --> FAQDraft["Draft FAQ entry"]
     FAQDraft --> Review{"Human review"}
     Review -->|"Approve"| PublishReady["Ready for FAQ or product-page update"]
@@ -253,6 +257,7 @@ For safety and repeatability:
 - The AI provider sits behind a replaceable adapter.
 - The local demo and automated tests pass without live GLM/FPT credentials.
 - `AI_LIVE_ENABLED=false` is the safe default.
+- When live credentials are enabled, GLM can draft supported replies and generate the two CS resolution suggestions. The CS helper uses a short live-AI attempt and deterministic customer-safe fallback wording if the provider is slow or unavailable.
 - If live credentials are unavailable, the submission should state that the provider adapter is implemented and tests use fake or validated structured outputs.
 
 The workflow was developed with OpenCode, an open-source coding agent.
@@ -271,7 +276,7 @@ Use this sequence to understand the workflow quickly:
    ```text
    Do you offer carbon-neutral shipping or a strap recycling take-back program?
    ```
-5. Resolve the CS queue item with a verified resolution.
+5. In CS Queue, optionally use `Suggest resolutions`, insert one of the two options, edit it, and resolve the gap.
 6. Draft a KB entry and review it.
 7. Open Marketing Intel to view theme clustering, monthly brief, and external benchmark.
 8. Open System Details to view evaluation metrics and source proof.

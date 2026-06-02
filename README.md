@@ -9,6 +9,7 @@ BOLDR SignalDesk is an approval-first customer intelligence workflow for the BOL
 - Searches BOLDR's local FAQ, product reference, SOP, and rate-card sources.
 - Drafts customer replies only when evidence supports the answer.
 - Routes missing, risky, or order-specific questions to human review.
+- Offers two editable CS resolution suggestions for unresolved gaps: an attempted answer from attempted evidence and a safe customer-wording fallback.
 - Creates draft FAQ entries after a human adds a verified resolution.
 - Clusters recurring themes and generates monthly marketing intelligence.
 - Benchmarks internal themes against curated external watch-market signals.
@@ -116,9 +117,10 @@ Before each run, click `Reset demo` in Customer Chat.
    ```text
    Do you offer carbon-neutral shipping or a strap recycling take-back program?
    ```
-5. Open `CS Queue`, add a verified resolution, then either draft a KB entry or close the one-off case.
-6. Open `Marketing Intel` to see theme clustering, monthly brief, and external benchmark.
-7. Open `System Details` to see source proof and evaluation metrics.
+5. Open `CS Queue`, use `Suggest resolutions` beside `Verified Resolution` if helpful, edit the chosen wording, then resolve the gap.
+6. Draft a KB entry or close the one-off case.
+7. Open `Marketing Intel` to see theme clustering, monthly brief, and external benchmark.
+8. Open `System Details` to see source proof and evaluation metrics.
 
 Demo reset is also available through the API:
 
@@ -171,7 +173,8 @@ Live GLM/FPT credentials are optional for review. If credentials are unavailable
 - The GLM-5.1/FPT provider adapter is implemented.
 - The model is behind a replaceable provider interface.
 - Tests use fake or validated structured outputs and do not require live credentials.
-- When `AI_LIVE_ENABLED=true` and credentials are present, the workflow can use GLM-5.1 for structured, evidence-grounded drafting.
+- When `AI_LIVE_ENABLED=true` and credentials are present, the workflow can use GLM-5.1 for structured, evidence-grounded reply drafting and CS resolution suggestions.
+- CS resolution suggestions use a short live-AI attempt and fall back to deterministic customer-safe wording if the provider is unavailable or slow.
 
 ## Troubleshooting
 
