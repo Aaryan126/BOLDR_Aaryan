@@ -102,6 +102,7 @@ The system must create a repeatable intelligence loop:
 - Unsupported questions create CS Queue items with missing knowledge, owner, priority, evidence attempted, and next action.
 - Human CS resolution releases the verified answer back to Customer Chat, then asks the agent whether to draft a reusable KB entry or close the one-off case without KB work.
 - KB drafts require approve/reject review before they appear as approved additions.
+- Knowledge Base includes a clickable source-map visualization showing source files, covered support topics, and outputs such as evidence-backed replies, CS gap routing, draft KB updates, and approved additions.
 - Marketing Intel combines existing theme radar data with live demo enquiry signals and explicitly maps those signals to the five required personas.
 - Marketing Intel now presents the two brief deliverables as explicit first-class sections: Weekly Theme Clustering and the monthly "What customers are asking that is not on your product pages" brief.
 - Marketing Intel also surfaces the bonus External Sentiment Benchmarking output with a visible shortcut, source-group counts, market-wide signal count, benchmark cards, signal strength, source diversity, rationale, validation steps, and source links so judges do not need to open System Details.

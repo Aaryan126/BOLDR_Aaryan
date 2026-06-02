@@ -935,6 +935,7 @@ Deliverables:
 - GLM/FPT draft composer for answerable ad-hoc chat when `AI_LIVE_ENABLED=true`, with schema validation, default human-review blocking on invalid model output, and an explicit public-demo deterministic fallback setting. Complete.
 - Structured product-price answer handling for named watch models and variants. Complete.
 - Dark BOLDR-styled tabbed workspace with Customer Chat, Approvals, CS Queue, Knowledge Base, Marketing Intel, and System Details. Complete.
+- Clickable Knowledge Base source map showing source files, support-topic coverage, evidence-backed outputs, CS gap routing, and generated KB additions. Complete.
 - Existing implementation dashboard preserved under System Details. Complete.
 - Browser smoke path for answerable approval, knowledge gap resolution, KB drafting/review, and desktop/mobile overflow. Complete.
 - Seeded demo data state.
@@ -982,7 +983,7 @@ Phase record:
 ```text
 Phase: 13A Chat-first demo workflow
 Status: Implemented; awaiting human demo-owner verification
-Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval queue, CS queue with verified response release and close-without-KB path, KB draft/review surface, live demo marketing signals, evidence-grounded GLM draft composer when live AI is enabled, public-demo deterministic fallback after live provider failure, structured product-price answers, dev-port CORS fallback
+Implemented: /api/enquiries in-memory workflow, chat-first workspace, approval queue, CS queue with verified response release and close-without-KB path, KB draft/review surface, clickable KB source map, live demo marketing signals, evidence-grounded GLM draft composer when live AI is enabled, public-demo deterministic fallback after live provider failure, structured product-price answers, dev-port CORS fallback
 Default tests run: backend pytest, frontend lint/typecheck/build, git diff check, Playwright desktop/mobile smoke on answerable and gap flows
 Human verification completed: Pending
 Known issues: Demo enquiry state is in-memory and resets with backend restart; strict live GLM mode blocks invalid model output for human review, while public demo deployments can enable deterministic fallback after a live provider timeout or validation failure

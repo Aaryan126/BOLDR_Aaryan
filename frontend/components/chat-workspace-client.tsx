@@ -901,6 +901,7 @@ export function ChatWorkspaceClient({
           approvedKbAdditions={approvedKbAdditions}
           datasetOverview={datasetOverview}
           diagnostics={diagnostics}
+          enquiries={enquiries}
           gapQueue={gapRecords}
           kbReviewNote={kbReviewNote}
           loadingAction={loadingAction}
@@ -1527,6 +1528,7 @@ function KnowledgeBaseTabView({
   approvedKbAdditions,
   datasetOverview,
   diagnostics,
+  enquiries,
   gapQueue,
   kbReviewNote,
   loadingAction,
@@ -1539,6 +1541,7 @@ function KnowledgeBaseTabView({
   approvedKbAdditions: AdhocEnquiryRecord[];
   datasetOverview: DatasetOverview;
   diagnostics: DatasetOverview["diagnostics"];
+  enquiries: AdhocEnquiryRecord[];
   gapQueue: AdhocEnquiryRecord[];
   kbReviewNote: string;
   loadingAction: string | null;
@@ -1562,6 +1565,13 @@ function KnowledgeBaseTabView({
           {datasetOverview.sources.map((source) => <span key={source.file_name}>{source.file_name} - {source.exists ? "ready" : "missing"}</span>)}
         </div>
       </div>
+      <KnowledgeSourceMap
+        approvedKbAdditions={approvedKbAdditions}
+        datasetOverview={datasetOverview}
+        enquiries={enquiries}
+        gapRecords={gapQueue}
+        pendingKbDrafts={pendingKbDrafts}
+      />
       <div className="kb-columns">
         <section className="kb-column">
           <h2>Draft Queue</h2>
@@ -1583,6 +1593,326 @@ function KnowledgeBaseTabView({
           </div>
         </div>
       ) : null}
+    </section>
+  );
+}
+
+type KBMapNodeKind = "source" | "topic" | "output";
+
+type KBMapNode = {
+  id: string;
+  kind: KBMapNodeKind;
+  label: string;
+  metric: string;
+  status: string;
+  detail: string;
+  detailItems: string[];
+  x: number;
+  y: number;
+};
+
+type KBMapConnection = {
+  from: string;
+  to: string;
+  tone?: "normal" | "warning" | "success";
+};
+
+function KnowledgeSourceMap({
+  approvedKbAdditions,
+  datasetOverview,
+  enquiries,
+  gapRecords,
+  pendingKbDrafts,
+}: {
+  approvedKbAdditions: AdhocEnquiryRecord[];
+  datasetOverview: DatasetOverview;
+  enquiries: AdhocEnquiryRecord[];
+  gapRecords: AdhocEnquiryRecord[];
+  pendingKbDrafts: AdhocEnquiryRecord[];
+}) {
+  const [selectedNodeId, setSelectedNodeId] = useState("faq");
+  const diagnostics = datasetOverview.diagnostics;
+  const sourceByTerms = (...terms: string[]) =>
+    datasetOverview.sources.find((source) => {
+      const haystack = `${source.file_name} ${source.source_type} ${source.role}`.toLowerCase();
+      return terms.every((term) => haystack.includes(term.toLowerCase()));
+    });
+  const sourceDetail = (source: DatasetOverview["sources"][number] | undefined) => ({
+    status: source?.exists ? "Ready" : "Missing",
+    items: [
+      source?.file_name ?? "Generated demo artifact",
+      source?.role ? formatLabel(source.role) : "Built from approved CS resolutions",
+      source?.source_type ? formatLabel(source.source_type) : "Demo knowledge addition",
+    ],
+  });
+  const gapText = (record: AdhocEnquiryRecord) =>
+    `${record.ticket.subject} ${record.ticket.message_body} ${record.gap_state?.gap_theme ?? ""}`.toLowerCase();
+  const shippingGaps = gapRecords.filter((record) =>
+    /shipping|order|delivery|courier|tracking|refund/.test(gapText(record)),
+  );
+  const sustainabilityGaps = gapRecords.filter((record) =>
+    /carbon|neutral|recycling|sustainability|vegan|material/.test(gapText(record)),
+  );
+  const customerVisibleReplies = enquiries.filter((record) => record.customer_visible_response);
+
+  const faqSource = sourceDetail(sourceByTerms("faq"));
+  const productSource = sourceDetail(sourceByTerms("product", "reference"));
+  const sopSource = sourceDetail(sourceByTerms("sop"));
+  const engravingSource = sourceDetail(sourceByTerms("engraving"));
+  const servicingSource = sourceDetail(sourceByTerms("servicing"));
+
+  const nodes: KBMapNode[] = [
+    {
+      id: "faq",
+      kind: "source",
+      label: "FAQ Document",
+      metric: `${diagnostics?.faq_entry_count ?? 0} entries`,
+      status: faqSource.status,
+      detail: "Customer-facing wording and existing support coverage.",
+      detailItems: faqSource.items,
+      x: 70,
+      y: 48,
+    },
+    {
+      id: "product_ref",
+      kind: "source",
+      label: "Product Reference",
+      metric: `${diagnostics?.product_model_count ?? 0} models`,
+      status: productSource.status,
+      detail: "Authoritative product specs, safety, strap, and availability facts.",
+      detailItems: productSource.items,
+      x: 70,
+      y: 146,
+    },
+    {
+      id: "sop",
+      kind: "source",
+      label: "Support SOP",
+      metric: `${diagnostics?.document_chunk_count ?? 0} chunks`,
+      status: sopSource.status,
+      detail: "Routing, tone, escalation, and approval process guidance.",
+      detailItems: sopSource.items,
+      x: 70,
+      y: 244,
+    },
+    {
+      id: "engraving_rate",
+      kind: "source",
+      label: "Engraving Rate Card",
+      metric: `${diagnostics?.engraving_rate_card_count ?? 0} rules`,
+      status: engravingSource.status,
+      detail: "Authoritative engraving prices, character limits, and turnaround rules.",
+      detailItems: engravingSource.items,
+      x: 70,
+      y: 342,
+    },
+    {
+      id: "servicing_rate",
+      kind: "source",
+      label: "Servicing Rate Card",
+      metric: `${diagnostics?.servicing_rate_card_count ?? 0} rules`,
+      status: servicingSource.status,
+      detail: "Authoritative servicing scope, price, and turnaround rules.",
+      detailItems: servicingSource.items,
+      x: 70,
+      y: 440,
+    },
+    {
+      id: "approved_additions",
+      kind: "source",
+      label: "Approved Additions",
+      metric: `${approvedKbAdditions.length} approved`,
+      status: approvedKbAdditions.length > 0 ? "Growing" : "Empty",
+      detail: "Human-approved FAQ additions generated from resolved CS gaps.",
+      detailItems: approvedKbAdditions.length
+        ? approvedKbAdditions.map((record) => record.gap_state?.kb_draft?.question ?? record.ticket.subject).slice(0, 3)
+        : ["No approved demo additions yet"],
+      x: 70,
+      y: 538,
+    },
+    {
+      id: "product_specs",
+      kind: "topic",
+      label: "Product Specs",
+      metric: `${diagnostics?.product_model_count ?? 0} models`,
+      status: "Covered",
+      detail: "Model, SKU, compatibility, and availability questions draw from product references.",
+      detailItems: ["Product reference", "FAQ wording", "Evidence cards in approvals"],
+      x: 440,
+      y: 76,
+    },
+    {
+      id: "strap_materials",
+      kind: "topic",
+      label: "Strap & Material Safety",
+      metric: `${diagnostics?.strap_item_count ?? 0} strap SKUs`,
+      status: "Covered",
+      detail: "Safety, BPA, strap material, and compatibility answers are grounded in product data.",
+      detailItems: ["Product reference", "FAQ document", "Health-conscious buyer signals"],
+      x: 440,
+      y: 176,
+    },
+    {
+      id: "engraving",
+      kind: "topic",
+      label: "Engraving",
+      metric: `${diagnostics?.engraving_rate_card_count ?? 0} rules`,
+      status: "Authoritative",
+      detail: "Pricing and hard limits come from the engraving rate card.",
+      detailItems: ["Rate card priority source", "Gift workflow", "Character and timing rules"],
+      x: 440,
+      y: 276,
+    },
+    {
+      id: "servicing",
+      kind: "topic",
+      label: "Servicing",
+      metric: `${diagnostics?.servicing_rate_card_count ?? 0} rules`,
+      status: "Authoritative",
+      detail: "Service scope, pricing, and turnaround rely on the servicing rate card.",
+      detailItems: ["Rate card priority source", "Escalation-sensitive answers", "CS review when stale"],
+      x: 440,
+      y: 376,
+    },
+    {
+      id: "shipping_policy",
+      kind: "topic",
+      label: "Shipping & Order Policy",
+      metric: `${shippingGaps.length} live gaps`,
+      status: shippingGaps.length > 0 ? "Needs CS" : "Monitored",
+      detail: "Order-specific or missing policy cases route to CS rather than static KB answers.",
+      detailItems: ["SOP routing", "FAQ policy wording", "Shopify lookup later"],
+      x: 440,
+      y: 476,
+    },
+    {
+      id: "sustainability",
+      kind: "topic",
+      label: "Sustainability Signals",
+      metric: `${sustainabilityGaps.length} live gaps`,
+      status: sustainabilityGaps.length > 0 ? "Emerging" : "Monitored",
+      detail: "Carbon-neutral, vegan, recycling, and material questions become product-page and KB signals.",
+      detailItems: sustainabilityGaps.length
+        ? sustainabilityGaps.map((record) => record.gap_state?.gap_theme ?? record.ticket.subject).slice(0, 3)
+        : ["No live sustainability gap in this session"],
+      x: 440,
+      y: 576,
+    },
+    {
+      id: "reply_output",
+      kind: "output",
+      label: "Evidence-backed Replies",
+      metric: `${customerVisibleReplies.length} released`,
+      status: "Human-gated",
+      detail: "Supported answers become customer-visible only after approval or verified CS resolution.",
+      detailItems: ["Approval queue", "Customer Chat response", "Grounding guardrails"],
+      x: 810,
+      y: 124,
+    },
+    {
+      id: "gap_output",
+      kind: "output",
+      label: "CS Gap Routing",
+      metric: `${gapRecords.length} records`,
+      status: "No hallucination",
+      detail: "Unsupported or order-specific questions are routed for human confirmation.",
+      detailItems: ["Missing knowledge", "Owner and priority", "Evidence attempted"],
+      x: 810,
+      y: 284,
+    },
+    {
+      id: "draft_output",
+      kind: "output",
+      label: "Draft KB Updates",
+      metric: `${pendingKbDrafts.length} pending`,
+      status: "Reviewable",
+      detail: "Resolved gaps can become draft FAQ entries when the answer is reusable.",
+      detailItems: pendingKbDrafts.length
+        ? pendingKbDrafts.map((record) => record.gap_state?.kb_draft?.question ?? record.ticket.subject).slice(0, 3)
+        : ["No pending KB drafts"],
+      x: 810,
+      y: 444,
+    },
+  ];
+
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const selectedNode = nodeById.get(selectedNodeId) ?? nodes[0];
+  const connections: KBMapConnection[] = [
+    { from: "faq", to: "product_specs" },
+    { from: "faq", to: "shipping_policy" },
+    { from: "product_ref", to: "product_specs" },
+    { from: "product_ref", to: "strap_materials" },
+    { from: "product_ref", to: "sustainability" },
+    { from: "sop", to: "shipping_policy", tone: "warning" },
+    { from: "sop", to: "gap_output", tone: "warning" },
+    { from: "engraving_rate", to: "engraving" },
+    { from: "servicing_rate", to: "servicing" },
+    { from: "approved_additions", to: "sustainability", tone: "success" },
+    { from: "product_specs", to: "reply_output" },
+    { from: "strap_materials", to: "reply_output" },
+    { from: "engraving", to: "reply_output" },
+    { from: "servicing", to: "reply_output" },
+    { from: "shipping_policy", to: "gap_output", tone: "warning" },
+    { from: "sustainability", to: "draft_output", tone: "success" },
+  ];
+
+  return (
+    <section className="kb-source-map" aria-labelledby="kb-source-map-heading">
+      <div className="kb-source-map-header">
+        <div>
+          <span className="deliverable-eyebrow">KB Topology</span>
+          <h2 id="kb-source-map-heading">What the knowledge base is made of</h2>
+        </div>
+        <span className="status-pill">{datasetOverview.sources.filter((source) => source.exists).length} sources ready</span>
+      </div>
+      <div className="kb-source-map-layout">
+        <div className="kb-source-map-canvas">
+          <svg aria-hidden="true" viewBox="0 0 1080 690">
+            {connections.map((connection) => {
+              const from = nodeById.get(connection.from);
+              const to = nodeById.get(connection.to);
+              if (!from || !to) {
+                return null;
+              }
+              const fromX = from.x + 260;
+              const fromY = from.y + 35;
+              const toX = to.x;
+              const toY = to.y + 35;
+              const path = `M ${fromX} ${fromY} C ${fromX + 90} ${fromY}, ${toX - 90} ${toY}, ${toX} ${toY}`;
+              return (
+                <path
+                  className={`kb-source-line ${connection.tone ?? "normal"}`}
+                  d={path}
+                  key={`${connection.from}-${connection.to}`}
+                />
+              );
+            })}
+          </svg>
+          {nodes.map((node) => (
+            <button
+              className={`kb-map-node ${node.kind} ${selectedNode.id === node.id ? "active" : ""}`}
+              key={node.id}
+              onClick={() => setSelectedNodeId(node.id)}
+              style={{ left: node.x, top: node.y }}
+              type="button"
+            >
+              <span>{formatLabel(node.kind)}</span>
+              <strong>{node.label}</strong>
+              <small>{node.metric}</small>
+            </button>
+          ))}
+        </div>
+        <aside className={`kb-map-detail-panel ${selectedNode.kind}`}>
+          <span>{formatLabel(selectedNode.kind)} · {selectedNode.status}</span>
+          <h3>{selectedNode.label}</h3>
+          <p>{selectedNode.detail}</p>
+          <div className="kb-map-detail-list">
+            {selectedNode.detailItems.map((item, index) => (
+              <div key={`${selectedNode.id}-${item}-${index}`}>{item}</div>
+            ))}
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
