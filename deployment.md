@@ -7,21 +7,22 @@ This project deploys as two public services:
 
 Railway remains documented as a standby option, but the active deployment is Cloud Run because Railway project creation was blocked by a platform outage during setup.
 
-The GLM/FPT key must only live on the backend as a private environment variable. Do not put it in `.env.example`, frontend files, Vercel `NEXT_PUBLIC_*` variables, or chat messages.
+The GLM/FPT key must only live in private server-side environment variables. Do not put it in `.env.example`, client-side frontend files, Vercel `NEXT_PUBLIC_*` variables, or chat messages. The active deployment uses a server-side Vercel proxy endpoint for FPT requests, so Vercel may hold encrypted private proxy credentials that are never exposed to the browser.
 
 ## Current Status
 
-As of 2026-06-01, both services are deployed and publicly reachable:
+As of 2026-06-02, both services are deployed and publicly reachable:
 
 ```text
-Frontend latest deployment URL: https://frontend-nv3t8uhkf-aaryans-projects-4b4bf5a5.vercel.app
+Frontend latest deployment URL: https://frontend-a5ocis372-aaryans-projects-4b4bf5a5.vercel.app
 Frontend stable alias URL: https://frontend-ashy-mu-csvn2wfbmk.vercel.app
 Vercel scope/project: aaryans-projects-4b4bf5a5/frontend
 Vercel project id: prj_3NbOBbM9aCGpWDR28npmmc0w9Ay8
 
 Backend Cloud Run URL: https://boldr-signaldesk-backend-734024547221.us-central1.run.app
 Backend Cloud Run service: boldr-signaldesk-backend
-Backend Cloud Run revision: boldr-signaldesk-backend-00014-nft
+Backend image revision: boldr-signaldesk-backend-00015-ss2
+Backend active revision after CORS update: boldr-signaldesk-backend-00016-kcm
 ```
 
 The Vercel production environment variable is set:
@@ -34,11 +35,12 @@ Verified checks:
 
 ```text
 Frontend stable alias returns HTTP 200.
-Frontend renders "Backend connected".
+Frontend latest deployment URL returns HTTP 200.
 Cloud Run /health returns {"status":"ok"}.
 Cloud Run /api/ai/status reports configured=true and live_enabled=true.
 Cloud Run CORS allows the Vercel stable alias and latest deployment URL.
-Public /api/enquiries creates an awaiting_approval draft with evidence and guardrails.
+Public /api/enquiries creates a CS gap ticket with evidence and guardrails.
+Public /api/enquiries/{id}/suggest-resolutions returns exactly two CS suggestions: Attempted Answer and Customer Wording.
 Public /api/evaluation/review-trends returns the human-review trend contract.
 ```
 
@@ -126,19 +128,19 @@ Cloud Run environment:
 ```env
 APP_ENV=production
 AI_PROVIDER=fpt_ai_factory
-FPT_AI_BASE_URL=https://mkp-api.fptcloud.com/v1
+FPT_AI_BASE_URL=https://frontend-ashy-mu-csvn2wfbmk.vercel.app/api/fpt-ai
 GLM_MODEL=GLM-5.1
 GLM_THINKING_ENABLED=false
-AI_TIMEOUT_SECONDS=8
+AI_TIMEOUT_SECONDS=120
 AI_MAX_RETRIES=0
 AI_LIVE_ENABLED=true
-AI_DETERMINISTIC_FALLBACK_ENABLED=true
+AI_DETERMINISTIC_FALLBACK_ENABLED=false
 PUBLIC_ENQUIRY_RATE_LIMIT=30
 PUBLIC_ENQUIRY_RATE_WINDOW_SECONDS=60
-CORS_ORIGINS=https://frontend-maxnme6gr-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ashy-mu-csvn2wfbmk.vercel.app,https://frontend-3ayl1gnv0-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ksu5tl0io-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-d4x93694s-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-jidepyk7z-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-acdaa9zi1-aaryans-projects-4b4bf5a5.vercel.app
+CORS_ORIGINS=https://frontend-a5ocis372-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-gzikmnkz3-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-maxnme6gr-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ashy-mu-csvn2wfbmk.vercel.app,https://frontend-3ayl1gnv0-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ksu5tl0io-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-d4x93694s-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-jidepyk7z-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-acdaa9zi1-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-nv3t8uhkf-aaryans-projects-4b4bf5a5.vercel.app
 ```
 
-The short timeout and fallback setting are deliberate for public judging: the backend still calls private GLM/FPT first, but if GLM is slow or returns invalid structured JSON, the app uses the existing deterministic evidence-grounded draft and keeps the human approval gate.
+The production backend calls GLM/FPT through the Vercel proxy endpoint and keeps deterministic fallback disabled. If the provider is slow or returns invalid structured JSON, the workflow preserves the human review gate rather than auto-publishing unsupported customer claims.
 
 Cloud Run CLI flow used:
 
@@ -290,7 +292,7 @@ Set this Vercel environment variable:
 NEXT_PUBLIC_API_BASE_URL=https://boldr-signaldesk-backend-734024547221.us-central1.run.app
 ```
 
-Only the backend URL should be public. Do not add `FPT_AI_API_KEY` or any GLM credential to Vercel.
+Only the backend URL should be public through `NEXT_PUBLIC_API_BASE_URL`. Do not add `FPT_AI_API_KEY`, proxy tokens, or any GLM credential as a `NEXT_PUBLIC_*` variable. If the server-side FPT proxy route is used, keep its credentials encrypted in Vercel production environment variables only.
 
 CLI option if the backend URL changes:
 
