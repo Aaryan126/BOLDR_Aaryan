@@ -11,10 +11,10 @@ The GLM/FPT key must only live in private server-side environment variables. Do 
 
 ## Current Status
 
-As of 2026-06-02, both services are deployed and publicly reachable:
+As of 2026-06-03, both services are deployed and publicly reachable:
 
 ```text
-Frontend latest deployment URL: https://frontend-r31246gum-aaryans-projects-4b4bf5a5.vercel.app
+Frontend latest deployment URL: https://frontend-q3z6te6no-aaryans-projects-4b4bf5a5.vercel.app
 Frontend stable alias URL: https://frontend-ashy-mu-csvn2wfbmk.vercel.app
 Vercel scope/project: aaryans-projects-4b4bf5a5/frontend
 Vercel project id: prj_3NbOBbM9aCGpWDR28npmmc0w9Ay8
@@ -22,7 +22,7 @@ Vercel project id: prj_3NbOBbM9aCGpWDR28npmmc0w9Ay8
 Backend Cloud Run URL: https://boldr-signaldesk-backend-734024547221.us-central1.run.app
 Backend Cloud Run service: boldr-signaldesk-backend
 Backend image revision: boldr-signaldesk-backend-00015-ss2
-Backend active revision after CORS update: boldr-signaldesk-backend-00017-rqp
+Backend active revision after CORS update: boldr-signaldesk-backend-00018-vzc
 ```
 
 The Vercel production environment variable is set:
@@ -137,7 +137,7 @@ AI_LIVE_ENABLED=true
 AI_DETERMINISTIC_FALLBACK_ENABLED=false
 PUBLIC_ENQUIRY_RATE_LIMIT=30
 PUBLIC_ENQUIRY_RATE_WINDOW_SECONDS=60
-CORS_ORIGINS=https://frontend-r31246gum-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-a5ocis372-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-gzikmnkz3-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-maxnme6gr-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ashy-mu-csvn2wfbmk.vercel.app,https://frontend-3ayl1gnv0-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ksu5tl0io-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-d4x93694s-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-jidepyk7z-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-acdaa9zi1-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-nv3t8uhkf-aaryans-projects-4b4bf5a5.vercel.app
+CORS_ORIGINS=https://frontend-q3z6te6no-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-r31246gum-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-a5ocis372-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-gzikmnkz3-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-maxnme6gr-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ashy-mu-csvn2wfbmk.vercel.app,https://frontend-3ayl1gnv0-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-ksu5tl0io-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-d4x93694s-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-jidepyk7z-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-acdaa9zi1-aaryans-projects-4b4bf5a5.vercel.app,https://frontend-nv3t8uhkf-aaryans-projects-4b4bf5a5.vercel.app
 ```
 
 The production backend calls GLM/FPT through the Vercel proxy endpoint and keeps deterministic fallback disabled. If the provider is slow or returns invalid structured JSON, the workflow preserves the human review gate rather than auto-publishing unsupported customer claims.

@@ -31,7 +31,7 @@ From the BOLDR challenge brief:
 
 One sentence:
 
-> BOLDR SignalDesk turns every customer support email into either an evidence-backed draft, a safe knowledge-gap workflow, or a product and marketing signal.
+> BOLDR SignalDesk turns every customer support enquiry into either an evidence-backed draft, a safe knowledge-gap workflow, or a product and marketing signal.
 
 The story should not be "I built an AI chatbot." The story should be:
 
@@ -322,7 +322,7 @@ Embedded video content:
 1. Return to Customer Chat.
 2. Enter:
    ```text
-   What luminous material do you use on the dial? Is it Super-LumiNova? Is it safe?
+   What luminous material do you use on the dial? Is it safe?
    ```
 3. Show answerability blocked.
 4. Go to CS Queue.
