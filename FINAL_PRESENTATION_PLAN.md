@@ -272,7 +272,31 @@ Human review
 
 Voiceover:
 
-> First, an answerable materials-safety ticket. SignalDesk identifies the customer as a Health-Conscious Buyer, searches the BOLDR sources, and creates a draft only because the answer is supported. The important part is the approval queue: this does not auto-send. The CS team sees the evidence, edits if needed, and approves before the customer ever receives it.
+> Here is the first outcome: an answerable customer enquiry.
+>
+> A customer asks whether BOLDR FKM straps are BPA-free and safe for kids.
+>
+> SignalDesk classifies the question as materials and safety, then maps it to the Health-Conscious Buyer persona.
+>
+> Now it searches BOLDR's actual knowledge sources and checks whether the answer is supported.
+>
+> That gate is important. If the evidence is not there, the system should not guess.
+>
+> In this case, the evidence is strong enough, so SignalDesk drafts a reply in BOLDR's tone.
+>
+> But it still does not send the answer automatically.
+>
+> The draft moves into the approval queue, with the supporting evidence attached, so the CS team can review, edit, approve, or reject it.
+>
+> So the first outcome is simple: faster support, but still source-backed and human-approved.
+
+Pause points:
+
+- After "answerable customer enquiry."
+- After the customer question.
+- After "Health-Conscious Buyer persona."
+- After "the system should not guess."
+- Before "But it still does not send..."
 
 What the judges should understand:
 
@@ -298,14 +322,14 @@ Embedded video content:
 1. Return to Customer Chat.
 2. Enter:
    ```text
-   Do you offer carbon-neutral shipping or a strap recycling take-back program?
+   What luminous material do you use on the dial? Is it Super-LumiNova? Is it safe?
    ```
 3. Show answerability blocked.
 4. Go to CS Queue.
 5. Show missing knowledge, owner, priority, attempted evidence.
 6. Paste verified resolution:
    ```text
-   BOLDR is not currently claiming carbon-neutral shipping or a strap recycling take-back program. We use recyclable packaging where available and are assessing carrier offset and strap take-back options.
+   BOLDR uses non-radioactive luminous material on supported watch dials and hands. If a specific model uses Super-LumiNova, it should be mentioned in the product specifications for the specific model. The luminous material is intended for normal watch use and should not pose a safety concern when the watch is used as designed.
    ```
 7. Resolve gap.
 8. Click Draft KB Entry.
@@ -314,26 +338,38 @@ Embedded video content:
 On-slide overlay text:
 
 ```text
-Outcome 2: Unsupported claim -> gap, not hallucination
+Outcome 2: Detailed product question -> knowledge gap and FAQ draft
 ```
 
 Add three small badges:
 
 ```text
-Blocked claim
-CS owner
+Luminous material
+Product-team verification
 FAQ draft
 ```
 
 Voiceover:
 
-> Now a gap case. Carbon-neutral shipping and strap take-back are exactly the kind of sustainability claims a brand should not invent. SignalDesk blocks the unsupported answer, creates a CS queue item with the missing fact and owner, and waits for a human resolution. Once the team verifies the answer, it drafts a reusable FAQ entry, again for review. This is the self-improving part of the system.
+> The second outcome is a knowledge gap, but it is a normal one for a premium watch brand.
+>
+> A customer asks what luminous material BOLDR uses on the dial, whether it is Super-LumiNova, and whether it is safe.
+>
+> SignalDesk can answer the general safety point, but it should not name a specific compound like Super-LumiNova unless that is verified for the model.
+>
+> So it does not guess.
+>
+> It creates a knowledge gap, shows the missing fact, and makes clear that the product team should verify the detail.
+>
+> Once a human adds the verified handling rule, SignalDesk drafts a reusable FAQ entry.
+>
+> That means one detailed product question becomes better product knowledge for the next customer.
 
 What the judges should understand:
 
 - Responsible AI is built into the workflow, not added as a disclaimer.
 - The KB improves after human resolution.
-- The system prevents repeated future work.
+- The system prevents repeated future work and improves product-page clarity.
 
 ### 2:55-3:45 - Slide 6: Demo Part 3 - Marketing Intelligence
 
@@ -518,12 +554,12 @@ Video should show:
 Layout:
 
 - Embedded video full-width.
-- Top-left overlay: "Outcome 2: Gap, not hallucination."
+- Top-left overlay: "Outcome 2: Product detail gap to FAQ draft."
 - Bottom badge row.
 
 Video should show:
 
-- Carbon-neutral / strap recycling question.
+- Luminous-material safety question.
 - Blocked answerability.
 - CS queue.
 - Verified resolution.
@@ -639,13 +675,13 @@ Are BOLDR FKM straps BPA-free and safe for kids?
 ```
 
 ```text
-Do you offer carbon-neutral shipping or a strap recycling take-back program?
+What luminous material do you use on the dial? Is it Super-LumiNova? Is it safe?
 ```
 
 For the gap resolution, paste:
 
 ```text
-BOLDR is not currently claiming carbon-neutral shipping or a strap recycling take-back program. We use recyclable packaging where available and are assessing carrier offset and strap take-back options.
+BOLDR uses non-radioactive luminous material on supported watch dials and hands. If a specific model uses Super-LumiNova, the team should confirm that from the product specification before naming it. The luminous material is intended for normal watch use and should not pose a safety concern when the watch is used as designed.
 ```
 
 Resolution note:
@@ -979,4 +1015,3 @@ End with:
 ```text
 BOLDR does not just answer customers faster. It learns from what customers keep asking.
 ```
-

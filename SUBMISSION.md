@@ -7,7 +7,7 @@ BOLDR SignalDesk focuses on the core challenge first. It uses the six actual loc
 # Live Demo
 
 - Frontend stable URL: https://frontend-ashy-mu-csvn2wfbmk.vercel.app
-- Frontend latest deployment URL: https://frontend-a5ocis372-aaryans-projects-4b4bf5a5.vercel.app
+- Frontend latest deployment URL: https://frontend-r31246gum-aaryans-projects-4b4bf5a5.vercel.app
 - Backend Cloud Run URL: https://boldr-signaldesk-backend-734024547221.us-central1.run.app
 
 # Workflow Logic And Demonstration
