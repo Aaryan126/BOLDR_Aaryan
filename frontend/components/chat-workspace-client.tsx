@@ -253,6 +253,7 @@ export function ChatWorkspaceClient({
   const [pendingMessage, setPendingMessage] = useState("");
   const [selectedSampleId, setSelectedSampleId] = useState("");
   const [sampleMenuOpen, setSampleMenuOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [selectedApprovalId, setSelectedApprovalId] = useState("");
@@ -267,6 +268,7 @@ export function ChatWorkspaceClient({
   const [kbReviewNote, setKbReviewNote] = useState("");
   const messageStreamRef = useRef<HTMLDivElement | null>(null);
   const sampleMenuRef = useRef<HTMLDivElement | null>(null);
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null);
 
   const sampleOptions = useMemo(
     () =>
@@ -422,6 +424,11 @@ export function ChatWorkspaceClient({
     setKbReviewNote("");
   }
 
+  function openSystemDetails() {
+    setSettingsMenuOpen(false);
+    setActiveTab("system");
+  }
+
   function handleSampleChange(ticketId: string) {
     setSelectedSampleId(ticketId);
     setSampleMenuOpen(false);
@@ -477,6 +484,27 @@ export function ChatWorkspaceClient({
     return () => {
       document.removeEventListener("mousedown", closeSampleMenu);
       document.removeEventListener("keydown", closeSampleMenuOnEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    function closeSettingsMenu(event: MouseEvent) {
+      if (!settingsMenuRef.current?.contains(event.target as Node)) {
+        setSettingsMenuOpen(false);
+      }
+    }
+
+    function closeSettingsMenuOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setSettingsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", closeSettingsMenu);
+    document.addEventListener("keydown", closeSettingsMenuOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeSettingsMenu);
+      document.removeEventListener("keydown", closeSettingsMenuOnEscape);
     };
   }, []);
 
@@ -817,23 +845,52 @@ export function ChatWorkspaceClient({
           >
             <Bot aria-hidden="true" size={14} />
           </div>
-          <button
-            aria-label="Open system details"
-            aria-pressed={activeTab === "system"}
-            className={
-              activeTab === "system"
-                ? "system-details-icon-button active"
-                : "system-details-icon-button"
-            }
-            onClick={() => setActiveTab("system")}
-            title="System Details"
-            type="button"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.5a2 2 0 0 1-1 1.73l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.5a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </button>
+          <div className="settings-menu-wrap" ref={settingsMenuRef}>
+            <button
+              aria-expanded={settingsMenuOpen}
+              aria-haspopup="menu"
+              aria-label="Open settings menu"
+              className={
+                activeTab === "system"
+                  ? "system-details-icon-button active"
+                  : "system-details-icon-button"
+              }
+              onClick={() => setSettingsMenuOpen((open) => !open)}
+              title="Settings"
+              type="button"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.5a2 2 0 0 1-1 1.73l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.5a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+            {settingsMenuOpen ? (
+              <div className="settings-menu" role="menu">
+                <button
+                  className={activeTab === "system" ? "settings-menu-item active" : "settings-menu-item"}
+                  onClick={openSystemDetails}
+                  role="menuitem"
+                  type="button"
+                >
+                  <strong>System details</strong>
+                  <span>Open the system, workflow, and metric panels.</span>
+                </button>
+                <button
+                  className="settings-menu-item danger"
+                  disabled={loadingAction !== null}
+                  onClick={() => {
+                    setSettingsMenuOpen(false);
+                    void resetDemo();
+                  }}
+                  role="menuitem"
+                  type="button"
+                >
+                  <strong>{loadingAction === "reset-demo" ? "Resetting demo" : "Reset demo"}</strong>
+                  <span>Clear the current demo state and start again.</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -871,7 +928,6 @@ export function ChatWorkspaceClient({
               void submitEnquiry();
             }
           }}
-          onResetDemo={() => void resetDemo()}
           onSend={submitEnquiry}
           onStartConversation={startNewConversation}
           pendingMessage={pendingMessage}
@@ -982,7 +1038,6 @@ function ChatTabView({
   onComposerChange,
   onComposerFocus,
   onComposerKeyDown,
-  onResetDemo,
   onSend,
   onStartConversation,
   pendingMessage,
@@ -1001,7 +1056,6 @@ function ChatTabView({
   onComposerChange: (nextValue: string) => void;
   onComposerFocus: () => void;
   onComposerKeyDown: (event: ReactKeyboardEvent<HTMLTextAreaElement>) => void;
-  onResetDemo: () => void;
   onSend: () => void;
   onStartConversation: () => void;
   pendingMessage: string;
@@ -1023,14 +1077,6 @@ function ChatTabView({
           <div className="chat-heading-actions">
             <button className="secondary-action new-conversation-action" onClick={onStartConversation} type="button">
               New conversation
-            </button>
-            <button
-              className="secondary-action new-conversation-action reset-demo-action"
-              disabled={loadingAction !== null}
-              onClick={onResetDemo}
-              type="button"
-            >
-              {loadingAction === "reset-demo" ? "Resetting" : "Reset demo"}
             </button>
           </div>
         </div>
