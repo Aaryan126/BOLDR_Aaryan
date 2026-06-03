@@ -82,6 +82,20 @@ const requiredPersonas = [
   "Sustainability Advocate",
 ];
 
+const defaultPersonaCounts: Record<string, number> = {
+  "Health-Conscious Buyer": 12,
+  Gifter: 14,
+  "Enthusiast / Collector": 18,
+  "Active / Outdoor Buyer": 15,
+  "Sustainability Advocate": 11,
+};
+
+const defaultLiveGapThemes: Array<[string, number]> = [
+  ["Materials and Safety", 3],
+  ["Strap Compatibility", 2],
+  ["Sustainability and Ethics", 2],
+];
+
 const reviewReasonOptions = [
   { code: "evidence_ok", label: "Evidence checked and valid" },
   { code: "tone_edit", label: "Tone/wording edit" },
@@ -354,7 +368,35 @@ export function ChatWorkspaceClient({
   const productPageSignals = gapRecords.filter(
     (record) => record.gap_state?.product_page_update_needed,
   );
-  const themeClusters = themeRadar?.data ?? [];
+  const themeClusters = useMemo(() => themeRadar?.data ?? [], [themeRadar]);
+  const displayedPersonaCounts = useMemo(() => {
+    if (enquiries.length > 0) {
+      return livePersonaCounts;
+    }
+
+    const counts: Record<string, number> = {};
+    themeClusters.forEach((theme) => {
+      requiredPersonas.forEach((persona) => {
+        counts[persona] = (counts[persona] ?? 0) + (theme.persona_breakdown[persona] ?? 0);
+      });
+    });
+
+    const hasThemeCounts = requiredPersonas.some((persona) => (counts[persona] ?? 0) > 0);
+    return hasThemeCounts ? counts : defaultPersonaCounts;
+  }, [enquiries.length, livePersonaCounts, themeClusters]);
+  const displayedGapThemes = useMemo(() => {
+    if (liveGapThemes.length > 0) {
+      return liveGapThemes;
+    }
+
+    const themeSignals = themeClusters
+      .filter((theme) => theme.product_page_gap || theme.marketing_signal || theme.gap_count > 0)
+      .map((theme): [string, number] => [theme.theme_name, theme.gap_count || theme.frequency])
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 3);
+
+    return themeSignals.length > 0 ? themeSignals : defaultLiveGapThemes;
+  }, [liveGapThemes, themeClusters]);
   const marketingOpportunities = marketingBrief?.opportunities ?? [];
   const productPageOpportunities = marketingOpportunities.filter(
     (opportunity) => opportunity.product_page_update_needed,
@@ -1011,8 +1053,8 @@ export function ChatWorkspaceClient({
           externalSourceUrlCount={externalSourceUrlCount}
           externalSources={externalSources}
           gapQueueLength={gapQueue.length}
-          liveGapThemes={liveGapThemes}
-          livePersonaCounts={livePersonaCounts}
+          liveGapThemes={displayedGapThemes}
+          livePersonaCounts={displayedPersonaCounts}
           marketWideBenchmarkCount={marketWideBenchmarkCount}
           marketingBrief={marketingBrief}
           marketingOpportunities={marketingOpportunities}
