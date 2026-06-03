@@ -82,7 +82,7 @@ export function ExternalBenchmarkClient({
   return (
     <section className="external-console" data-testid="phase12-external">
       <PageHeader
-        eyebrow="Phase 12 Bonus"
+        eyebrow="External Market Benchmark"
         title="External Sentiment Benchmarking"
         subtitle="Curated external evidence compared against internal support signals."
         action={

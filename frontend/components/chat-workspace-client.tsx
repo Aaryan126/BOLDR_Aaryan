@@ -209,6 +209,15 @@ function benchmarkToneClass(benchmark: ExternalBenchmark) {
   return "tone-neutral";
 }
 
+function formatExternalSourceLabel(source: ExternalBenchmark["external_sources"][number]) {
+  try {
+    const host = new URL(source.source_url).hostname.replace(/^www\./, "");
+    return `${source.name} - ${host}`;
+  } catch {
+    return source.name;
+  }
+}
+
 function samplePriority(ticket: TicketWorkflowSummary) {
   const text = `${ticket.ticket_id} ${ticket.subject} ${ticket.intent} ${ticket.persona}`.toLowerCase();
   const patterns = [
@@ -1211,8 +1220,8 @@ function MarketingTabView({
 
       <section className="marketing-bonus-shortcut" aria-labelledby="bonus-shortcut-heading">
         <div>
-          <span className="deliverable-eyebrow">Bonus Challenge</span>
-          <h2 id="bonus-shortcut-heading">External benchmark ready for judges</h2>
+          <span className="deliverable-eyebrow">Market Benchmark</span>
+          <h2 id="bonus-shortcut-heading">External signals mapped to customer demand</h2>
           <p>
             Internal support themes are compared with public watch-market sentiment to separate
             BOLDR-specific gaps from market-wide signals.
@@ -1233,7 +1242,7 @@ function MarketingTabView({
           </div>
         </div>
         <a className="secondary-action bonus-jump-link" href="#external-benchmark-section">
-          View External Benchmark
+          View Market Benchmark
         </a>
       </section>
 
@@ -1365,7 +1374,7 @@ function MarketingDeliverables({
 
       <section className="marketing-panel marketing-deliverable-panel external-benchmark-panel" id="external-benchmark-section">
         <div className="deliverable-header">
-          <div><span className="deliverable-eyebrow">Bonus External Benchmark</span><h2>Internal demand vs external watch-market sentiment</h2></div>
+          <div><span className="deliverable-eyebrow">External Market Benchmark</span><h2>Internal demand vs external watch-market sentiment</h2></div>
           <span className="status-pill">{externalSourceTypesSize} source types</span>
         </div>
         <div className="deliverable-meta-grid">
@@ -1381,6 +1390,23 @@ function MarketingDeliverables({
               <h3>{benchmark.theme}</h3>
               <p>{formatBenchmarkClassification(benchmark.classification)}</p>
               <p>{benchmark.recommended_action}</p>
+              <div className="benchmark-source-panel" aria-label={`Sources for ${benchmark.theme}`}>
+                <div className="benchmark-source-panel-heading">
+                  <span>Sources</span>
+                  <strong>{benchmark.external_sources.length}</strong>
+                </div>
+                <div className="benchmark-source-list">
+                  {benchmark.external_sources.map((source) => (
+                    <a href={source.source_url} key={`${benchmark.theme_key}-${source.source_url}`} rel="noreferrer" target="_blank">
+                      <span className="benchmark-source-main">
+                        <strong>{formatExternalSourceLabel(source)}</strong>
+                        <em>{formatLabel(source.source_type)} - {source.mention_count} mentions</em>
+                      </span>
+                      <span className="benchmark-source-arrow" aria-hidden="true">Open</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
             </article>
           ))}
         </div>

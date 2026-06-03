@@ -27,7 +27,7 @@ const navigationItems = [
   { label: "Workbench", href: "#workbench-console" },
   { label: "Theme Radar", href: "#theme-radar" },
   { label: "Quality", href: "#quality-dashboard" },
-  { label: "External Bonus", href: "#external-benchmarking" },
+  { label: "External Market Benchmark", href: "#external-benchmarking" },
 ];
 
 const phaseCards = [

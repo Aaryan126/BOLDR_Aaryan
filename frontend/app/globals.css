@@ -5614,16 +5614,50 @@ button {
 }
 
 .benchmark-persona-row,
-.benchmark-source-list,
 .source-registry-strip {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.benchmark-source-list {
+.benchmark-source-panel {
+  display: grid;
+  gap: 8px;
   border-top: 1px solid var(--border);
   padding-top: 12px;
+}
+
+.benchmark-source-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.benchmark-source-panel-heading span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.benchmark-source-panel-heading strong {
+  display: inline-grid;
+  min-width: 22px;
+  min-height: 22px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.benchmark-source-list {
+  display: grid;
+  gap: 6px;
 }
 
 .external-benchmark-card .benchmark-validation-list {
@@ -5639,12 +5673,14 @@ button {
 
 .benchmark-source-list a,
 .source-registry-strip a {
-  display: inline-flex;
-  width: fit-content;
+  display: flex;
+  width: 100%;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-subtle);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 82%, transparent);
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 760;
@@ -5653,7 +5689,46 @@ button {
 }
 
 .benchmark-source-list a {
-  padding: 5px 8px;
+  padding: 8px 10px;
+}
+
+.benchmark-source-main {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.benchmark-source-main strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.benchmark-source-main em {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+.benchmark-source-arrow {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.benchmark-source-list a:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 
 .source-registry-strip {
