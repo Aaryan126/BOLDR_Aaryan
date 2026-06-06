@@ -60,7 +60,7 @@ Say:
 
 > The problem is not answering one customer question. The problem is forgetting what that question revealed.
 >
-> BOLDR has a three-person support team. Customers ask detailed questions about straps, materials, engraving, servicing, shipping, and product suitability. Today, a staff member can research and answer one enquiry, but the learning often disappears into the support archive.
+> BOLDR has a small support team. Customers ask detailed questions about straps, materials, engraving, servicing, shipping, and product suitability. Today, a staff member can research and answer one enquiry, but the learning often disappears into the support archive.
 >
 > This example is exactly the kind of signal that matters: "Are your watch straps BPA-free and safe for kids?" That can be a support answer today, an FAQ update tomorrow, and a product-page or campaign signal later.
 >
@@ -117,6 +117,8 @@ Live narration over video:
 >
 > In the approval view, the BOLDR employee does not just see a draft. They also see the evidence behind it, including the claim-to-evidence map. That map shows which source supports which claim, so the reviewer can audit the answer quickly instead of trusting a black box.
 >
+> This is also the Responsible AI pattern in the product: evidence first, transparent reasoning, and human approval before anything reaches the customer.
+>
 > The approval decision also becomes workflow telemetry: what was approved, edited, rejected, and which evidence was useful. Over time, that improves the knowledge base, retrieval rules, and review workflow. It is not auto-sending and it is not blindly retraining itself.
 >
 > Outcome one is faster support, but still source-backed and human-approved.
@@ -136,39 +138,41 @@ If the video is too long, cut:
 
 > Over time, that improves the knowledge base, retrieval rules, and review workflow.
 
-## Slide 5 - Outcome 2: Unsupported Claim To Gap Workflow
+## Slide 5 - Outcome 2: Corporate Order Gap Workflow
 
 Target: 2:05-2:55.
 
-Important: use the wording that matches your actual video. If your deck still says sustainability but the video shows luminous material, explain the workflow generically and do not dwell on the slide subtitle.
+Important: use this wording because it matches the actual video question. If the slide title still says "unsupported claim," explain it as an unsupported commercial policy claim: the system should not invent logo-engraving rules, discounts, or bulk-order terms.
 
 Recommended video question:
 
 ```text
-What luminous material do you use on the dial? Is it Super-LumiNova? Is it safe?
+Do you support bulk or corporate orders for BOLDR watches, including logo engravings and possible discounts?
 ```
 
 Recommended verified resolution:
 
 ```text
-BOLDR uses non-radioactive luminous material on supported watch dials and hands. If a specific model uses Super-LumiNova, the team should confirm that from the product specification before naming it. The luminous material is intended for normal watch use and should not pose a safety concern when the watch is used as designed.
+BOLDR can support corporate and bulk order enquiries through a custom quote process. For logo engraving, bulk quantities, and possible discounts, the CS team should collect the requested models, quantity, logo or engraving requirements, delivery destination, deadline, and contact details, then route the enquiry to the appropriate sales or operations owner for confirmation before promising pricing, discounts, or production timelines.
 ```
 
 Video setup before pressing play:
 
-> The second path is the safer one. When a product claim is not fully verified, SignalDesk creates a gap instead of guessing.
+> The second path is the gap workflow. Here, the question is commercially valuable, but the system should not invent pricing, discounts, or logo-engraving rules.
 
 Live narration over video:
 
-> Here the customer asks what luminous material is used on the dial, whether it is Super-LumiNova, and whether it is safe.
+> Here the customer asks whether BOLDR supports bulk or corporate watch orders, including logo engraving and possible discounts.
 >
-> This is a normal premium-watch question, but it has two different risk levels. General safety can be handled carefully. Naming a specific compound like Super-LumiNova should only happen if the model-specific product source confirms it.
+> This is exactly the kind of enquiry that can become revenue, but it is also the kind of enquiry where the system should be careful. A discount, production timeline, or logo-engraving promise should not be invented from a generic FAQ.
 >
-> SignalDesk sees that the evidence is not strong enough for the full claim, so it blocks the direct answer and creates a CS Queue item.
+> SignalDesk sees that the evidence is not strong enough for the full commercial policy, so it blocks the direct answer and creates a CS Queue item.
+>
+> This is Responsible AI in the gap path: the system turns uncertainty into a reviewable task instead of a confident-sounding answer.
 >
 > The value here is not only "no hallucination." The employee gets the missing fact, the attempted evidence, the owner, the priority, and the next action.
 >
-> After a human adds the verified resolution, SignalDesk drafts a reusable FAQ entry. That means a one-off support gap becomes structured product knowledge for the next customer.
+> After a human adds the verified resolution, SignalDesk drafts a reusable FAQ entry. That means one corporate sales enquiry becomes a repeatable workflow: collect the right details, route it to the right owner, and avoid promising terms before they are confirmed.
 
 Pause points:
 
@@ -241,7 +245,7 @@ Say:
 >
 > Revenue signals: the system identifies product-page gaps directly from buyer intent, so support questions can become better watch copy, clearer FAQs, and targeted campaign ideas.
 >
-> The operating cost is realistic for a micro-brand: the pilot estimate is about 37 to 75 dollars per month at 500 enquiries per month, before credits.
+> Cost efficiency is the other important part. The operating cost is realistic for a micro-brand: the pilot estimate is about 37 to 75 dollars per month at 500 enquiries per month, before credits.
 >
 > The measured scorecard supports the reliability story: 70 tickets processed, 95.71 percent answerability accuracy, 100 percent evidence coverage for answerable tickets, and zero unsupported hard-claim guardrail failures.
 >
@@ -283,15 +287,15 @@ Use this if you want a single continuous version.
 >
 > In the approval view, the BOLDR employee does not just see a draft. They also see the evidence behind it, including the claim-to-evidence map. That map shows which source supports which claim, so the reviewer can audit the answer quickly instead of trusting a black box.
 >
-> The approval decision also becomes workflow telemetry: what was approved, edited, rejected, and which evidence was useful. Over time, that improves the knowledge base, retrieval rules, and review workflow. It is not auto-sending and it is not blindly retraining itself. Outcome one is faster support, but still source-backed and human-approved.
+> This is also the Responsible AI pattern in the product: evidence first, transparent reasoning, and human approval before anything reaches the customer. The approval decision also becomes workflow telemetry: what was approved, edited, rejected, and which evidence was useful. Over time, that improves the knowledge base, retrieval rules, and review workflow. It is not auto-sending and it is not blindly retraining itself. Outcome one is faster support, but still source-backed and human-approved.
 >
-> The second path is the safer one. When a product claim is not fully verified, SignalDesk creates a gap instead of guessing.
+> The second path is the gap workflow. Here, the question is commercially valuable, but the system should not invent pricing, discounts, or logo-engraving rules.
 >
-> Here the customer asks what luminous material is used on the dial, whether it is Super-LumiNova, and whether it is safe. This is a normal premium-watch question, but it has two different risk levels. General safety can be handled carefully. Naming a specific compound like Super-LumiNova should only happen if the model-specific product source confirms it.
+> Here the customer asks whether BOLDR supports bulk or corporate watch orders, including logo engraving and possible discounts. This is exactly the kind of enquiry that can become revenue, but it is also the kind of enquiry where the system should be careful. A discount, production timeline, or logo-engraving promise should not be invented from a generic FAQ.
 >
-> SignalDesk sees that the evidence is not strong enough for the full claim, so it blocks the direct answer and creates a CS Queue item. The value here is not only "no hallucination." The employee gets the missing fact, the attempted evidence, the owner, the priority, and the next action.
+> SignalDesk sees that the evidence is not strong enough for the full commercial policy, so it blocks the direct answer and creates a CS Queue item. This is Responsible AI in the gap path: the system turns uncertainty into a reviewable task instead of a confident-sounding answer. The value here is not only "no hallucination." The employee gets the missing fact, the attempted evidence, the owner, the priority, and the next action.
 >
-> After a human adds the verified resolution, SignalDesk drafts a reusable FAQ entry. That means a one-off support gap becomes structured product knowledge for the next customer.
+> After a human adds the verified resolution, SignalDesk drafts a reusable FAQ entry. That means one corporate sales enquiry becomes a repeatable workflow: collect the right details, route it to the right owner, and avoid promising terms before they are confirmed.
 >
 > The third outcome is where this stops being only a support tool. SignalDesk turns repeated enquiries into product and marketing intelligence.
 >
@@ -303,7 +307,7 @@ Use this if you want a single continuous version.
 >
 > The business impact is practical for a small team. Faster support: answerable enquiries become evidence-backed drafts instead of manual lookups. Safer support: unsupported claims are blocked before they are written. Smarter knowledge base: once a human resolves a gap, SignalDesk turns that resolution into a reusable FAQ draft. Revenue signals: the system identifies product-page gaps directly from buyer intent.
 >
-> The operating cost is realistic for a micro-brand: about 37 to 75 dollars per month at 500 enquiries per month, before credits.
+> Cost efficiency is the other important part. The operating cost is realistic for a micro-brand: about 37 to 75 dollars per month at 500 enquiries per month, before credits.
 >
 > The measured scorecard supports the reliability story: 70 tickets processed, 95.71 percent answerability accuracy, 100 percent evidence coverage for answerable tickets, and zero unsupported hard-claim guardrail failures.
 >
@@ -345,4 +349,3 @@ Use this if you want a single continuous version.
 - Avoid overusing "AI." Say "workflow," "evidence gate," "approval queue," and "knowledge gap."
 - If the video desynchronizes, keep narrating the business logic. The slides are enough to recover.
 - End before the timer, even if Slide 8 only shows for two seconds.
-
