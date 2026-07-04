@@ -26,22 +26,23 @@ The primary user is a customer support lead or operations manager at a small e-c
 ## Big Picture Workflow
 
 ```mermaid
+%%{init: {"flowchart": {"htmlLabels": true, "nodeSpacing": 70, "rankSpacing": 90, "curve": "basis"}, "themeVariables": {"fontSize": "16px"}}}%%
 flowchart LR
-    Customer["Customer enquiry"] --> Intake["SignalDesk intake"]
-    Intake --> Classify["Classify intent and buyer persona"]
-    Classify --> Retrieve["Search BOLDR knowledge sources"]
-    Retrieve --> Decision{"Is the answer supported by evidence?"}
-    Decision -->|"Yes"| Draft["Draft customer reply"]
-    Draft --> Approval["Human approval queue"]
-    Approval --> Send["Approved reply can be sent"]
-    Decision -->|"No"| Gap["Create knowledge-gap record"]
-    Gap --> Suggest["Suggest two CS resolution options"]
-    Suggest --> CS["CS team edits verified resolution"]
-    CS --> FAQ["Draft FAQ or product-page update"]
-    FAQ --> Review["Human review before publishing"]
-    Retrieve --> Themes["Theme clustering"]
+    Customer["Customer<br/>enquiry"] --> Intake["SignalDesk<br/>intake"]
+    Intake --> Classify["Classify intent<br/>and buyer persona"]
+    Classify --> Retrieve["Search BOLDR<br/>knowledge sources"]
+    Retrieve --> Decision{"Is the answer<br/>supported by<br/>evidence?"}
+    Decision -->|"Yes"| Draft["Draft<br/>customer reply"]
+    Draft --> Approval["Human<br/>approval queue"]
+    Approval --> Send["Approved reply<br/>can be sent"]
+    Decision -->|"No"| Gap["Create<br/>knowledge-gap<br/>record"]
+    Gap --> Suggest["Suggest two<br/>CS resolution<br/>options"]
+    Suggest --> CS["CS team edits<br/>verified<br/>resolution"]
+    CS --> FAQ["Draft FAQ or<br/>product-page<br/>update"]
+    FAQ --> Review["Human review<br/>before publishing"]
+    Retrieve --> Themes["Theme<br/>clustering"]
     Gap --> Themes
-    Themes --> Marketing["Monthly marketing intelligence"]
+    Themes --> Marketing["Monthly<br/>marketing<br/>intelligence"]
 ```
 
 The key idea is simple: the system only drafts a direct customer answer when the answer is supported by BOLDR sources. If the information is missing, uncertain, order-specific, or risky, the enquiry becomes a reviewable gap instead of a hallucinated answer.
